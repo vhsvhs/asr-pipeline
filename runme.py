@@ -30,12 +30,15 @@ p = write_raxml_commands(ap)
 
 print "\n. Calculating aLRT branch support with PhyML..."
 x = post_raxml(ap)
-run_script(x, ap)
+#run_script(x, ap)
 calc_alr(ap)
 
 print "\n. Reconstructing ancestral sequences..."
 x = get_asr_commands(ap)
-print x
+run_script(x, ap)
+
+x = get_getanc_commands(ap)
+run_script(x, ap)
 
 #
 # continue here - move the raxml output into OUT.* directories.

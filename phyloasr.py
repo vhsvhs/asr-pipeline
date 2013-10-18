@@ -271,36 +271,39 @@ def get_asr_commands(ap):
     #os.system(MPIRUN + " asr_commands.sh")
     #exit()
 
-"""
+
 #
 # Get ancestors
 #
-getanc_commands = []
-for DIR in DIR_runid_lnl:
-    for runid in DIR_runid_lnl[DIR]:
-        here = os.getcwd()
-        asrmsa = DIR + "/" + gene + "." + DIR_nick[DIR] + ".asr.fasta"
-        asrtree = get_asr_treepath(DIR, runid)
-        model = "~/Applications/paml44/dat/"
-        if runid.__contains__("JTT"):
-            model += "jones.dat"
-        elif runid.__contains__("WAG"):
-            model += "wag.dat"
-        elif runid.__contains__("LG"):
-            model += "lg.dat"
-        for ing in ingroups:
-            ingroup = ingroups[ing]
-            getanc_commands.append("python ~/Documents/SourceCode/Lazarus/lazarus.py --alignment " + asrmsa + " --tree " + asrtree + " --model " + model + " --outputdir " + here + "/" + DIR + "/asr." + runid + " --outgroup " + outgroup + " --ingroup " + ingroup + " --getanc True")
-            getanc_commands.append("mv " + DIR + "/asr." + runid + "/ancestor-ml.dat " + DIR + "/asr." + runid + "/anc." + ing + ".dat")
-            getanc_commands.append("mv " + DIR + "/asr." + runid + "/ancestor.out.txt " + DIR + "/asr." + runid + "/anc." + ing + ".txt")
-
-#fout = open("getanc_commands.txt", "w")
-#for a in getanc_commands:
-#    os.system(a)
-#    fout.write(a + "\n")
-#fout.close()
+def get_getanc_commands(ap):
+    getanc_commands = []
+    for msa in ap.params["msa_algorithms"]:
+        for model in ap.params["raxml_models"]:
+            runid = get_runid(msa, model)
+            here = os.getcwd()
+            asrmsa = get_fasta_path(msa, ap)
+            asrtree = get_asr_treepath(msa, runid)
+            modelstr = ap.params["mmfolder"]
+            if runid.__contains__("JTT"):
+                modelstr += "/jones.dat"
+            elif runid.__contains__("WAG"):
+                modelstr += "/wag.dat"
+            elif runid.__contains__("LG"):
+                modelstr += "/lg.dat"
+            for ing in ap.params["ingroup"]:
+                getanc_commands.append("python ~/Documents/SourceCode/Lazarus/lazarus.py --alignment " + asrmsa + " --tree " + asrtree + " --model " + modelstr + " --outputdir " + here + "/OUT." + msa + "/asr." + model + " --outgroup " + ap.params["outgroup"] + " --ingroup " + ap.params["ingroup"][ing] + " --getanc True")
+                getanc_commands.append("mv OUT." + msa + "/asr." + runid + "/ancestor-ml.dat OUT." + msa + "/asr." + model + "/anc." + ing + ".dat")
+                getanc_commands.append("mv OUT." + msa + "/asr." + runid + "/ancestor.out.txt OUT." + msa + "/asr." + model + "/anc." + ing + ".txt")
+    
+    fout = open("SCRIPTS/getanc_commands.txt", "w")
+    for a in getanc_commands:
+        os.system(a)
+        fout.write(a + "\n")
+    fout.close()
+    return "SCRIPTS/getanc_commands.txt"
 
 #exit()
+"""
 
 def get_struct_sites():
     msapath = "MSAPROBS/" + gene + ".msaprobs.asr.phylip"
