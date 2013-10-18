@@ -204,77 +204,74 @@ for ta in treepath_id:
         ta_tb_distance[ta][tb] = d
 print ta_tb_distance
 #exit()
+"""
 
-#################################################
-#
-# Run ASR
-#
-asr_commands = []
-for DIR in DIR_runid_lnl:
-    fin = open(get_fastapath(DIR), "r")
-    lines = fin.readlines()
-    fin.close()
-    innames = [] # array of taxa in the trimmed alignment:
-    for i in range(0, lines.__len__()):
-        if lines[i].startswith(">"):
-            l = lines[i].strip()
-            name = re.sub(">", "", l)
-            if name in innames:
-                print ". Your alignment" + get_fastapath(DIR) + " has two copies of", name
-                exit()
-            print "182:", name
-            innames.append(name)
+def get_asr_commands(ap):
+    asr_commands = []
+    for msa in ap.params["msa_algorithms"]:
+        for model in ap.params["raxml_models"]:
+            runid = get_runid(msa, model)
+            
+            fastapath = get_fasta_path(msa, ap)
+            
+            fin = open(get_fasta_path(msa, ap), "r")
+            lines = fin.readlines()
+            fin.close()
+            innames = [] # array of taxa in the trimmed alignment:
+            for i in range(0, lines.__len__()):
+                if lines[i].startswith(">"):
+                    l = lines[i].strip()
+                    name = re.sub(">", "", l)
+                    if name in innames:
+                        print ". Your alignment" + fastapath + " has two copies of", name
+                        exit()
+                    innames.append(name)
+        
+            fin = open(fastapath, "r")
+            outlines = []
+            linecache = ""
+            lines = fin.readlines()
+            toggle = False
+            for i in range(0, lines.__len__()):
+                if lines[i].startswith(">"):
+                    l = lines[i].strip()
+                    name = re.sub(">", "", l)
+                    if name in innames:
+                        if linecache.__len__() > 2:
+                            outlines.append(linecache)
+                            linecache = ""
+                        toggle = True
+                        #print "adding", l
+                        outlines.append(l + "\n")
+                    else:
+                        #print "skipping", name
+                        toggle = False
+                elif toggle == True:
+                    linecache += lines[i]
+            if linecache.__len__() > 2:
+                outlines.append(linecache)
+        
+            if False == os.path.exists("OUT." + msa + "/asr." + model):
+                os.system("mkdir OUT." + msa + "/asr." + model)
+            modelstr = "~/Applications/paml44/dat/lg.dat"
+            if runid.__contains__("JTT"):
+                modelstr = "~/Applications/paml44/dat/jones.dat"
+            elif runid.__contains__("WAG"):
+                modelstr = "~/Applications/paml44/dat/wag.dat"
+            elif runid.__contains__("LG"):
+                modelstr = "~/Applications/paml44/dat/lg.dat"
+            asrtreepath = get_asr_treepath(msa, runid)
+            asr_commands.append(ap.params["lazarus_exe"] + " --alignment " + fastapath + " --tree " + asrtreepath + " --model " + modelstr + " --outputdir OUT." + msa + "/asr." + model + " --branch_lengths fixed --asrv 8 --codeml --gapcorrect True --outgroup " + ap.params["outgroup"] + " --cleanup True")
 
-    fin = open(get_fastapath(DIR), "r")
-    outlines = []
-    linecache = ""
-    lines = fin.readlines()
-    toggle = False
-    for i in range(0, lines.__len__()):
-        if lines[i].startswith(">"):
-            l = lines[i].strip()
-            name = re.sub(">", "", l)
-            if name in innames:
-                if linecache.__len__() > 2:
-                    outlines.append(linecache)
-                    linecache = ""
-                toggle = True
-                #print "adding", l
-                outlines.append(l + "\n")
-            else:
-                #print "skipping", name
-                toggle = False
-        elif toggle == True:
-            linecache += lines[i]
-    if linecache.__len__() > 2:
-        outlines.append(linecache)
-
-    fout = open(DIR + "/" + gene + "." + DIR_nick[DIR] + ".asr.fasta", "w")
-    for l in outlines:
-        fout.write(l)
+    fout = open("SCRIPTS/asr_commands.sh", "w")
+    for a in asr_commands:
+        fout.write(a + "\n")
     fout.close()
+    return "SCRIPTS/asr_commands.sh"
+    #os.system(MPIRUN + " asr_commands.sh")
+    #exit()
 
-    os.system("perl ~/Applications/seqConverter.pl -d" + DIR + "/" + gene + "." + DIR_nick[DIR] + ".asr.fasta -ope")
-
-    for runid in DIR_runid_lnl[DIR]:
-        os.system("mkdir " + DIR + "/asr." + runid)
-        model = "~/Applications/paml44/dat/lg.dat"
-        if runid.__contains__("JTT"):
-            model = "~/Applications/paml44/dat/jones.dat"
-        elif runid.__contains__("WAG"):
-            model = "~/Applications/paml44/dat/wag.dat"
-        elif runid.__contains__("LG"):
-            model = "~/Applications/paml44/dat/lg.dat"
-        asrtreepath = get_asr_treepath(DIR, runid)
-        asr_commands.append("python ~/Documents/SourceCode/Lazarus/lazarus.py --alignment " + DIR + "/" + gene + "." + DIR_nick[DIR] + ".asr.fasta --tree " + asrtreepath + " --model " + model + " --outputdir " + DIR + "/asr." + runid + " --branch_lengths fixed --asrv 8 --codeml --gapcorrect True --outgroup " + outgroup + " --cleanup True")
-
-#fout = open("asr_commands.sh", "w")
-#for a in asr_commands:
-#    fout.write(a + "\n")
-#fout.close()
-#os.system(MPIRUN + " asr_commands.sh")
-#exit()
-
+"""
 #
 # Get ancestors
 #

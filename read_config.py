@@ -24,6 +24,10 @@ def read_config_file(ap):
         
         elif tokens[0].startswith("PHYML"):
             ap.params["phyml_exe"] = tokens[1].strip()
+
+        elif tokens[0].startswith("LAZARUS"):
+            ap.params["lazarus_exe"] = tokens[1].strip()
+        
         
         elif tokens[0].startswith("MPIRUN"):
             ap.params["mpirun_exe"] = tokens[1]

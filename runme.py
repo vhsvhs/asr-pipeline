@@ -33,6 +33,9 @@ x = post_raxml(ap)
 run_script(x, ap)
 calc_alr(ap)
 
+print "\n. Reconstructing ancestral sequences..."
+x = get_asr_commands(ap)
+print x
 
 #
 # continue here - move the raxml output into OUT.* directories.

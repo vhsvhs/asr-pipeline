@@ -65,8 +65,8 @@ def get_alr_treepath(msa, model, ap):
 #
 # Which tree should we use for ancestral reconstruction?
 #
-def get_asr_treepath(DIR, runid):
-    return get_ml_treepath(DIR, runid)
+def get_asr_treepath(msa, runid):
+    return get_ml_treepath(msa, runid)
 
 
 def get_seed_sequence(msapath, seed):
