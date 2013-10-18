@@ -3,10 +3,13 @@ from argParser import *
 from tools import *
 from phyloasr import *
 
+from splash import *
 from read_config import *
 from run_msas import *
 
 ap = ArgParser(sys.argv)
+
+print_splash()
 
 """ Setup """
 read_config_file( ap )
@@ -15,13 +18,21 @@ verify_config(ap)
 setup_workspace(ap)
 
 """ MSAs """
+print "\n. Aligning sequences..."
 p = write_msa_commands(ap)
 #run_script(p, ap)
 trim_alignments(ap)
 
 """ ML Trees """
+print "\n. Inferring ML phylogenies with RAxML..."
 p = write_raxml_commands(ap)
-run_script(p, ap)
+#run_script(p, ap)
+
+print "\n. Calculating aLRT branch support with PhyML..."
+x = post_raxml(ap)
+run_script(x, ap)
+calc_alr(ap)
+
 
 #
 # continue here - move the raxml output into OUT.* directories.

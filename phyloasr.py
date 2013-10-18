@@ -26,13 +26,14 @@
 #
 
 from tools import *
-
+from alrt2alr import *
 
 
 #
 # Create RAxML commands for each alignment and each model.
 #
 def write_raxml_commands(ap):
+    here = os.getcwd()
     commands = []
     for msa in ap.params["msa_algorithms"]:
         phypath = get_phylip_path(msa, ap)
@@ -41,6 +42,7 @@ def write_raxml_commands(ap):
             command = ap.params["raxml_exe"]
             command += "  -s " + phypath
             command += " -n " + runid
+            command += " -w " + here + "/OUT." + msa
             command += " -e 0.001"
             command += " -m " + model
             command += " -p 12345"
@@ -52,145 +54,128 @@ def write_raxml_commands(ap):
         fout.write(c + "\n")
     fout.close()
     return p
-"""
 
-#
-# Run RAxML. . .
-#
-fout = open("raxml_commands.txt", "w")
-for c in commands:
-    fout.write( c + "\n" )
-fout.close() 
-#os.system(MPIRUN + " raxml_commands.txt")
-
-for DIR in DIRS:
-    os.system("mv ./*" + DIR_nick[DIR] + "* ./" + DIR + "/")
-
-#
-# Post-RAxML cleanup:
-#
-for DIR in DIRS:
-    keyword = DIR_nick[DIR]
-    for runid in DIR_runids[DIR]:
-        # Renmae the RAxML tree with ".tre" suffix, so that future programs
-        # will know it's a newick tree.
-        os.system("mv " + get_raxml_treepath(DIR, runid) + "  " + get_ml_treepath(DIR, runid) )
-        # Removed the .reduced alignment that's written by RAxML.
-        # It will be redundant with our trimmed version of the alignment.
-        os.system("rm " + get_phylippath(DIR) + ".reduced")
-
-
-#
-# Fetch ML results,
-# Calculate min, max likelihoods for each model, 
-# and find the best-fitting model.
-#
-DIR_runid_lnl = {} 
-DIR_suml = {}
-DIR_runid_pp = {}
-DIR_runid_alpha = {}
-for DIR in DIR_runids:
-    DIR_runid_lnl[DIR] = {}
-    DIR_runid_pp[DIR] = {}
-    DIR_runid_alpha[DIR] = {}
-    maxl = None
-    minl = None
-    for runid in DIR_runids[DIR]:
-        # Get the output stats about this run:
-        statspath = DIR_runid_statspath[DIR][runid]
-        if False == os.path.exists(statspath):
-            print "I can't find:", statspath
-            continue
-        fin = open(statspath, "r")
-        lines = fin.readlines()
-        for l in lines:
-            if l.startswith("Final GAMMA-based Score of best tree"):
-                tokens = l.split()
-                lnl = float(tokens[6])
-                DIR_runid_lnl[DIR][runid] = lnl
-                print runid, lnl
-                if maxl == None:
-                    maxl = lnl
-                if minl == None:
-                    minl = lnl
-                if lnl > maxl:
-                    maxl = lnl
-                if lnl < minl:
-                    minl = lnl
-            elif l.startswith("alpha[0]:"):
-                l = l.strip()
-                tokens = l.split()
-                this_alpha = tokens[1]
-                DIR_runid_alpha[DIR][runid] = this_alpha
-        fin.close()
-
-    DIR_suml[DIR] = 0.0
-    for runid in DIR_runid_lnl[DIR]:
-        DIR_suml[DIR] += (DIR_runid_lnl[DIR][runid] - minl)
+def post_raxml(ap):
+    #
+    # Fetch ML results,
+    # Calculate min, max likelihoods for each model, 
+    # and find the best-fitting model.
+    #
+    runid_alpha = {}
+    for msa in ap.params["msa_algorithms"]:
+        runid_lnl = {} 
+        maxl = None
+        minl = None
+        suml = 0
+        for model in ap.params["raxml_models"]:
+            runid = get_runid(msa, model)
+            spath = get_statspath(msa, model)
+            if False == os.path.exists(spath):
+                print "Something is wrong. I can't find the output from RAxML:", spath
+                exit()
+            fin = open(spath, "r")
+            lines = fin.readlines()
+            for l in lines:
+                if l.startswith("Final GAMMA-based Score of best tree"):
+                    tokens = l.split()
+                    lnl = float(tokens[6])
+                    runid_lnl[runid] = lnl
+                    if maxl == None:
+                        maxl = lnl
+                    if minl == None:
+                        minl = lnl
+                    if lnl > maxl:
+                        maxl = lnl
+                    if lnl < minl:
+                        minl = lnl
+                elif l.startswith("alpha[0]:"):
+                    l = l.strip()
+                    tokens = l.split()
+                    this_alpha = tokens[1]
+                    runid_alpha[runid] = this_alpha
+            fin.close()
     
-    fout = open("lnl_log." + DIR_nick[DIR] + ".txt", "w")
-    for runid in DIR_runid_lnl[DIR]:
-        lnl = DIR_runid_lnl[DIR][runid]
-        pp = (lnl-minl)/(DIR_suml[DIR])
-        DIR_runid_pp[DIR][runid] = pp
-        special = ""
-        if lnl == maxl:
-            special = " (ML) "
-        line = DIR + "\t" + runid + "\t" + lnl.__str__() + "\t" + "%.4f"%pp + "\t" + special
-        fout.write(line + "\n")
+        for runid in runid_lnl:
+            suml += (runid_lnl[runid] - minl)
+            
+        runid_pp = {}
+        fout = open("OUT." + msa + "/raxml.lnl.summary.txt", "w")
+        for runid in runid_lnl:
+            lnl = runid_lnl[runid]
+            pp = (lnl-minl)/suml
+            runid_pp[runid] = pp
+            special = ""
+            if lnl == maxl:
+                special = " (ML) "
+            line = runid + "\t" + lnl.__str__() + "\t" + "%.4f"%pp + "\t" + special
+            fout.write(line + "\n")
+        fout.close()
+
+
+    alrt_commands = []
+    for msa in ap.params["msa_algorithms"]:
+        for model in ap.params["raxml_models"]:
+            runid = get_runid(msa, model)
+            mltreepath = get_ml_treepath(msa, runid)
+            phylippath = get_phylip_path(msa, ap)
+            
+            if False == os.path.exists(mltreepath):
+                print "Something is wrong. I can't find the ML tree output from RAxML:", mltreepath
+                exit()
+            if False == os.path.exists(phylippath):
+                print "Something is wrong. I can't find the trimmed Phylip alignment", phylippath
+                exit()
+            
+            modelstr = ""
+            if runid.__contains__("JTT"):
+                modelstr = "JTT"
+            elif runid.__contains__("WAG"):
+                modelstr = "WAG"
+            elif runid.__contains__("LG"):
+                modelstr = "LG"
+            gammastr = ""
+            if runid.__contains__("GAMMA"):
+                gammastr = " --nclasses 8 --alpha " + runid_alpha[runid].__str__()
+            command = ap.params["phyml_exe"]
+            command += " --input " + phylippath
+            command += " -u " + mltreepath
+            command += " --model " + modelstr
+            command += gammastr
+            command += " -f m"  # use fixed pi values
+            command += " -o n"  # don't optimize anything
+            command += " -b -1" # calculate ALRTs
+            command += " --run_id " + model + ".alrt"
+            command += " --datatype aa"
+            command += " > OUT." + msa + "/catch.phyml." + model + ".txt"
+            alrt_commands.append( command )
+    fout = open("SCRIPTS/alrt_commands.sh", "w")
+    for c in alrt_commands:
+        fout.write(c + "\n")
     fout.close()
+    return "SCRIPTS/alrt_commands.sh"     
 
+def calc_alr(ap):
+    #
+    # Convert ALRTs to ALRs
+    #
+    alr_commands = []
+    for msa in ap.params["msa_algorithms"]:
+        for model in ap.params["raxml_models"]:
+            runid = get_runid(msa, model)
+            alrt_treepath = get_alrt_treepath(msa, model, ap)
+            alr_treepath = get_alr_treepath(msa, model, ap)
+            
+            if False == os.path.exists(alrt_treepath):
+                print "Something is wrong. I can't find the ML tree with aLRT values at", alrt_treepath
+                exit()
+            
+            alrt_to_alr( alrt_treepath, alr_treepath )
 
-#
-# Use PhyML to calculate ALRTs on each RAxML ML tree.
-#
-alrt_commands = []
-for DIR in DIR_runids:
-    for runid in DIR_runid_lnl[DIR]:
-        mltreepath = get_ml_treepath(DIR, runid)
-        phylippath = get_phylippath(DIR)
-        model = ""
-        if runid.__contains__("JTT"):
-            model = "JTT"
-        elif runid.__contains__("WAG"):
-            model = "WAG"
-        elif runid.__contains__("LG"):
-            model = "LG"
-        gamma = ""
-        if runid.__contains__("GAMMA"):
-            this_alpha = DIR_runid_alpha[DIR][runid]
-            gamma = " --nclasses 8 --alpha " + this_alpha.__str__()
-        command = PHYML
-        command += " --input " + phylippath
-        command += " -u " + mltreepath
-        command += " --model " + model
-        command += gamma
-        command += " -f m"  # use fixed pi values
-        command += " -o n"  # don't optimize anything
-        command += " -b -1" # calculate ALRTs
-        command += " --run_id " + runid + ".alrt"
-        command += " --datatype aa"
-        command += " > " + DIR + "/catch.phyml." + runid + ".txt"
-        alrt_commands.append( command )
-fout = open("alrt_commands.sh", "w")
-for c in alrt_commands:
-    fout.write(c + "\n")
-fout.close()
-#os.system(MPIRUN + " alrt_commands.sh")        
+            if False == os.path.exists(alr_treepath):
+                print "Something is wrong. I can't find converted ML tree with aLR values at", alr_treepath
+                exit()
 
-#
-# Convert ALRTs to ALRs
-#
-alr_commands = []
-for DIR in DIR_runids:
-    for runid in DIR_runid_lnl[DIR]:
-        alrt_treepath = get_alrt_treepath(DIR, runid)
-        alr_treepath = get_alr_treepath(DIR, runid)
-        c = ALRT2ALR + " " + alrt_treepath + " > " + alr_treepath
-        alr_commands.append(c)
-#for c in alr_commands:
-#    print c
-#    os.system(c)
+"""
 
 #exit()
 

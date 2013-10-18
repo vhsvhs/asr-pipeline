@@ -53,7 +53,7 @@ def trim_alignments(ap):
         seqlen = lines[0].split()[1]
         
         pfout = open(get_phylip_path(msa,ap), "w")
-        pfout.write(ntaxa + "  " + (stop-start).__str__() + "\n")
+        pfout.write(ntaxa + "  " + (stop-start+1).__str__() + "\n")
         
         ffout = open(get_fasta_path(msa,ap), "w")
         
