@@ -98,8 +98,8 @@ def read_config_file(ap):
                 ap.params["compareanc"] = []
             ap.params["compareanc"].append( (anc1,anc2) )
             
-        elif tokens[0].startswith("MPI"):
-            answer = tokens[0].split()[1]
+        elif tokens[0].startswith("USE_MPI"):
+            answer = re.sub(" ", "", tokens[1])
             if answer == "on" or answer == "True":
                 ap.params["usempi"] = True
             else:
@@ -109,19 +109,20 @@ def read_config_file(ap):
 def verify_config(ap):
     """Will return nothing if the configuration is ok.  Will error and quit if the
     configuration is flawed."""
-    for a in ap.params["ancestors"]:
-        if a not in ap.params["seedtaxa"]:
-            print "\n. ERROR: You did not specify a SEED for the ancestor", a
-            exit()
-    for c in ap.params["compareanc"]:
-        a1 = c[0]
-        a2 = c[1]
-        if a1 not in ap.params["ancestors"]:
-            print "\n. ERROR: you specified a comparison between ancestors", a1, "and", a2, "but", a1,"was not defined in the ANCESTORS line."
-            exit() 
-        if a1 not in ap.params["ancestors"]:
-            print "\n. ERROR: you specified a comparison between ancestors", a1, "and", a2, "but", a2,"was not defined in the ANCESTORS line."
-            exit()
+    if "ancestors" in ap.params:
+        for a in ap.params["ancestors"]:
+            if a not in ap.params["seedtaxa"]:
+                print "\n. ERROR: You did not specify a SEED for the ancestor", a
+                exit()
+        for c in ap.params["compareanc"]:
+            a1 = c[0]
+            a2 = c[1]
+            if a1 not in ap.params["ancestors"]:
+                print "\n. ERROR: you specified a comparison between ancestors", a1, "and", a2, "but", a1,"was not defined in the ANCESTORS line."
+                exit() 
+            if a1 not in ap.params["ancestors"]:
+                print "\n. ERROR: you specified a comparison between ancestors", a1, "and", a2, "but", a2,"was not defined in the ANCESTORS line."
+                exit()
     if False == os.path.exists(ap.params["ergseqpath"]):
         print "\n. I could not find your sequences at", ap.params["ergseqpath"]
         exit()

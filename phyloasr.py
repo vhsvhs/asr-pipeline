@@ -33,12 +33,14 @@ from alrt2alr import *
 # Create RAxML commands for each alignment and each model.
 #
 def write_raxml_commands(ap):
-    here = os.getcwd()
+    #here = os.path.abspath("./")
+    here = os.popen('pwd').read().strip()
     commands = []
     for msa in ap.params["msa_algorithms"]:
         phypath = get_phylip_path(msa, ap)
         for model in ap.params["raxml_models"]:
             runid = get_runid(msa, model) 
+            os.system("rm " + here + "/OUT." + msa + "/*" + runid)
             command = ap.params["raxml_exe"]
             command += "  -s " + phypath
             command += " -n " + runid
@@ -46,7 +48,7 @@ def write_raxml_commands(ap):
             command += " -e 0.001"
             command += " -m " + model
             command += " -p 12345"
-            command += " > OUT." + msa + "/catch." + runid + ".txt" 
+            command += " > " + here + "/OUT." + msa + "/catch." + runid + ".txt" 
             commands.append(command)
     p = "SCRIPTS/raxml.commands.sh"
     fout = open(p, "w")

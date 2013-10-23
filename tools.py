@@ -1,6 +1,6 @@
 from configuration import *
 
-def run_script(p, ap):
+def run_script(p, ap): 
     if ap.params["usempi"] == True:
         os.system( ap.params["mpirun_exe"] + " " + p)
     else:

@@ -43,14 +43,16 @@ def trim_alignments(ap):
     """Trims the alignment to match the start and stop motifs.
     The results are written as both PHYLIP and FASTA formats."""
     convert_all_fasta_to_phylip(ap)
-    
-
     for msa in ap.params["msa_algorithms"]:
-        [start,stop] = get_boundary_sites( get_phylipfull_path(msa, ap), ap)
         fin = open(get_phylipfull_path(msa, ap), "r")
         lines = fin.readlines()
         ntaxa = lines[0].split()[0]
-        seqlen = lines[0].split()[1]
+        seqlen = int( lines[0].split()[1] )
+        start = 1
+        stop = seqlen
+        
+        if "start_motif" in ap.params and "end_motif" in ap.params:
+            [start,stop] = get_boundary_sites( get_phylipfull_path(msa, ap), ap)
         
         pfout = open(get_phylip_path(msa,ap), "w")
         pfout.write(ntaxa + "  " + (stop-start+1).__str__() + "\n")
