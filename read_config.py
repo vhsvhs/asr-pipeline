@@ -5,6 +5,11 @@ def read_config_file(ap):
     cpath = ap.getArg("--configpath")
     fin = open(cpath, "r")
 
+    # Default values:
+    #
+    ap.params["end_motif"] = None
+    ap.params["start_motif"] = None
+
     for l in fin.xreadlines():
         l = l.strip()
         if l.startswith("#"):
@@ -12,6 +17,8 @@ def read_config_file(ap):
         if l.__len__() < 2:
             continue
         tokens = l.split("=")
+        if tokens.__len__() < 1: 
+            continue
         
         if tokens[0].startswith("GENE_ID"):
             ap.params["geneid"] = re.sub(" ", "", tokens[1])
@@ -62,7 +69,7 @@ def read_config_file(ap):
         elif tokens[0].startswith("END_MOTIF"):
             ap.params["end_motif"] = re.sub(" ", "", tokens[1])
         
-        elif tokens[0].startswith("SEED_MOTIF_SEQUENCE"):
+        elif tokens[0].startswith("SEED_MOTIF_TAXA"):
             ap.params["seed_motif_seq"] = re.sub(" ", "", tokens[1])
         
         elif tokens[0].startswith("N_BAYES_SAMPLES"):
@@ -111,6 +118,7 @@ def verify_config(ap):
     configuration is flawed."""
     if "ancestors" in ap.params:
         for a in ap.params["ancestors"]:
+            print a, ap.params["seedtaxa"]
             if a not in ap.params["seedtaxa"]:
                 print "\n. ERROR: You did not specify a SEED for the ancestor", a
                 exit()

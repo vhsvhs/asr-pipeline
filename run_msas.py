@@ -51,20 +51,30 @@ def trim_alignments(ap):
         start = 1
         stop = seqlen
         
-        if "start_motif" in ap.params and "end_motif" in ap.params:
+        if (ap.params["end_motif"] != None) and (ap.params["start_motif"] != None):
             [start,stop] = get_boundary_sites( get_phylipfull_path(msa, ap), ap)
         
-        pfout = open(get_phylip_path(msa,ap), "w")
-        pfout.write(ntaxa + "  " + (stop-start+1).__str__() + "\n")
-        
+
+        poutl = ""
         ffout = open(get_fasta_path(msa,ap), "w")
         
+        count_good_taxa = 0
         for ii in range(1, lines.__len__()):
             tokens = lines[ii].split()
             taxa = tokens[0]
             seq = tokens[1]
             trimmed_seq = seq[start-1:stop]
-            pfout.write(taxa + "  " + trimmed_seq + "\n")
-            ffout.write(">" + taxa + "\n" + trimmed_seq + "\n")
+            hasdata = False
+            for c in trimmed_seq:
+                if c != "-":
+                    hasdata = True
+            if hasdata == True:
+                count_good_taxa += 1
+                poutl += taxa + "  " + trimmed_seq + "\n"
+                ffout.write(">" + taxa + "\n" + trimmed_seq + "\n")
+                
+        pfout = open(get_phylip_path(msa,ap), "w")
+        pfout.write(count_good_taxa.__str__() + "  " + (stop-start+1).__str__() + "\n")
+        pfout.write(poutl)
         pfout.close()
         ffout.close()

@@ -37,12 +37,17 @@ if jump <= 3:
     p = write_raxml_commands(ap)
     run_script(p, ap)
 
+""" Branch Support """
 if jump <= 4:
     print "\n. Calculating aLRT branch support with PhyML..."
-    x = post_raxml(ap)
+    get_mlalpha_pp(ap)
+    
+if jump <= 4.1:    
+    x = calc_alrt(ap)
     run_script(x, ap)
     calc_alr(ap)
 
+""" A.S.R. """
 if jump <= 5:
     if "ancestors" in ap.params:
         print "\n. Reconstructing ancestral sequences..."
@@ -52,6 +57,12 @@ if jump <= 5:
         x = get_getanc_commands(ap)
         run_script(x, ap)
 
+""" Predict sites of functional evolution """
+if jump <= 6:
+    if "compareanc" in ap.params:
+        if (jump > 4):
+            get_mlalpha_pp(ap)
+        x = get_compareanc_commands(ap)
 
 """
 python run_msas.py ime2

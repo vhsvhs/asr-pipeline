@@ -57,13 +57,18 @@ def write_raxml_commands(ap):
     fout.close()
     return p
 
-def post_raxml(ap):
+def get_mlalpha_pp(ap):
     #
     # Fetch ML results,
     # Calculate min, max likelihoods for each model, 
     # and find the best-fitting model.
     #
-    runid_alpha = {}
+    # The ML alpha and the PP for each msa/model
+    # are written to ap.params["runid_alpha"]
+    # and ap.params["runid_pp"]
+    #
+    ap.params["runid_alpha"] = {}
+    ap.params["runid_pp"] = {}
     for msa in ap.params["msa_algorithms"]:
         runid_lnl = {} 
         maxl = None
@@ -94,26 +99,26 @@ def post_raxml(ap):
                     l = l.strip()
                     tokens = l.split()
                     this_alpha = tokens[1]
-                    runid_alpha[runid] = this_alpha
+                    ap.params["runid_alpha"][runid] = this_alpha
             fin.close()
     
         for runid in runid_lnl:
             suml += (runid_lnl[runid] - minl)
             
-        runid_pp = {}
         fout = open("OUT." + msa + "/raxml.lnl.summary.txt", "w")
         for runid in runid_lnl:
             lnl = runid_lnl[runid]
             pp = (lnl-minl)/suml
-            runid_pp[runid] = pp
+            ap.params["runid_pp"][runid] = pp
             special = ""
             if lnl == maxl:
                 special = " (ML) "
             line = runid + "\t" + lnl.__str__() + "\t" + "%.4f"%pp + "\t" + special
             fout.write(line + "\n")
         fout.close()
-
-
+        
+        
+def calc_alrt(ap):
     alrt_commands = []
     for msa in ap.params["msa_algorithms"]:
         for model in ap.params["raxml_models"]:
@@ -137,7 +142,7 @@ def post_raxml(ap):
                 modelstr = "LG"
             gammastr = ""
             if runid.__contains__("GAMMA"):
-                gammastr = " --nclasses 8 --alpha " + runid_alpha[runid].__str__()
+                gammastr = " --nclasses 8 --alpha " + ap.params["runid_alpha"][runid].__str__()
             command = ap.params["phyml_exe"]
             command += " --input " + phylippath
             command += " -u " + mltreepath
@@ -156,10 +161,9 @@ def post_raxml(ap):
     fout.close()
     return "SCRIPTS/alrt_commands.sh"     
 
+
 def calc_alr(ap):
-    #
-    # Convert ALRTs to ALRs
-    #
+    """Convert aLRTs to aLRs"""
     alr_commands = []
     for msa in ap.params["msa_algorithms"]:
         for model in ap.params["raxml_models"]:
@@ -257,11 +261,11 @@ def get_asr_commands(ap):
                 os.system("mkdir OUT." + msa + "/asr." + model)
             modelstr = "~/Applications/paml44/dat/lg.dat"
             if runid.__contains__("JTT"):
-                modelstr = "~/Applications/paml44/dat/jones.dat"
+                modelstr = ap.params["mmfolder"] + "/jones.dat"
             elif runid.__contains__("WAG"):
-                modelstr = "~/Applications/paml44/dat/wag.dat"
+                modelstr = ap.params["mmfolder"] + "/wag.dat"
             elif runid.__contains__("LG"):
-                modelstr = "~/Applications/paml44/dat/lg.dat"
+                modelstr = ap.params["mmfolder"] + "/lg.dat"
             asrtreepath = get_asr_treepath(msa, runid)
             asr_commands.append(ap.params["lazarus_exe"] + " --alignment " + fastapath + " --tree " + asrtreepath + " --model " + modelstr + " --outputdir OUT." + msa + "/asr." + model + " --branch_lengths fixed --asrv 8 --codeml --gapcorrect True --outgroup " + ap.params["outgroup"] + " --cleanup True")
 
@@ -293,9 +297,9 @@ def get_getanc_commands(ap):
             elif runid.__contains__("LG"):
                 modelstr += "/lg.dat"
             for ing in ap.params["ingroup"]:
-                getanc_commands.append("python ~/Documents/SourceCode/Lazarus/lazarus.py --alignment " + asrmsa + " --tree " + asrtree + " --model " + modelstr + " --outputdir " + here + "/OUT." + msa + "/asr." + model + " --outgroup " + ap.params["outgroup"] + " --ingroup " + ap.params["ingroup"][ing] + " --getanc True")
-                getanc_commands.append("mv OUT." + msa + "/asr." + runid + "/ancestor-ml.dat OUT." + msa + "/asr." + model + "/anc." + ing + ".dat")
-                getanc_commands.append("mv OUT." + msa + "/asr." + runid + "/ancestor.out.txt OUT." + msa + "/asr." + model + "/anc." + ing + ".txt")
+                getanc_commands.append(ap.params["lazarus_exe"] + " --alignment " + asrmsa + " --tree " + asrtree + " --model " + modelstr + " --outputdir " + here + "/OUT." + msa + "/asr." + model + " --outgroup " + ap.params["outgroup"] + " --ingroup " + ap.params["ingroup"][ing] + " --getanc True")
+                getanc_commands.append("mv OUT." + msa + "/asr." + model + "/ancestor-ml.dat OUT." + msa + "/asr." + model + "/anc." + ing + ".dat")
+                getanc_commands.append("mv OUT." + msa + "/asr." + model + "/ancestor.out.txt OUT." + msa + "/asr." + model + "/anc." + ing + ".txt")
     
     fout = open("SCRIPTS/getanc_commands.txt", "w")
     for a in getanc_commands:
@@ -305,101 +309,61 @@ def get_getanc_commands(ap):
     return "SCRIPTS/getanc_commands.txt"
 
 #exit()
-"""
 
-def get_struct_sites():
-    msapath = "MSAPROBS/" + gene + ".msaprobs.asr.phylip"
-    seed = "Saccharomyces.cerevisiae.IME2"
-
-    start_motif = START_MOTIF #"YQLI"
-    end_motif = END_MOTIF #"MPFF"
-    startsite = None
-    endsite = None
-    fin = open(msapath, "r")
-    for l in fin.readlines():
-        if l.startswith(seed):
-            seq = l.split()[1]
-            # find the starting motif                                                                                               
-            for i in range(0, seq.__len__()):
-                if seq[i] == start_motif[0]:
-                    here = ""
-                    j = i
-                    while here.__len__() < start_motif.__len__() and j < seq.__len__():
-                        if seq[j] != "-":
-                            here += seq[j]
-                        j += 1
-                    if here  == start_motif:
-                        startsite = i + 1
-                        #print here, seq[startsite-1:(startsite-1)+4]                                                               
-                        break
-            for i in range(i, seq.__len__()):
-                if seq[i] == end_motif[0]:
-                    here = ""
-                    j = i
-                    while here.__len__() < end_motif.__len__() and j < seq.__len__():
-                        if seq[j] != "-":
-                            here += seq[j]
-                        j += 1
-                    #print here, end_motif                                                                                          
-                    if here  == end_motif:
-                        endsite = j
-                        #print seq[endsite-1:(endsite-1)+3]
-                        break
-    fin.close()
-    return [startsite, endsite]
-
-
-
-#
-# Compare ancestors
-#
-compare_commands = []
-for pair in comparisons:
-    #print pair
-    outlines = []
-    outlines.append("seed " + ingroup_seed[ pair[0] ])
-
-    msapaths = "msapaths "
-    for DIR in DIR_runid_lnl:
-        for runid in DIR_runid_lnl[DIR]:
-            if 0.01 < DIR_runid_pp[DIR][runid]:
-                msapaths += DIR + "/asr." + runid + "/reformatted_alignment.phy "
-    outlines.append(msapaths)
-
-    for DIR in DIR_runid_lnl:
-        for runid in DIR_runid_lnl[DIR]:
-            if 0.01 < DIR_runid_pp[DIR][runid]:
-                msapath = DIR + "/asr." + runid + "/reformatted_alignment.phy "
-                outlines.append("msaname " + msapath + " " + DIR + "-" + runid)
-
-    for DIR in DIR_runid_lnl:
-        for runid in DIR_runid_lnl[DIR]:
-            if 0.01 < DIR_runid_pp[DIR][runid]:            
-                msapath = DIR + "/asr." + runid + "/reformatted_alignment.phy "
-                outlines.append("compare " + DIR + "/asr." + runid + "/anc." + pair[0]+ ".dat " + DIR + "/asr." + runid + "/anc." + pair[1] + ".dat " + DIR + "-" + runid)
-
-    for DIR in DIR_runid_lnl:
-        for runid in DIR_runid_lnl[DIR]:
-            if 0.01 < DIR_runid_pp[DIR][runid]:
-                msapath = DIR + "/asr." + runid + "/reformatted_alignment.phy "
-                outlines.append("msaweight " + DIR + "-" + runid + " " + DIR_runid_pp[DIR][runid].__str__())
-
-    specpath = "compare_ancs." + pair[0] + "-" + pair[1] + "config.txt"
-    fout = open(specpath, "w")
-    for o in outlines:
-        fout.write(o + "\n")
-    fout.close()
-
-    model = "~/Applications/paml44/dat/lg.dat"
-    #model = "/common/paml42/dat/lg.dat"
+#ap.params["compareanc"]
+def get_compareanc_commands(ap):
+    compare_commands = []
+    for pair in ap.params["compareanc"]:    
+        #msapathlines = "msapaths "
+        msanamelines = ""
+        comparelines = ""
+        weightlines = ""
+        for msa in ap.params["msa_algorithms"]:
+            for model in ap.params["raxml_models"]:
+                runid = get_runid(msa, model)
+                pp = ap.params["runid_pp"][runid]
+                if pp > 0.0:
+                    msapath = "OUT." + msa + "/asr." + model + "/reformatted_alignment.phy"
+                    
+                    #msapathlines += msapath + " "
+                    msanamelines += "msaname " + msapath + " " + runid + "\n"
+                    comparelines += "compare OUT." + msa + "/asr." + model + "/anc." + pair[0] + ".dat OUT." + msa + "/asr." + model + "/anc." + pair[1] + ".dat " + runid + "\n"
+                    weightlines += "msaweight " + runid + " " + pp.__str__() + "\n"
+            
+        specpath = "compare_ancs." + pair[0] + "-" + pair[1] + ".config.txt"
+        fout = open(specpath, "w")
+        fout.write("seed " + ap.params["seedtaxa"][ pair[0] ] + "\n")
+        #fout.write(msapathlines)
+        fout.write(msanamelines)
+        fout.write(comparelines)
+        fout.write(weightlines)
+        fout.close()
     
-    [startsite,endsite] = get_struct_sites()
+        model = get_model_path(ap, runid)
+        
+        #
+        # At this point,the call to get_bound.. is unnecessary
+        # because we already trimmed the alignment to start/stop motif
+        # boundaries earlier, in the trim_alignment method
+        #
+        #[startsite,endsite] = get_boundary_sites(  get_phylipfull_path("msaprobs",ap))
+    
+        c = "python ~/Documents/SourceCode/anccomp/compare_ancs.py "
+        c += " --specpath " + specpath
+        c += " --modelpath " + model
+        c += " --window_sizes 1"
+        c += " --metrics k p hb"
+        c += " --runid " + pair[0] + "to" + pair[1]
+        c += " --restrict_to_seed True"
+        c += " --renumber_sites True"
+        #c += " --force_bin_width 0.25"
+        #if startsite != None and endsite != None:
+        #    c += " --highlight_sites " + startsite.__str__() + "-" + endsite.__str__()
+        compare_commands.append(c)
+    
+    fout = open("SCRIPTS/compareanc_commands.sh", "w")
+    for c in compare_commands:
+        fout.write(c + "\n")
+    fout.close()
+    return "SCRIPTS/compareanc_commands.sh"
 
-    compare_commands.append("python ~/Documents/SourceCode/anccomp/compare_ancs.py --specpath " + specpath + " --modelpath " + model + " --window_sizes 1 --metrics k p hb --runid " + pair[0] + "to" + pair[1] + " --restrict_to_seed True --renumber_sites True --force_bin_width 0.25 --highlight_sites " + startsite.__str__() + "-" + endsite.__str__() + " --pdbtoolsdir /Users/victor/Applications/pdbTools_0.2.1 --pdb_path ../homology_models2/" + pair[1] + ".pdb")
-    compare_commands.append("mv /Users/victor/Documents/GENES/ime2/2013-Oct15/pymol_script.k.p /Users/victor/Documents/GENES/ime2/2013-Oct15/" + pair[0] + "to" + pair[1] + ".p")
-
-fout = open("SCRIPTS/compareanc_commands.sh", "w")
-for c in compare_commands:
-    fout.write(c + "\n")
-fout.close()
-"""
