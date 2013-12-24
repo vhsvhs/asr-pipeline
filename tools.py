@@ -1,7 +1,21 @@
 from configuration import *
 from dendropy import Tree
-import re, os
+import math, re, os
 from Bio import Phylo
+
+def get_mean(values):
+    sum = 0.0
+    for v in values:
+        sum += float(v)
+    return sum / float(values.__len__())
+
+def get_sd(values):
+    mean = get_mean(values)
+    sumofsquares = 0.0
+    for v in values:
+        sumofsquares += (v - mean)**2
+    return math.sqrt( sumofsquares / float(values.__len__()) )
+
 
 def get_runid(dir, model):
     nick = DIR_nick[dir]
@@ -145,13 +159,16 @@ def get_ml_sequence(site_states_probs, start=0, stop=-1):
             continue
         maxp = 0.0
         maxc = ""
-        for c in site_states_probs[site]:
+        for tup in site_states_probs[site]:
             #print site_states_probs[site][c]
-            if site_states_probs[site][c] > maxp:
-                maxp = site_states_probs[site][c]
-                maxc = c
-        if maxc != "-":
-            mlseq += maxc
+            state = tup[0]
+            p = tup[1]
+            if  p > maxp:
+                maxp = p
+                maxc = state
+        if maxc != "-" and maxc != '-':
+            mlseq += maxc.upper()
+        #print site_states_probs, site, maxc
     return mlseq
 
 def get_ml_sequence_from_file(path):
@@ -162,15 +179,51 @@ def get_ml_sequence_from_file(path):
             tokens = l.split()
             state = tokens[1]
             if state != "-":
-                mlseq += state
+                mlseq += state.upper()
     return mlseq
 
+def get_pp_distro(path):
+    fin = open( path , "r")
+    site_state_pp = {}
+    for l in fin.xreadlines():
+        if l.__len__() > 2:
+            tokens = l.split()
+            site = int(tokens[0])
+            if site not in site_state_pp:
+                site_state_pp[site] = []
+            for ii in range(1,tokens.__len__()):
+                if ii%2 == 1:
+                    state = tokens[ii].upper()
+                    #print state
+                    #print tokens, ii
+                    prob = float(tokens[ii+1])
+                    site_state_pp[ site ].append( [state,prob] )
+    return site_state_pp
+
+def get_pp_distro_stats(data):
+    """Input: the output from get_pp_distro.  Output: mean and s.d. PP."""
+    pps = []
+    for site in data:
+        pps.append(data[site][1])
+    sum = 0.0
+
+# returns a bin number for this P value
+def binForProb(p):
+    return int(p / 0.05)
+
+# return the P value of the floor of this bin
+def probForBin(b):
+    x = float(b*5) / float(100)
+    if x == 1.00:
+        return x
+    return x + 0.025
+    
 def get_boundary_sites(msapath, seed):
     """msapath must be Phylip."""
     start_motif = START_MOTIF #"YQLI"
     end_motif = END_MOTIF #"MPFF"
     startsite = 1
-    endsite = None
+    endsite = -1
     fin = open(msapath, "r")
     #print msapath, seed
     for l in fin.readlines():
@@ -181,7 +234,7 @@ def get_boundary_sites(msapath, seed):
             # find the starting motif                                                                                               
             if start_motif != None:
                 for i in range(0, seq.__len__()):
-                    if seq[i] == start_motilenf[0]:
+                    if seq[i] == start_motif[0]:
                         here = ""
                         j = i
                         while here.__len__() < start_motif.__len__() and j < seq.__len__():

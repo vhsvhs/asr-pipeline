@@ -22,28 +22,7 @@ if stopsite == False:
 else:
     stopsite = int(stopsite)
 
-def get_data(path):
-    fin = open( inpath , "r")
-    site_state_pp = {}
-    for l in fin.xreadlines():
-        if l.__len__() > 2:
-            tokens = l.split()
-            site = int(tokens[0])
-            if site < startsite:
-                continue # skip this site
-            if site > stopsite and stopsite > 0:
-                continue # skip this site
-            if site not in site_state_pp:
-                site_state_pp[site] = {}
-            for ii in range(1,tokens.__len__()):
-                if ii%2 == 1:
-                    state = tokens[ii]
-                    #print state
-                    #print tokens, ii
-                    prob = float(tokens[ii+1])
-                    site_state_pp[ site ][state] = prob
-                    #print site, state, prob
-    return site_state_pp
+
 
 
 
@@ -115,7 +94,7 @@ def run_test():
 #run_test()
 #exit()
 
-data = get_data(inpath)
+data = get_pp_distro(inpath)
 if data.keys().__len__() < 1:
     print "I found no data! ?"
     
