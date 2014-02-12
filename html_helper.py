@@ -10,13 +10,13 @@ def get_header(head = "", urlpre = ""):
     h += "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n"
     h += "<html>\n"  
     h += "<head>\n"
-    h += "<title>" + PROJECT_TITLE + " Ancestral Library</title>\n"
+    h += "<title>" + ap.params["project_title"] + " Ancestral Library</title>\n"
     h += "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=iso-8859-1\">\n"
     h += "<link rel=\"stylesheet\" href=\"" + urlpre + "asrpipeline.css\">\n"
     h += head
     h += "</head>\n"    
     h += "<body><br>\n"
-    h += "<h1>" + PROJECT_TITLE + " Ancestral Library</h1>\n"    
+    h += "<h1>" + ap.params["project_title"] + " Ancestral Library</h1>\n"    
     h += "<hr>\n"
     h += "<p><a href='" + urlpre + "index.html'>Overview</a>"
     h += " | <a href='" + urlpre + "alignments.html'>Alignments</a>" 
@@ -62,11 +62,11 @@ def write_alignments():
     out += "<th align='center'>Download</th>"
     out += "</tr>\n"
     
-    for d in DIRS:
+    for d in ap.params["msa_algorithms"]:
         out += "<tr>"
         out += "<td aling='left'>" + d + "</td>"
         fpath = get_fastapath(d)
-        ppath = get_fullphylippath(d)
+        ppath = get_phylippath(d)
         (ntaxa, nsites) = get_phylipstats(ppath)
         out += "<td align='center'>" + ntaxa.__str__() + "</td>"
         out += "<td align='center'>" + nsites.__str__() + "</td>"
@@ -82,16 +82,16 @@ def write_alignments():
 
 
 def read_lnllog(dir):
-    fin = open("lnl_log." + DIR_nick[dir] + ".txt", "r")
+    fin = open(dir + "/raxml.lnl.summary.txt", "r")
     lines = fin.readlines()
     fin.close()
     model_data = {}
     for l in lines:
         if l.__len__() > 3:
             tokens = l.split()
-            model = tokens[1].split(".")[1]
-            lnl = "%.3f"%float(tokens[2])
-            pp = "%.3f"%float(tokens[3])
+            model = tokens[0].split(".")[1]
+            lnl = "%.3f"%float(tokens[1])
+            pp = "%.3f"%float(tokens[2])
             model_data[model] = (lnl,pp)
     return model_data
 
@@ -99,7 +99,7 @@ def write_treesancs():
     out = ""
     out += get_header()
 
-    for d in DIRS:
+    for d in ap.params["msa_algorithms"]:
         out += "<h2>" + d + "</h2>"
         out += "<table width=100%>\n"
         out += "<tr>"
@@ -112,9 +112,8 @@ def write_treesancs():
         out += "</tr>\n"
 
         model_data = read_lnllog(d)
-        for model in models:
-            rid = get_runid(d, model)
-            tpath = get_alrt_treepath(d, rid)
+        for model in ap.params["raxml_models"]:
+            tpath = get_alrt_treepath(d, model)
             tlength = get_tree_length( tpath )
             out += "<tr>"
             out += "<td>" + model + "</td>"
@@ -136,7 +135,7 @@ def write_treesancs():
 
 def write_anctree(d, model):
     rid = get_runid(d, model)
-    tpath = get_alrt_treepath(d, rid)
+    tpath = get_alrt_treepath(d, model)
 
     js = "<script type=\"text/javascript\" src=\"../SCRIPTS/HTML_SUPPORT/raphael-min.js\" ></script>\n"
     js += "<script type=\"text/javascript\" src=\"../SCRIPTS/HTML_SUPPORT/jsphylosvg-min.js\"></script>\n"
@@ -366,12 +365,11 @@ def write_ppdistro_plot(data):
     return out
 
 def write_ancestors_indi():
-    for d in DIRS:
-        for model in models:
-            rid = get_runid(d, model)
+    for d in ap.params["msa_algorithms"]:
+        for model in ap.params["raxml_models"]:
             outdir = HTMLDIR + "/asr." + get_runid(d, model)
             os.system("mkdir " + outdir)
-            ancdir = d + "/asr." + rid + "/tree1"
+            ancdir = d + "/asr." + model + "/tree1"
             for f in os.listdir(ancdir):
                 if f.__contains__(".dat"):            
                     data = get_pp_distro( ancdir + "/" + f )

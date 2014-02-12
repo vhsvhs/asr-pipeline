@@ -2,16 +2,16 @@
 #
 #
 import random,sys,os
-
-#from configuration import *
+from configuration import *
 from tools import *
 
-for d in DIRS:
-    for m in models:
+
+for d in ap.params["msa_algorithms"]:
+    for m in ap.params["raxml_models"]:
         print "\n. Sampling Bayesian Ancestors. . .", d, m
         runid = get_runid(d,m)
-        for a in ingroups:
-            [start,stop] = get_boundary_sites( get_fullphylippath(d), ingroup_seed[a] )
+        for a in ap.params["ingroup"]:
+            [start,stop] = get_boundary_sites( get_phylippath(d), ap.params["seedtaxa"][a] )
             print "\n\t .", a
             apath = d + "/asr." + runid + "/anc." + a + ".dat"
             command = "python SCRIPTS/asr_bayes.py --in " + apath 

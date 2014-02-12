@@ -22,6 +22,9 @@ def read_config_file(ap):
         
         if tokens[0].startswith("GENE_ID"):
             ap.params["geneid"] = re.sub(" ", "", tokens[1])
+        
+        if tokens[0].startswith("PROJECT_TITLE"):
+            ap.params["project_title"] = re.sub(" ", "", tokens[1])
 
         if tokens[0].startswith("SEQUENCES"):
             ap.params["ergseqpath"] = re.sub(" ", "", tokens[1])
@@ -37,7 +40,6 @@ def read_config_file(ap):
 
         elif tokens[0].startswith("MARKOV_MODEL_FOLDER"):
             ap.params["mmfolder"] = tokens[1].strip()
-                
         
         elif tokens[0].startswith("MPIRUN"):
             ap.params["mpirun_exe"] = tokens[1]
@@ -106,7 +108,8 @@ def read_config_file(ap):
             ap.params["compareanc"].append( (anc1,anc2) )
             
         elif tokens[0].startswith("USE_MPI"):
-            answer = re.sub(" ", "", tokens[1])
+            print tokens[0]
+            answer = re.sub(" ", "", tokens[0].split()[1])
             if answer == "on" or answer == "True":
                 ap.params["usempi"] = True
             else:
@@ -134,6 +137,11 @@ def verify_config(ap):
     if False == os.path.exists(ap.params["ergseqpath"]):
         print "\n. I could not find your sequences at", ap.params["ergseqpath"]
         exit()
+    if ap.params["start_motif"] == None:
+        ap.params["start_motif"] = ""
+    if ap.params["end_motif"] == None:
+        ap.params["end_motif"] = ""
+    return ap
 
 def print_config(ap):
     for p in ap.params:
@@ -142,8 +150,8 @@ def print_config(ap):
 
 def setup_workspace(ap):
     for msa in ap.params["msa_algorithms"]:
-        if False == os.path.exists("OUT." + msa):
-            os.system("mkdir OUT." + msa)
+        if False == os.path.exists(msa):
+            os.system("mkdir " + msa)
     if False == os.path.exists("SCRIPTS"):
         os.system("mkdir SCRIPTS")
             

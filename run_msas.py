@@ -25,26 +25,50 @@ def write_msa_commands(ap):
     fout = open(p, "w")
     for msa in ap.params["msa_algorithms"]:
         if msa == "muscle":
-            fout.write(ap.params["muscle_exe"] + " -in " + ap.params["ergseqpath"] + " -out " + get_fastafull_path(msa, ap) + "\n")
+            fout.write(ap.params["muscle_exe"] + " -in " + ap.params["ergseqpath"] + " -out " + get_fastapath(msa) + "\n")
         elif msa == "prank":
-            fout.write(ap.params["prank_exe"] + " -d=" + ap.params["ergseqpath"] + " -o=" + get_fastafull_path(msa, ap) + "\n")
+            fout.write(ap.params["prank_exe"] + " -d=" + ap.params["ergseqpath"] + " -o=" + get_fastapath(msa) + "\n")
         elif msa == "msaprobs": 
-            fout.write(ap.params["msaprobs_exe"] + " " + ap.params["ergseqpath"] + " > " + get_fastafull_path(msa, ap) + "\n")
+            fout.write(ap.params["msaprobs_exe"] + " " + ap.params["ergseqpath"] + " > " + get_fastapath(msa) + "\n")
     fout.close()
     return p
     #os.system("mpirun -np 4 --machinefile hosts.txt /common/bin/mpi_dispatch SCRIPTS/msas.commands.sh")
 
+def fasta_to_phylip(inpath, outpath):
+    fin = open(inpath, "r")
+    last_taxa = None
+    taxa_seq = {}
+    for l in fin.xreadlines():
+        if l.startswith(">"):
+            taxa = re.sub(">", "", l)
+            taxa = taxa.strip()
+            last_taxa = taxa
+            taxa_seq[ taxa ] = ""
+        elif l.__len__() > 0:
+            l = l.strip()
+            taxa_seq[ last_taxa ] += l
+    fin.close()
+    
+    fout = open(outpath, "w")
+    fout.write("  " + taxa_seq.__len__().__str__() + "  " + taxa_seq[ taxa_seq.keys()[0] ].__len__().__str__() + "\n")
+    for taxa in taxa_seq:
+        fout.write(taxa + "   " + taxa_seq[taxa] + "\n")
+    fout.close()
+
 def convert_all_fasta_to_phylip(ap):
     for msa in ap.params["msa_algorithms"]:
-        f = get_fastafull_path(msa, ap)
-        fasta_to_phylip(f)
+        f = get_fastapath(msa)
+        p = get_phylippath(msa)
+        fasta_to_phylip(f, p)
 
+#
+# depricated method:
+#
 def trim_alignments(ap):
     """Trims the alignment to match the start and stop motifs.
     The results are written as both PHYLIP and FASTA formats."""
-    convert_all_fasta_to_phylip(ap)
     for msa in ap.params["msa_algorithms"]:
-        fin = open(get_phylipfull_path(msa, ap), "r")
+        fin = open(get_phylippath(msa), "r")
         lines = fin.readlines()
         ntaxa = lines[0].split()[0]
         seqlen = int( lines[0].split()[1] )
@@ -52,12 +76,12 @@ def trim_alignments(ap):
         stop = seqlen
         
         if (ap.params["end_motif"] != None) and (ap.params["start_motif"] != None):
-            [start,stop] = get_boundary_sites( get_phylipfull_path(msa, ap), ap)
+            [start,stop] = get_boundary_sites( get_phylippath(msa), ap)
         
 
+        """Write PHYLIP to pfout and FASTA to ffout."""
         poutl = ""
         ffout = open(get_fasta_path(msa,ap), "w")
-        
         count_good_taxa = 0
         for ii in range(1, lines.__len__()):
             tokens = lines[ii].split()
@@ -72,9 +96,8 @@ def trim_alignments(ap):
                 count_good_taxa += 1
                 poutl += taxa + "  " + trimmed_seq + "\n"
                 ffout.write(">" + taxa + "\n" + trimmed_seq + "\n")
-                
-        pfout = open(get_phylip_path(msa,ap), "w")
+        ffout.close()
+        pfout = open(get_phylippath(msa,ap), "w")
         pfout.write(count_good_taxa.__str__() + "  " + (stop-start+1).__str__() + "\n")
         pfout.write(poutl)
         pfout.close()
-        ffout.close()

@@ -37,18 +37,19 @@ def write_raxml_commands(ap):
     here = os.popen('pwd').read().strip()
     commands = []
     for msa in ap.params["msa_algorithms"]:
-        phypath = get_phylip_path(msa, ap)
+        phypath = get_phylippath(msa)
         for model in ap.params["raxml_models"]:
             runid = get_runid(msa, model) 
-            os.system("rm " + here + "/OUT." + msa + "/*" + runid)
+            if os.path.exists(here + "/" + msa + "/RAxML_info." + runid):
+                os.system("rm " + here + "/" + msa + "/RAxML_*" + runid)
             command = ap.params["raxml_exe"]
             command += "  -s " + phypath
             command += " -n " + runid
-            command += " -w " + here + "/OUT." + msa
+            command += " -w " + here + "/" + msa
             command += " -e 0.001"
             command += " -m " + model
             command += " -p 12345"
-            command += " > " + here + "/OUT." + msa + "/catch." + runid + ".txt" 
+            command += " > " + here + "/" + msa + "/catch." + runid + ".txt" 
             commands.append(command)
     p = "SCRIPTS/raxml.commands.sh"
     fout = open(p, "w")
@@ -105,7 +106,7 @@ def get_mlalpha_pp(ap):
         for runid in runid_lnl:
             suml += (runid_lnl[runid] - minl)
             
-        fout = open("OUT." + msa + "/raxml.lnl.summary.txt", "w")
+        fout = open(msa + "/raxml.lnl.summary.txt", "w")
         for runid in runid_lnl:
             lnl = runid_lnl[runid]
             pp = (lnl-minl)/suml
@@ -123,8 +124,8 @@ def calc_alrt(ap):
     for msa in ap.params["msa_algorithms"]:
         for model in ap.params["raxml_models"]:
             runid = get_runid(msa, model)
-            mltreepath = get_ml_treepath(msa, runid)
-            phylippath = get_phylip_path(msa, ap)
+            mltreepath = get_raxml_treepath(msa, runid)
+            phylippath = get_phylippath(msa)
             
             if False == os.path.exists(mltreepath):
                 print "Something is wrong. I can't find the ML tree output from RAxML:", mltreepath
@@ -153,7 +154,7 @@ def calc_alrt(ap):
             command += " -b -1" # calculate ALRTs
             command += " --run_id " + model + ".alrt"
             command += " --datatype aa"
-            command += " > OUT." + msa + "/catch.phyml." + model + ".txt"
+            command += " > " + msa + "/catch.phyml." + model + ".txt"
             alrt_commands.append( command )
     fout = open("SCRIPTS/alrt_commands.sh", "w")
     for c in alrt_commands:
@@ -167,9 +168,8 @@ def calc_alr(ap):
     alr_commands = []
     for msa in ap.params["msa_algorithms"]:
         for model in ap.params["raxml_models"]:
-            runid = get_runid(msa, model)
-            alrt_treepath = get_alrt_treepath(msa, model, ap)
-            alr_treepath = get_alr_treepath(msa, model, ap)
+            alrt_treepath = get_alrt_treepath(msa, model)
+            alr_treepath = get_alr_treepath(msa, model)
             
             if False == os.path.exists(alrt_treepath):
                 print "Something is wrong. I can't find the ML tree with aLRT values at", alrt_treepath
@@ -218,9 +218,9 @@ def get_asr_commands(ap):
         for model in ap.params["raxml_models"]:
             runid = get_runid(msa, model)
             
-            fastapath = get_fasta_path(msa, ap)
+            fastapath = get_fastapath(msa)
             
-            fin = open(get_fasta_path(msa, ap), "r")
+            fin = open(get_fastapath(msa), "r")
             lines = fin.readlines()
             fin.close()
             innames = [] # array of taxa in the trimmed alignment:
@@ -257,17 +257,11 @@ def get_asr_commands(ap):
             if linecache.__len__() > 2:
                 outlines.append(linecache)
         
-            if False == os.path.exists("OUT." + msa + "/asr." + model):
-                os.system("mkdir OUT." + msa + "/asr." + model)
-            modelstr = "~/Applications/paml44/dat/lg.dat"
-            if runid.__contains__("JTT"):
-                modelstr = ap.params["mmfolder"] + "/jones.dat"
-            elif runid.__contains__("WAG"):
-                modelstr = ap.params["mmfolder"] + "/wag.dat"
-            elif runid.__contains__("LG"):
-                modelstr = ap.params["mmfolder"] + "/lg.dat"
-            asrtreepath = get_asr_treepath(msa, runid)
-            asr_commands.append(ap.params["lazarus_exe"] + " --alignment " + fastapath + " --tree " + asrtreepath + " --model " + modelstr + " --outputdir OUT." + msa + "/asr." + model + " --branch_lengths fixed --asrv 8 --codeml --gapcorrect True --outgroup " + ap.params["outgroup"] + " --cleanup True")
+            if False == os.path.exists(msa + "/asr." + model):
+                os.system("mkdir " + msa + "/asr." + model)
+            modelstr = get_model_path(model, ap)
+            asrtreepath = get_raxml_treepath(msa, runid)
+            asr_commands.append(ap.params["lazarus_exe"] + " --alignment " + fastapath + " --tree " + asrtreepath + " --model " + modelstr + " --outputdir " + msa + "/asr." + model + " --branch_lengths fixed --asrv 8 --codeml --gapcorrect True --outgroup " + ap.params["outgroup"] + " --cleanup True")
 
     fout = open("SCRIPTS/asr_commands.sh", "w")
     for a in asr_commands:
@@ -287,7 +281,7 @@ def get_getanc_commands(ap):
         for model in ap.params["raxml_models"]:
             runid = get_runid(msa, model)
             here = os.getcwd()
-            asrmsa = get_fasta_path(msa, ap)
+            asrmsa = get_fastapath(msa)
             asrtree = get_asr_treepath(msa, runid)
             modelstr = ap.params["mmfolder"]
             if runid.__contains__("JTT"):
@@ -297,9 +291,9 @@ def get_getanc_commands(ap):
             elif runid.__contains__("LG"):
                 modelstr += "/lg.dat"
             for ing in ap.params["ingroup"]:
-                getanc_commands.append(ap.params["lazarus_exe"] + " --alignment " + asrmsa + " --tree " + asrtree + " --model " + modelstr + " --outputdir " + here + "/OUT." + msa + "/asr." + model + " --outgroup " + ap.params["outgroup"] + " --ingroup " + ap.params["ingroup"][ing] + " --getanc True")
-                getanc_commands.append("mv OUT." + msa + "/asr." + model + "/ancestor-ml.dat OUT." + msa + "/asr." + model + "/anc." + ing + ".dat")
-                getanc_commands.append("mv OUT." + msa + "/asr." + model + "/ancestor.out.txt OUT." + msa + "/asr." + model + "/anc." + ing + ".txt")
+                getanc_commands.append(ap.params["lazarus_exe"] + " --alignment " + asrmsa + " --tree " + asrtree + " --model " + modelstr + " --outputdir " + here + "/" + msa + "/asr." + model + " --outgroup " + ap.params["outgroup"] + " --ingroup " + ap.params["ingroup"][ing] + " --getanc True")
+                getanc_commands.append("mv " + msa + "/asr." + model + "/ancestor-ml.dat " + msa + "/asr." + model + "/anc." + ing + ".dat")
+                getanc_commands.append("mv " + msa + "/asr." + model + "/ancestor.out.txt " + msa + "/asr." + model + "/anc." + ing + ".txt")
     
     fout = open("SCRIPTS/getanc_commands.txt", "w")
     for a in getanc_commands:
@@ -323,11 +317,11 @@ def get_compareanc_commands(ap):
                 runid = get_runid(msa, model)
                 pp = ap.params["runid_pp"][runid]
                 if pp > 0.0:
-                    msapath = "OUT." + msa + "/asr." + model + "/reformatted_alignment.phy"
+                    msapath = msa + "/asr." + model + "/reformatted_alignment.phy"
                     
                     #msapathlines += msapath + " "
                     msanamelines += "msaname " + msapath + " " + runid + "\n"
-                    comparelines += "compare OUT." + msa + "/asr." + model + "/anc." + pair[0] + ".dat OUT." + msa + "/asr." + model + "/anc." + pair[1] + ".dat " + runid + "\n"
+                    comparelines += "compare " + msa + "/asr." + model + "/anc." + pair[0] + ".dat " + msa + "/asr." + model + "/anc." + pair[1] + ".dat " + runid + "\n"
                     weightlines += "msaweight " + runid + " " + pp.__str__() + "\n"
             
         specpath = "compare_ancs." + pair[0] + "-" + pair[1] + ".config.txt"
@@ -339,7 +333,7 @@ def get_compareanc_commands(ap):
         fout.write(weightlines)
         fout.close()
     
-        model = get_model_path(ap, runid)
+        modelstr = get_model_path(model, ap)
         
         #
         # At this point,the call to get_bound.. is unnecessary
@@ -350,7 +344,7 @@ def get_compareanc_commands(ap):
     
         c = "python ~/Documents/SourceCode/anccomp/compare_ancs.py "
         c += " --specpath " + specpath
-        c += " --modelpath " + model
+        c += " --modelpath " + modelstr
         c += " --window_sizes 1"
         c += " --metrics k p hb"
         c += " --runid " + pair[0] + "to" + pair[1]

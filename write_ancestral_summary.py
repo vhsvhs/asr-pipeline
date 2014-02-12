@@ -3,9 +3,9 @@ from tools import *
 
 fout = open("summary.ancestors.txt", "w")
 for d in DIRS:
-    for m in models:
-        for i in ingroups:
-            [start,stop] = get_boundary_sites(  get_fullphylippath(d), ingroup_seed[i]  )
+    for m in ap.params["raxml_models"]:
+        for i in ap.params["ingroup"]:
+            [start,stop] = get_boundary_sites(  get_phylippath(d), ap.params["seedtaxa"][i]  )
             print d, start, stop
             fin = open(d + "/asr." + get_runid(d,m) + "/anc." + i + ".txt", "r")
             lines = fin.readlines()

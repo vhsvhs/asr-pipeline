@@ -5,6 +5,6 @@ from argParser import *
 SEP = "."
 
 DIR_nick = {}
-ingroups = {}
-comparisons = []
-ingroup_seed = []
+DIR_nick["muscle"] = "muscle"
+DIR_nick["prank"] = "prank"
+DIR_nick["msaprobs"] = "msaprobs"
