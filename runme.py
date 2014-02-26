@@ -26,9 +26,6 @@ print_config(ap)
 verify_config(ap)
 setup_workspace(ap)
 
-#print ap.params
-#exit(0)
-
 if jump <= 0 and stop > 0:
     print "\n. Reading your FASTA sequences..."
     clean_erg_seqs(ap)
