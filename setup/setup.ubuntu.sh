@@ -63,5 +63,21 @@ apt-get install python-scipy
 sudo easy_install -U pip
 
 # PyCogent
-DONT_USE_PYREX=1 sudo pip install -r path/to/cogent-requirements.txt
+DONT_USE_PYREX=1 sudo pip install -r ~/asr-pipeline/apps/cogent-requirements.txt
+
+
+# LAZARUS
+cd /common
+git clone https://project-lazarus.googlecode.com/git lazarus
+
+# PAML
+cd /common/lazarus/paml/src
+make
+cd /
+ln -s /common/lazarus/paml/src/codeml /bin/codeml
+ln -s /common/lazarus/paml/src/baseml /bin/baseml
+
+# R
+sudo apt-get install r-base
+ln -s /usr/bin/R /usr/bin/r
 
