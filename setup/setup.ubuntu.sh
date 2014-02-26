@@ -20,7 +20,7 @@ ln -s /common/muscle3.6_src/muscle  /bin/muscle
 cd /
 
 #MSAPROBS
-cp /asr-pipeline/apps/MSAProbs-0.9.7.tar /common/
+cp ~/asr-pipeline/apps/MSAProbs-0.9.7.tar /common/
 cd /common
 tar -xvf MSAProbs-0.9.7.tar 
 cd MSAProbs-0.9.7/MSAProbs/
