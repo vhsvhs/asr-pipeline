@@ -10,7 +10,7 @@ def run_script(path):
     if ap.params["usempi"]:
         os.system(ap.params["mpirun_exe"] + " " + path)
     else:
-        os.system("source " + path)
+        os.system(ap.params["run_exe"] + " " + path)
 
 def get_mean(values):
     sum = 0.0
