@@ -18,3 +18,6 @@ cd muscle3.6_src/
 make
 ln -s /common/muscle3.6_src/muscle  /bin/muscle
 cd /
+
+#MSAPROBS
+
