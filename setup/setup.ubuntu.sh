@@ -26,7 +26,13 @@ tar -xvf MSAProbs-0.9.7.tar
 cd MSAProbs-0.9.7/MSAProbs/
 make
 ln -s /common/MSAProbs-0.9.7/MSAProbs/msaprobs /bin/msaprobs
+cd /
 
-
+#PHYML
+curl -O https://github.com/stephaneguindon/phyml-downloads/releases/download/stable/phyml-20120412.tar.gz
+mv phyml-20120412.tar.gz /common/
+cd /common
+gzip -d phyml-20120412.tar.gz
+tar -xvf phyml-20120412.tar
 
 
