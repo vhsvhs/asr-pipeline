@@ -134,13 +134,24 @@ def verify_config(ap):
             if a1 not in ap.params["ancestors"]:
                 print "\n. ERROR: you specified a comparison between ancestors", a1, "and", a2, "but", a2,"was not defined in the ANCESTORS line."
                 exit()
+                
     if False == os.path.exists(ap.params["ergseqpath"]):
         print "\n. I could not find your sequences at", ap.params["ergseqpath"]
         exit()
+
     if ap.params["start_motif"] == None:
         ap.params["start_motif"] = ""
     if ap.params["end_motif"] == None:
         ap.params["end_motif"] = ""
+        
+    for msa in ap.params["msa_algorithms"]:
+        if msa == "MUSCLE" and "muscle_exe" not in ap.params:
+            print "\n. Something is wrong. Your config file doesn't have an executable path for MUSCLE."
+        if msa == "MSAPROBS" and "msaprobs_exe" not in ap.params:
+            print "\n. Something is wrong. Your config file doesn't have an executable path for MSAPROBS."
+        if msa == "PRANK" and "prank_exe" not in ap.params:
+            print "\n. Something is wrong. Your config file doesn't have an executable path for PRANK."
+        
     return ap
 
 def print_config(ap):
