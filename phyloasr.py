@@ -37,13 +37,13 @@ def write_raxml_commands(ap):
     here = os.popen('pwd').read().strip()
     commands = []
     for msa in ap.params["msa_algorithms"]:
-        phypath = get_phylippath(msa)
+        faspath = get_fastapath(msa)
         for model in ap.params["raxml_models"]:
             runid = get_runid(msa, model) 
-            if os.path.exists(here + "/" + msa + "/RAxML_info." + runid):
+            if os.path.exists(here + "/" + msa + "/RAxML_info." + runid): # Remove dirty RAxML data.
                 os.system("rm " + here + "/" + msa + "/RAxML_*" + runid)
             command = ap.params["raxml_exe"]
-            command += "  -s " + phypath
+            command += "  -s " + faspath
             command += " -n " + runid
             command += " -w " + here + "/" + msa
             command += " -e 0.001"
@@ -60,7 +60,7 @@ def write_raxml_commands(ap):
 
 def get_mlalpha_pp(ap):
     #
-    # Fetch ML results,
+    # Fetch ML resultse from RAxML
     # Calculate min, max likelihoods for each model, 
     # and find the best-fitting model.
     #
@@ -77,31 +77,30 @@ def get_mlalpha_pp(ap):
         suml = 0
         for model in ap.params["raxml_models"]:
             runid = get_runid(msa, model)
-            spath = get_statspath(msa, model)
-            if False == os.path.exists(spath):
-                print "Something is wrong. I can't find the output from RAxML:", spath
+            lpath = get_raxml_logpath(msa, model)
+            if False == os.path.exists(lpath):
+                print "Something is wrong. I can't find the log file from RAxML:", lpath
                 exit()
-            fin = open(spath, "r")
+            fin = open(lpath, "r")
             lines = fin.readlines()
-            for l in lines:
-                if l.startswith("Final GAMMA-based Score of best tree"):
-                    tokens = l.split()
-                    lnl = float(tokens[6])
-                    runid_lnl[runid] = lnl
-                    if maxl == None:
-                        maxl = lnl
-                    if minl == None:
-                        minl = lnl
-                    if lnl > maxl:
-                        maxl = lnl
-                    if lnl < minl:
-                        minl = lnl
-                elif l.startswith("alpha[0]:"):
-                    l = l.strip()
-                    tokens = l.split()
-                    this_alpha = tokens[1]
-                    ap.params["runid_alpha"][runid] = this_alpha
             fin.close()
+            lastline = lines[ lines.__len__()-1 ]
+            lnl = float(lastline.split()[1])
+            runid_lnl[runid] = lnl
+            if maxl == None:
+                maxl = lnl
+            if minl == None:
+                minl = lnl
+            if lnl > maxl:
+                maxl = lnl
+            if lnl < minl:
+                minl = lnl
+#             elif l.startswith("alpha[0]:"):
+#                 l = l.strip()
+#                 tokens = l.split()
+#                 this_alpha = tokens[1]
+#                 ap.params["runid_alpha"][runid] = this_alpha
+
     
         for runid in runid_lnl:
             suml += (runid_lnl[runid] - minl)
@@ -109,7 +108,10 @@ def get_mlalpha_pp(ap):
         fout = open(msa + "/raxml.lnl.summary.txt", "w")
         for runid in runid_lnl:
             lnl = runid_lnl[runid]
-            pp = (lnl-minl)/suml
+            if runid_lnl.keys().__len__() <= 1:
+                pp = 1.0
+            else:
+                pp = (lnl-minl)/suml
             ap.params["runid_pp"][runid] = pp
             special = ""
             if lnl == maxl:
@@ -194,7 +196,7 @@ ta_tb_distance = {} # key = treepath, value = hash, key = treepath, value = symm
 ii = 1
 for DIR in DIR_runids:
     for runid in DIR_runid_lnl[DIR]:
-        mltreepath = get_ml_treepath(DIR, runid)
+        mltreepath = get_raxml_treepath(DIR, runid)
         treepath_id[ mltreepath ] = ii
         ii += 1
 from dendropy import Tree
@@ -282,7 +284,7 @@ def get_getanc_commands(ap):
             runid = get_runid(msa, model)
             here = os.getcwd()
             asrmsa = get_fastapath(msa)
-            asrtree = get_asr_treepath(msa, runid)
+            asrtree = get_raxml_treepath(msa, runid)
             modelstr = ap.params["mmfolder"]
             if runid.__contains__("JTT"):
                 modelstr += "/jones.dat"

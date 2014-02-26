@@ -20,6 +20,32 @@ python SCRIPTS/clean_seqs.py cgmc.txt > cgmc.fasta
 mpirun -np 4 SCRIPTS/run_msas.mpi.sh
 """
 
+def clean_erg_seqs(ap):
+    fin = open(ap.params["ergseqpath"], "r")
+    lines = fin.readlines()
+    fin.close()
+    
+    outlines = []
+    taxanames = []
+    for l in lines:
+        l = l.strip()
+        if l.__len__() <= 1:
+            pass
+        elif l.startswith(">"):
+            taxaname = re.sub(">", "", l.split()[0] )
+            if taxaname in taxanames:
+                print "Something is wrong. I found the sequence name", taxaname, "twice in your sequences."
+                exit()
+            outlines.append(">" + taxaname)
+        else:
+            outlines.append(l)
+    
+    cleanpath = ap.params["ergseqpath"]
+    fout = open(cleanpath, "w")
+    for l in outlines:
+        fout.write(l + "\n")
+    fout.close()
+    
 def write_msa_commands(ap):
     p = "SCRIPTS/msas.commands.sh"
     fout = open(p, "w")
@@ -41,6 +67,7 @@ def fasta_to_phylip(inpath, outpath):
     for l in fin.xreadlines():
         if l.startswith(">"):
             taxa = re.sub(">", "", l)
+            taxa = taxa.split()[0] # trim any lingering GenBank labels. As of 03/2014, this line may be unecessary - split()[0] part of the parsing occurs when the RAW sequences are read into a FASTA file
             taxa = taxa.strip()
             last_taxa = taxa
             taxa_seq[ taxa ] = ""

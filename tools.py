@@ -7,7 +7,10 @@ from argParser import *
 ap = ArgParser(sys.argv)
 
 def run_script(path):
-    os.system("source " + path)
+    if ap.params["usempi"]:
+        os.system(ap.params["mpirun_exe"] + " " + path)
+    else:
+        os.system("source " + path)
 
 def get_mean(values):
     sum = 0.0
@@ -64,11 +67,14 @@ def get_statspath(DIR, model):
     runid = get_runid(DIR,model)
     return DIR + "/RAxML_info." + runid
 
+def get_raxml_logpath(DIR, model):
+    runid = get_runid(DIR,model)
+    return DIR + "/RAxML_log." + runid
 #
 # The path to the RAxML ML tree
 #
 def get_raxml_treepath(DIR, runid):
-    return DIR + "/RAxML_bestTree." + runid
+    return DIR + "/RAxML_result." + runid
 
 
 def get_ml_treepath(DIR, runid):
@@ -139,8 +145,8 @@ def get_cladogram_path(d, model):
 #
 # Which tree should we use for ancestral reconstruction?
 #
-def get_asr_treepath(DIR, runid):
-    return get_ml_treepath(DIR, runid)
+#def get_asr_treepath(DIR, runid):
+#    return get_ml_treepath(DIR, runid)
 
 
 def get_seed_sequence(msapath, seed):
