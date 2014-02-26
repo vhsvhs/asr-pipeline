@@ -1,4 +1,0 @@
-TREE #1 with branch lengths:
-(Kluyveromyces.lactis.IME2: 1.042016, (Saccharomyces.cerevisiae.IME2: 1.104279, (Yarrowia.lipolytica.IME2: 2.878096, (Candida.lusitaniae.IME2: 1.957279, (Candida.parapsilosis.IME2: 0.645404, Candida.albicans.IME2: 0.511110): 0.347123): 0.472864): 0.523881): 0.229757, Kluyveromyces.waltii.IME2: 0.761808);
-TREE #1 as a cladogram:
-(Kluyveromyces.lactis.IME2, (Saccharomyces.cerevisiae.IME2, (Yarrowia.lipolytica.IME2, (Candida.lusitaniae.IME2, (Candida.parapsilosis.IME2, Candida.albicans.IME2) 12 ) 11 ) 10 ) 9 , Kluyveromyces.waltii.IME2) 8 ;

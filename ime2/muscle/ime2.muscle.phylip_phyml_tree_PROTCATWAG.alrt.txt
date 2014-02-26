@@ -1,1 +1,0 @@
-(Kluyveromyces.lactis.IME2:0.80127022,(Saccharomyces.cerevisiae.IME2:0.84642674,(Yarrowia.lipolytica.IME2:2.11897146,(Candida.lusitaniae.IME2:1.46905183,(Candida.parapsilosis.IME2:0.52131708,Candida.albicans.IME2:0.39610312)10.171234:0.25305558)16.446013:0.38089159)12.496823:0.37467740)10.030780:0.17095944,Kluyveromyces.waltii.IME2:0.61199167);

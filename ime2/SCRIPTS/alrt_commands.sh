@@ -1,8 +1,0 @@
-phyml --input msaprobs/ime2.msaprobs.phylip -u msaprobs/RAxML_bestTree.msaprobs.PROTGAMMALG --model LG --nclasses 8 --alpha 0.935656 -f m -o n -b -1 --run_id PROTGAMMALG.alrt --datatype aa > msaprobs/catch.phyml.PROTGAMMALG.txt
-phyml --input msaprobs/ime2.msaprobs.phylip -u msaprobs/RAxML_bestTree.msaprobs.PROTGAMMAWAG --model WAG --nclasses 8 --alpha 1.170493 -f m -o n -b -1 --run_id PROTGAMMAWAG.alrt --datatype aa > msaprobs/catch.phyml.PROTGAMMAWAG.txt
-phyml --input msaprobs/ime2.msaprobs.phylip -u msaprobs/RAxML_bestTree.msaprobs.PROTCATLG --model LG -f m -o n -b -1 --run_id PROTCATLG.alrt --datatype aa > msaprobs/catch.phyml.PROTCATLG.txt
-phyml --input msaprobs/ime2.msaprobs.phylip -u msaprobs/RAxML_bestTree.msaprobs.PROTCATWAG --model WAG -f m -o n -b -1 --run_id PROTCATWAG.alrt --datatype aa > msaprobs/catch.phyml.PROTCATWAG.txt
-phyml --input muscle/ime2.muscle.phylip -u muscle/RAxML_bestTree.muscle.PROTGAMMALG --model LG --nclasses 8 --alpha 0.822765 -f m -o n -b -1 --run_id PROTGAMMALG.alrt --datatype aa > muscle/catch.phyml.PROTGAMMALG.txt
-phyml --input muscle/ime2.muscle.phylip -u muscle/RAxML_bestTree.muscle.PROTGAMMAWAG --model WAG --nclasses 8 --alpha 1.009625 -f m -o n -b -1 --run_id PROTGAMMAWAG.alrt --datatype aa > muscle/catch.phyml.PROTGAMMAWAG.txt
-phyml --input muscle/ime2.muscle.phylip -u muscle/RAxML_bestTree.muscle.PROTCATLG --model LG -f m -o n -b -1 --run_id PROTCATLG.alrt --datatype aa > muscle/catch.phyml.PROTCATLG.txt
-phyml --input muscle/ime2.muscle.phylip -u muscle/RAxML_bestTree.muscle.PROTCATWAG --model WAG -f m -o n -b -1 --run_id PROTCATWAG.alrt --datatype aa > muscle/catch.phyml.PROTCATWAG.txt
