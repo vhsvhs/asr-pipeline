@@ -12,14 +12,14 @@ mkdir common
 
 # MUSCLE
 ####################
-curl -O http://drive5.com/muscle/downloads3.6/muscle3.6_src.tar.gz
-mv muscle3.6_src.tar.gz /common/
+curl -O http://www.drive5.com/muscle/downloads33/muscle_3.3_src.tar.gz
+mv muscle3.3_src.tar.gz /common/
 cd /common
-gzip -d muscle3.6_src.tar.gz
-tar -xvf muscle3.6_src.tar
-cd muscle3.6_src/
+gzip -d muscle3.3_src.tar.gz
+tar -xvf muscle3.3_src.tar
+cd muscle
 make
-ln -s /common/muscle3.6_src/muscle  /bin/muscle
+ln -s /common/muscle/muscle  /bin/muscle
 cd /
 
 # MSAPROBS
