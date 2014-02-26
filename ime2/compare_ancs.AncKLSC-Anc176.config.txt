@@ -1,0 +1,19 @@
+seed Saccharomyces.cerevisiae.IME2
+msaname msaprobs/asr.PROTGAMMALG/reformatted_alignment.phy msaprobs.PROTGAMMALG
+msaname msaprobs/asr.PROTGAMMAWAG/reformatted_alignment.phy msaprobs.PROTGAMMAWAG
+msaname msaprobs/asr.PROTCATLG/reformatted_alignment.phy msaprobs.PROTCATLG
+msaname muscle/asr.PROTGAMMALG/reformatted_alignment.phy muscle.PROTGAMMALG
+msaname muscle/asr.PROTCATLG/reformatted_alignment.phy muscle.PROTCATLG
+msaname muscle/asr.PROTCATWAG/reformatted_alignment.phy muscle.PROTCATWAG
+compare msaprobs/asr.PROTGAMMALG/anc.AncKLSC.dat msaprobs/asr.PROTGAMMALG/anc.Anc176.dat msaprobs.PROTGAMMALG
+compare msaprobs/asr.PROTGAMMAWAG/anc.AncKLSC.dat msaprobs/asr.PROTGAMMAWAG/anc.Anc176.dat msaprobs.PROTGAMMAWAG
+compare msaprobs/asr.PROTCATLG/anc.AncKLSC.dat msaprobs/asr.PROTCATLG/anc.Anc176.dat msaprobs.PROTCATLG
+compare muscle/asr.PROTGAMMALG/anc.AncKLSC.dat muscle/asr.PROTGAMMALG/anc.Anc176.dat muscle.PROTGAMMALG
+compare muscle/asr.PROTCATLG/anc.AncKLSC.dat muscle/asr.PROTCATLG/anc.Anc176.dat muscle.PROTCATLG
+compare muscle/asr.PROTCATWAG/anc.AncKLSC.dat muscle/asr.PROTCATWAG/anc.Anc176.dat muscle.PROTCATWAG
+msaweight msaprobs.PROTGAMMALG 0.499941057725
+msaweight msaprobs.PROTGAMMAWAG 0.0231359429614
+msaweight msaprobs.PROTCATLG 0.476922999314
+msaweight muscle.PROTGAMMALG 0.499997859528
+msaweight muscle.PROTCATLG 0.499998916551
+msaweight muscle.PROTCATWAG 3.22392106286e-06

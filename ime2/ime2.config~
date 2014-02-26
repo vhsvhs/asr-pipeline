@@ -1,0 +1,47 @@
+GENE_ID = ime2
+
+SEQUENCES = ime2.fasta
+
+# How should we invoke RAxML?
+RAXML = raxml
+
+# How should we invoke PhyML?
+PHYML = phyml
+
+LAZARUS = python ~/Documents/SourceCode/Lazarus/lazarus.py
+
+MARKOV_MODEL_FOLDER = ~/Applications/paml44/dat/
+
+# How should we invoke MPI dispatching?
+# Note: the use of MPI enables multiprocessor parallelism, such that
+# mutliple trees can be analyzed in parallel on multiple comptue core.
+USE_MPI False
+#MPIRUN = mpirun -np 19 --machinefile hosts.txt /common/bin/mpi_dispatch
+MPIRUN = source
+
+# In what directories should I expect to find multiple sequence alignments? 
+ALIGNMENT_ALGORITHMS = msaprobs muscle
+
+MSAPROBS = /Users/victor/Applications/MSAProbs-0.9.5/MSAProbs/msaprobs
+MUSCLE = /Users/victor/Applications/muscle3.6_src/muscle
+PRANK = /Users/victor/Applications/prank
+
+MODELS_RAXML = PROTGAMMALG PROTGAMMAWAG PROTCATLG PROTCATWAG
+
+START_MOTIF = YQLI
+END_MOTIF = MPFF
+SEED_MOTIF_TAXA = Saccharomyces.cerevisiae.IME2
+
+N_BAYES_SAMPLES = 1000
+
+OUTGROUP = "[Yarrowia.lipolytica.IME2]"
+
+ANCESTORS = AncKLSC AncSKCTG
+INGROUP AncKLSC [Saccharomyces.cerevisiae.IME2,Kluyveromyces.waltii.IME2]
+INGROUP AncSKCTG [Saccharomyces.cerevisiae.IME2,Candida.albicans.IME2]
+
+SEED AncKLSC Saccharomyces.cerevisiae.IME2
+SEED AncSKCTG Saccharomyces.cerevisiae.IME2
+
+COMPARE AncKLSC Anc176
+COMPARE AncSKCTG Anc181

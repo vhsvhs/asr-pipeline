@@ -1,0 +1,48 @@
+python ~/Documents/SourceCode/Lazarus/lazarus.py --alignment msaprobs/ime2.msaprobs.fasta --tree msaprobs/RAxML_bestTree.msaprobs.PROTGAMMALG.tre --model ~/Applications/paml44/dat//lg.dat --outputdir /Users/victor/Documents/SourceCode/asrpipeline/ime2/msaprobs/asr.PROTGAMMALG --outgroup "[Yarrowia.lipolytica.IME2]" --ingroup [Saccharomyces.cerevisiae.IME2,Candida.albicans.IME2] --getanc True
+mv msaprobs/asr.PROTGAMMALG/ancestor-ml.dat msaprobs/asr.PROTGAMMALG/anc.AncSKCTG.dat
+mv msaprobs/asr.PROTGAMMALG/ancestor.out.txt msaprobs/asr.PROTGAMMALG/anc.AncSKCTG.txt
+python ~/Documents/SourceCode/Lazarus/lazarus.py --alignment msaprobs/ime2.msaprobs.fasta --tree msaprobs/RAxML_bestTree.msaprobs.PROTGAMMALG.tre --model ~/Applications/paml44/dat//lg.dat --outputdir /Users/victor/Documents/SourceCode/asrpipeline/ime2/msaprobs/asr.PROTGAMMALG --outgroup "[Yarrowia.lipolytica.IME2]" --ingroup [Saccharomyces.cerevisiae.IME2,Kluyveromyces.waltii.IME2] --getanc True
+mv msaprobs/asr.PROTGAMMALG/ancestor-ml.dat msaprobs/asr.PROTGAMMALG/anc.AncKLSC.dat
+mv msaprobs/asr.PROTGAMMALG/ancestor.out.txt msaprobs/asr.PROTGAMMALG/anc.AncKLSC.txt
+python ~/Documents/SourceCode/Lazarus/lazarus.py --alignment msaprobs/ime2.msaprobs.fasta --tree msaprobs/RAxML_bestTree.msaprobs.PROTGAMMAWAG.tre --model ~/Applications/paml44/dat//wag.dat --outputdir /Users/victor/Documents/SourceCode/asrpipeline/ime2/msaprobs/asr.PROTGAMMAWAG --outgroup "[Yarrowia.lipolytica.IME2]" --ingroup [Saccharomyces.cerevisiae.IME2,Candida.albicans.IME2] --getanc True
+mv msaprobs/asr.PROTGAMMAWAG/ancestor-ml.dat msaprobs/asr.PROTGAMMAWAG/anc.AncSKCTG.dat
+mv msaprobs/asr.PROTGAMMAWAG/ancestor.out.txt msaprobs/asr.PROTGAMMAWAG/anc.AncSKCTG.txt
+python ~/Documents/SourceCode/Lazarus/lazarus.py --alignment msaprobs/ime2.msaprobs.fasta --tree msaprobs/RAxML_bestTree.msaprobs.PROTGAMMAWAG.tre --model ~/Applications/paml44/dat//wag.dat --outputdir /Users/victor/Documents/SourceCode/asrpipeline/ime2/msaprobs/asr.PROTGAMMAWAG --outgroup "[Yarrowia.lipolytica.IME2]" --ingroup [Saccharomyces.cerevisiae.IME2,Kluyveromyces.waltii.IME2] --getanc True
+mv msaprobs/asr.PROTGAMMAWAG/ancestor-ml.dat msaprobs/asr.PROTGAMMAWAG/anc.AncKLSC.dat
+mv msaprobs/asr.PROTGAMMAWAG/ancestor.out.txt msaprobs/asr.PROTGAMMAWAG/anc.AncKLSC.txt
+python ~/Documents/SourceCode/Lazarus/lazarus.py --alignment msaprobs/ime2.msaprobs.fasta --tree msaprobs/RAxML_bestTree.msaprobs.PROTCATLG.tre --model ~/Applications/paml44/dat//lg.dat --outputdir /Users/victor/Documents/SourceCode/asrpipeline/ime2/msaprobs/asr.PROTCATLG --outgroup "[Yarrowia.lipolytica.IME2]" --ingroup [Saccharomyces.cerevisiae.IME2,Candida.albicans.IME2] --getanc True
+mv msaprobs/asr.PROTCATLG/ancestor-ml.dat msaprobs/asr.PROTCATLG/anc.AncSKCTG.dat
+mv msaprobs/asr.PROTCATLG/ancestor.out.txt msaprobs/asr.PROTCATLG/anc.AncSKCTG.txt
+python ~/Documents/SourceCode/Lazarus/lazarus.py --alignment msaprobs/ime2.msaprobs.fasta --tree msaprobs/RAxML_bestTree.msaprobs.PROTCATLG.tre --model ~/Applications/paml44/dat//lg.dat --outputdir /Users/victor/Documents/SourceCode/asrpipeline/ime2/msaprobs/asr.PROTCATLG --outgroup "[Yarrowia.lipolytica.IME2]" --ingroup [Saccharomyces.cerevisiae.IME2,Kluyveromyces.waltii.IME2] --getanc True
+mv msaprobs/asr.PROTCATLG/ancestor-ml.dat msaprobs/asr.PROTCATLG/anc.AncKLSC.dat
+mv msaprobs/asr.PROTCATLG/ancestor.out.txt msaprobs/asr.PROTCATLG/anc.AncKLSC.txt
+python ~/Documents/SourceCode/Lazarus/lazarus.py --alignment msaprobs/ime2.msaprobs.fasta --tree msaprobs/RAxML_bestTree.msaprobs.PROTCATWAG.tre --model ~/Applications/paml44/dat//wag.dat --outputdir /Users/victor/Documents/SourceCode/asrpipeline/ime2/msaprobs/asr.PROTCATWAG --outgroup "[Yarrowia.lipolytica.IME2]" --ingroup [Saccharomyces.cerevisiae.IME2,Candida.albicans.IME2] --getanc True
+mv msaprobs/asr.PROTCATWAG/ancestor-ml.dat msaprobs/asr.PROTCATWAG/anc.AncSKCTG.dat
+mv msaprobs/asr.PROTCATWAG/ancestor.out.txt msaprobs/asr.PROTCATWAG/anc.AncSKCTG.txt
+python ~/Documents/SourceCode/Lazarus/lazarus.py --alignment msaprobs/ime2.msaprobs.fasta --tree msaprobs/RAxML_bestTree.msaprobs.PROTCATWAG.tre --model ~/Applications/paml44/dat//wag.dat --outputdir /Users/victor/Documents/SourceCode/asrpipeline/ime2/msaprobs/asr.PROTCATWAG --outgroup "[Yarrowia.lipolytica.IME2]" --ingroup [Saccharomyces.cerevisiae.IME2,Kluyveromyces.waltii.IME2] --getanc True
+mv msaprobs/asr.PROTCATWAG/ancestor-ml.dat msaprobs/asr.PROTCATWAG/anc.AncKLSC.dat
+mv msaprobs/asr.PROTCATWAG/ancestor.out.txt msaprobs/asr.PROTCATWAG/anc.AncKLSC.txt
+python ~/Documents/SourceCode/Lazarus/lazarus.py --alignment muscle/ime2.muscle.fasta --tree muscle/RAxML_bestTree.muscle.PROTGAMMALG.tre --model ~/Applications/paml44/dat//lg.dat --outputdir /Users/victor/Documents/SourceCode/asrpipeline/ime2/muscle/asr.PROTGAMMALG --outgroup "[Yarrowia.lipolytica.IME2]" --ingroup [Saccharomyces.cerevisiae.IME2,Candida.albicans.IME2] --getanc True
+mv muscle/asr.PROTGAMMALG/ancestor-ml.dat muscle/asr.PROTGAMMALG/anc.AncSKCTG.dat
+mv muscle/asr.PROTGAMMALG/ancestor.out.txt muscle/asr.PROTGAMMALG/anc.AncSKCTG.txt
+python ~/Documents/SourceCode/Lazarus/lazarus.py --alignment muscle/ime2.muscle.fasta --tree muscle/RAxML_bestTree.muscle.PROTGAMMALG.tre --model ~/Applications/paml44/dat//lg.dat --outputdir /Users/victor/Documents/SourceCode/asrpipeline/ime2/muscle/asr.PROTGAMMALG --outgroup "[Yarrowia.lipolytica.IME2]" --ingroup [Saccharomyces.cerevisiae.IME2,Kluyveromyces.waltii.IME2] --getanc True
+mv muscle/asr.PROTGAMMALG/ancestor-ml.dat muscle/asr.PROTGAMMALG/anc.AncKLSC.dat
+mv muscle/asr.PROTGAMMALG/ancestor.out.txt muscle/asr.PROTGAMMALG/anc.AncKLSC.txt
+python ~/Documents/SourceCode/Lazarus/lazarus.py --alignment muscle/ime2.muscle.fasta --tree muscle/RAxML_bestTree.muscle.PROTGAMMAWAG.tre --model ~/Applications/paml44/dat//wag.dat --outputdir /Users/victor/Documents/SourceCode/asrpipeline/ime2/muscle/asr.PROTGAMMAWAG --outgroup "[Yarrowia.lipolytica.IME2]" --ingroup [Saccharomyces.cerevisiae.IME2,Candida.albicans.IME2] --getanc True
+mv muscle/asr.PROTGAMMAWAG/ancestor-ml.dat muscle/asr.PROTGAMMAWAG/anc.AncSKCTG.dat
+mv muscle/asr.PROTGAMMAWAG/ancestor.out.txt muscle/asr.PROTGAMMAWAG/anc.AncSKCTG.txt
+python ~/Documents/SourceCode/Lazarus/lazarus.py --alignment muscle/ime2.muscle.fasta --tree muscle/RAxML_bestTree.muscle.PROTGAMMAWAG.tre --model ~/Applications/paml44/dat//wag.dat --outputdir /Users/victor/Documents/SourceCode/asrpipeline/ime2/muscle/asr.PROTGAMMAWAG --outgroup "[Yarrowia.lipolytica.IME2]" --ingroup [Saccharomyces.cerevisiae.IME2,Kluyveromyces.waltii.IME2] --getanc True
+mv muscle/asr.PROTGAMMAWAG/ancestor-ml.dat muscle/asr.PROTGAMMAWAG/anc.AncKLSC.dat
+mv muscle/asr.PROTGAMMAWAG/ancestor.out.txt muscle/asr.PROTGAMMAWAG/anc.AncKLSC.txt
+python ~/Documents/SourceCode/Lazarus/lazarus.py --alignment muscle/ime2.muscle.fasta --tree muscle/RAxML_bestTree.muscle.PROTCATLG.tre --model ~/Applications/paml44/dat//lg.dat --outputdir /Users/victor/Documents/SourceCode/asrpipeline/ime2/muscle/asr.PROTCATLG --outgroup "[Yarrowia.lipolytica.IME2]" --ingroup [Saccharomyces.cerevisiae.IME2,Candida.albicans.IME2] --getanc True
+mv muscle/asr.PROTCATLG/ancestor-ml.dat muscle/asr.PROTCATLG/anc.AncSKCTG.dat
+mv muscle/asr.PROTCATLG/ancestor.out.txt muscle/asr.PROTCATLG/anc.AncSKCTG.txt
+python ~/Documents/SourceCode/Lazarus/lazarus.py --alignment muscle/ime2.muscle.fasta --tree muscle/RAxML_bestTree.muscle.PROTCATLG.tre --model ~/Applications/paml44/dat//lg.dat --outputdir /Users/victor/Documents/SourceCode/asrpipeline/ime2/muscle/asr.PROTCATLG --outgroup "[Yarrowia.lipolytica.IME2]" --ingroup [Saccharomyces.cerevisiae.IME2,Kluyveromyces.waltii.IME2] --getanc True
+mv muscle/asr.PROTCATLG/ancestor-ml.dat muscle/asr.PROTCATLG/anc.AncKLSC.dat
+mv muscle/asr.PROTCATLG/ancestor.out.txt muscle/asr.PROTCATLG/anc.AncKLSC.txt
+python ~/Documents/SourceCode/Lazarus/lazarus.py --alignment muscle/ime2.muscle.fasta --tree muscle/RAxML_bestTree.muscle.PROTCATWAG.tre --model ~/Applications/paml44/dat//wag.dat --outputdir /Users/victor/Documents/SourceCode/asrpipeline/ime2/muscle/asr.PROTCATWAG --outgroup "[Yarrowia.lipolytica.IME2]" --ingroup [Saccharomyces.cerevisiae.IME2,Candida.albicans.IME2] --getanc True
+mv muscle/asr.PROTCATWAG/ancestor-ml.dat muscle/asr.PROTCATWAG/anc.AncSKCTG.dat
+mv muscle/asr.PROTCATWAG/ancestor.out.txt muscle/asr.PROTCATWAG/anc.AncSKCTG.txt
+python ~/Documents/SourceCode/Lazarus/lazarus.py --alignment muscle/ime2.muscle.fasta --tree muscle/RAxML_bestTree.muscle.PROTCATWAG.tre --model ~/Applications/paml44/dat//wag.dat --outputdir /Users/victor/Documents/SourceCode/asrpipeline/ime2/muscle/asr.PROTCATWAG --outgroup "[Yarrowia.lipolytica.IME2]" --ingroup [Saccharomyces.cerevisiae.IME2,Kluyveromyces.waltii.IME2] --getanc True
+mv muscle/asr.PROTCATWAG/ancestor-ml.dat muscle/asr.PROTCATWAG/anc.AncKLSC.dat
+mv muscle/asr.PROTCATWAG/ancestor.out.txt muscle/asr.PROTCATWAG/anc.AncKLSC.txt

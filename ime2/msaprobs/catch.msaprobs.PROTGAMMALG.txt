@@ -1,0 +1,67 @@
+
+
+This is RAxML version 7.2.8 released by Alexandros Stamatakis in October 2010.
+
+With greatly appreciated code contributions by:
+Andre Aberer (TUM)
+Simon Berger (TUM)
+John Cazes (TACC)
+Michael Ott (TUM)
+Nick Pattengale (UNM)
+Wayne Pfeiffer (SDSC)
+Akifumi S. Tanabe (Univ. Tsukuba)
+
+
+Alignment has 721 distinct alignment patterns
+
+Proportion of gaps and completely undetermined characters in this alignment: 39.10%
+
+RAxML rapid hill-climbing mode
+
+Using 1 distinct models/data partitions with joint branch length optimization
+
+
+Executing 1 inferences on the original alignment using 1 distinct randomized MP trees
+
+All free model parameters will be estimated by RAxML
+GAMMA model of rate heteorgeneity, ML estimate of alpha-parameter
+
+GAMMA Model parameters will be estimated up to an accuracy of 0.0010000000 Log Likelihood units
+
+Partition: 0
+Alignment Patterns: 721
+Name: No Name Provided
+DataType: AA
+Substitution Matrix: LG
+Fixed Base Frequencies:
+
+
+
+
+RAxML was called as follows:
+
+raxml -s msaprobs/ime2.msaprobs.phylip -n msaprobs.PROTGAMMALG -w /Users/victor/Documents/SourceCode/asrpipeline/ime2/msaprobs -e 0.001 -m PROTGAMMALG -p 12345 
+
+
+Testing which likelihood implementation to use
+Standard Implementation full tree traversal time: 0.054512
+Subtree Equality Vectors for gap columns full tree traversal time: 0.047022
+... using standard implementation
+
+Inference[0]: Time 15.099792 GAMMA-based likelihood -9576.713195, best rearrangement setting 4
+
+
+Conducting final model optimizations on all 1 trees under GAMMA-based models ....
+
+Inference[0] final GAMMA-based Likelihood: -9576.711653 tree written to file /Users/victor/Documents/SourceCode/asrpipeline/ime2/msaprobs/RAxML_result.msaprobs.PROTGAMMALG
+
+
+Starting final GAMMA-based thorough Optimization on tree 0 likelihood -9576.711653 .... 
+
+Final GAMMA-based Score of best tree -9576.711653
+
+Program execution info written to /Users/victor/Documents/SourceCode/asrpipeline/ime2/msaprobs/RAxML_info.msaprobs.PROTGAMMALG
+Best-scoring ML tree written to: /Users/victor/Documents/SourceCode/asrpipeline/ime2/msaprobs/RAxML_bestTree.msaprobs.PROTGAMMALG
+
+Overall execution time: 18.622269 secs or 0.005173 hours or 0.000216 days
+

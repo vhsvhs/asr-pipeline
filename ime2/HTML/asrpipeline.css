@@ -1,0 +1,97 @@
+body {
+background-color: #f0f0f0;
+/*background-color: #e5e5e5;*/
+width: 75%;
+margin: auto;
+font-family: sans-serif;
+line-height: 140%;
+}
+a:link {
+text-decoration: none;
+color: #0066ff;
+}
+a:visited {
+color: #0066ff;
+text-decoration: none;
+}
+a:mouseover {
+color: #ff9900;
+text-decoration: underline;
+}
+a:hover {
+color: #ff9900;
+text-decoration: underline;
+}
+a:active {
+text-decoration: none;
+color: #0066ff;
+}
+
+h1{ /* Big titles */
+color: #444444;
+font-size: 25pt;
+font-weight: bold;
+font-family: Helvetica, Optima, sans-serif;
+}
+h2{ /* sub-titles, such as "Section 1", "Section 2"*/
+font-size: 16pt;
+color: #444444;
+font-family: Helvetica, Optima, sans-serif;
+}
+h3{ /* navigation text, on the top*/
+color: #444444;
+font-size: 12pt;
+font-family: Helvetica, sans-serif;
+}
+h4{ /* clickable links, usually underneath clickable icons*/
+font-size: 10pt;
+padding: 0;
+color: #444444;
+}
+h5{ /* misc sub-titles, smaller than h2 and usually in-line */
+font-size: 12pt;
+color: #444444;
+}
+hr{
+height: 5px;
+color: #444444;
+background-color: #444444;
+}
+td, p, ul{ /* body text */
+font-size: 11pt;
+color: #444444;
+font-family: Helvetica, serif;
+line-height: 160%;
+}
+.bigp{ /* Nav links */
+font-size: 12pt;
+font-family: Helvetica;
+}
+.biggerp{
+font-size: 16pt;
+font-family: Helvetica;
+}
+.longp{
+font-family:Georgia;
+}
+
+img{
+border: 0;
+}
+
+
+.aqua{color: #3399ff;}
+.yellow{color: #ffcc33;}
+.white{color: #ffffff;}
+
+.smalltext{font-size: 9pt;}
+div{word-wrap: break-word;}
+.ppheader{background: #C0C0C0;}
+.ppfull{background: #1E90FF;}
+.pp9{background: #00BFFF;}
+.pp8{background: #90EE90;}
+.pp7{background: #ADFF2F;}
+.pp6{background: #FFD700;}
+.pp5{background: #FFA07A;}
+.pplow{background: #FFB6C1;}
+

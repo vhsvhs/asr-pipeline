@@ -1,0 +1,1 @@
+python ~/Documents/SourceCode/anccomp/compare_ancs.py  --specpath compare_ancs.AncKLSC-AncSKCTG.config.txt --modelpath ~/Applications/paml44/dat//wag.dat --window_sizes 1 --metrics k p hb --runid AncKLSCtoAncSKCTG --restrict_to_seed True --renumber_sites True

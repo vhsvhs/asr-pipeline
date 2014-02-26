@@ -1,0 +1,54 @@
+
+
+
+
+
+
+                                 ..........................                                      
+ ooooooooooooooooooooooooooooo        CURRENT SETTINGS        ooooooooooooooooooooooooooooooooooo
+                                 ..........................                                      
+
+                . Sequence filename:				 ime2.muscle.phylip
+                . Data type:					 aa
+                . Alphabet size:				 20
+                . Sequence format:				 interleaved
+                . Number of data sets:				 1
+                . Nb of bootstrapped data sets:			 0
+                . Compute approximate likelihood ratio test:	 yes (aLRT statistics)
+                . Model name:					 WAG
+                . Proportion of invariable sites:		 0.000000
+                . Number of subst. rate categs:			 8
+                . Gamma distribution parameter:			 1.009625
+                . 'Middle' of each rate class:			 mean
+                . Amino acid equilibrium frequencies:		 model
+                . Optimise tree topology:			 no
+                . Evaluated tree:				 file "user tree (RAxML_bestTree.muscle.PROTGAMMAWAG)"
+                . Optimise branch lengths:			 no
+                . Optimise substitution model parameters:	 no
+                . Run ID:					 PROTGAMMAWAG.alrt
+                . Random seed:					 1392237860
+                . Subtree patterns aliasing:			 no
+                . Version:					 20120412
+
+ oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
+
+
+
+. 720 patterns found (out of a total of 936 sites). 
+
+. 299 sites without polymorphism (31.94%).
+
+. Reading tree...
+
+. This analysis requires at least 16 Mo of memory space.
+
+
+. Log likelihood of the current tree: -9797.809708.
+
+. Compute fast branch supports on the most likely tree...
+
+. Printing the most likely tree in file 'ime2.muscle.phylip_phyml_tree_PROTGAMMAWAG.alrt.txt'...
+
+. Time used 0h0m6s
+
+oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo

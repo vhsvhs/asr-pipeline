@@ -1,0 +1,55 @@
+<phyloxml xmlns="http://www.phyloxml.org" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.phyloxml.org http://www.phyloxml.org/1.10/phyloxml.xsd">
+  <phylogeny rooted="false">
+    <clade>
+      <branch_length>1.0</branch_length>
+      <clade>
+        <name>Yarrowia.lipolytica.IME2</name>
+        <branch_length>1.0</branch_length>
+      </clade>
+      <clade>
+        <branch_length>1.0</branch_length>
+        <confidence type="unknown">10</confidence>
+        <clade>
+          <branch_length>1.0</branch_length>
+          <confidence type="unknown">11</confidence>
+          <clade>
+            <name>Candida.lusitaniae.IME2</name>
+            <branch_length>1.0</branch_length>
+          </clade>
+          <clade>
+            <branch_length>1.0</branch_length>
+            <confidence type="unknown">12</confidence>
+            <clade>
+              <name>Candida.parapsilosis.IME2</name>
+              <branch_length>1.0</branch_length>
+            </clade>
+            <clade>
+              <name>Candida.albicans.IME2</name>
+              <branch_length>1.0</branch_length>
+            </clade>
+          </clade>
+        </clade>
+        <clade>
+          <branch_length>1.0</branch_length>
+          <confidence type="unknown">9</confidence>
+          <clade>
+            <name>Saccharomyces.cerevisiae.IME2</name>
+            <branch_length>1.0</branch_length>
+          </clade>
+          <clade>
+            <branch_length>1.0</branch_length>
+            <confidence type="unknown">8</confidence>
+            <clade>
+              <name>Kluyveromyces.lactis.IME2</name>
+              <branch_length>1.0</branch_length>
+            </clade>
+            <clade>
+              <name>Kluyveromyces.waltii.IME2</name>
+              <branch_length>1.0</branch_length>
+            </clade>
+          </clade>
+        </clade>
+      </clade>
+    </clade>
+  </phylogeny>
+</phyloxml>
