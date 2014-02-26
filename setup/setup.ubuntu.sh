@@ -59,4 +59,9 @@ ln -s /common/standard-RAxML/raxmlHPC-PTHREADS /bin/raxml
 apt-get install python-numpy
 apt-get install python-scipy
 
+# PIP
+sudo easy_install -U pip
+
+# PyCogent
+DONT_USE_PYREX=1 sudo pip install -r path/to/cogent-requirements.txt
 
