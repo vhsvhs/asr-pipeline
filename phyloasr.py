@@ -270,8 +270,6 @@ def get_asr_commands(ap):
         fout.write(a + "\n")
     fout.close()
     return "SCRIPTS/asr_commands.sh"
-    #os.system(MPIRUN + " asr_commands.sh")
-    #exit()
 
 
 #
