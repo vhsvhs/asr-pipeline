@@ -415,30 +415,71 @@ def write_ancestors_indi():
                     fout = open(outpath, "w")
                     fout.write(out)
 
+
 def write_anccomp():
     """Writes the header for the anccomp page, plus calls the method write_anccomp_indi."""
     outpath = HTMLDIR + "/anccomp.html"
     fout = open( outpath, "w")
     fout.write( get_header() )
+    fout.write("<h2>&Delta-F Comparisons;</h2>\n")
     for pair in ap.params["compareanc"]:
-        fout.write("<p>Compare " + pair[0] + " to " + pair[1] + "</p>\n")
+        write_anccomp_indi(pair)
+        indi_path = pair[0] + "to" + pair[1] + ".html"
+        fout.write("<p>")
+        fout.write("<a href='" + indi_path + "'>")
+        fout.write(pair[0] + " to " + pair[1])
+        fout.write("</a>")
+        fout.write("</p>\n")
     fout.write( get_footer() )
     fout.close()
     
     
-def write_anccomp_indi():
+def write_anccomp_indi(pair):
     """Writes on HTML page for each ancestral comparison"""
-    for d in ap.params["msa_algorithms"]:
-        for model in ap.params["raxml_models"]:
-            outpath = HTMLDIR + "/asr." + get_runid(d, model)
-            for f in os.listdir(ancdir):
-                if f.__contains__(".dat"):            
-                    data = get_pp_distro( ancdir + "/" + f )
+    outpath = HTMLDIR + "/" + pair[0] + "to" + pair[1] + ".html"    
+    fout = open( outpath, "w" )
+    plotstring = write_anccomp_plot(pair)
+    #print "442:", plotstring
+    fout.write( get_header(head=plotstring) )
+    fout.write("<h2>Comparison of" + pair[0] + " to " + pair[1] + "</h2>\n")
+    
+    #
+    # Score across sites
+    #
+    fout.write("<div id=\"chart_div\" style=\"width: 900px; height: 500px;\"></div>")
+    fout.write("<img src='../" + pair[0] + "to" + pair[1] + "/hb-by-site.w=1.pdf'>")
+    fout.write("<img src='../" + pair[0] + "to" + pair[1] + "/hb-histogram.pdf'>")
+    fout.write( get_footer() )
+    fout.close()
+    
+def write_anccomp_plot(pair):
+    out = "<script type=\"text/javascript\" src=\"https://www.google.com/jsapi\"></script>"
+    out += "<script type=\"text/javascript\">"
+    out += "google.load(\"visualization\", \"1\", {packages:[\"corechart\"]});"
+    out += "google.setOnLoadCallback(drawChart);"
+    out += "function drawChart() {"
+    out += "var data = google.visualization.arrayToDataTable(["
+    out += "['Site', 'Score'],"
+    fin = open(pair[0] + "to" + pair[1] + "/summary.txt")
+    site_score = {}
+    for l in fin.xreadlines():
+        if l.__len__() > 5 and False == l.startswith("site"):
+            tokens = l.split()
+            site_score[ int(tokens[0]) ] = float(tokens[3])
+            out += "[" + tokens[0] + "," + tokens[3] + "],"
+    out += "]);"
 
-                    outpath = outdir + "/" + f.split(".")[0] + ".html" 
-                    out = ""    
+    out += "var options = {"
+    out += "title: 'Delta-f Score',"
+    out += "hAxis: {title: 'Site', titleTextStyle: {color: 'red'}}"
+    out += "};"
 
-
+    out += "var chart = new google.visualization.ColumnChart(document.getElementById('chart_div'));"
+    out += "chart.draw(data, options);"
+    out += "}"
+    out += "</script>"
+    return out
+    
 def write_css():
     if False == os.path.exists(HTMLDIR):
         os.system("mkdir " + HTMLDIR)

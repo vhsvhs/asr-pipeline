@@ -5,6 +5,7 @@ from phyloasr import *
 from splash import *
 from read_config import *
 from run_msas import *
+from html_helper import *
 
 print_splash()
 
@@ -77,12 +78,14 @@ if jump <= 6 and stop > 6:
 
 """ Build an HTML Report """
 if jump <= 7 and stop > 7:
-    from html_helper import *
+
     write_css()
     write_index()
     write_alignments()
     write_treesancs()
     write_ancestors_indi() # write individual ancestor pages
+
+if jump <= 7.1 and stop > 7.1:
     write_anccomp()
 
 """The maximum jump step index is 100.  See the command-line argument --stop"""
