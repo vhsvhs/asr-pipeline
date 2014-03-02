@@ -6,6 +6,8 @@ from phyloxml_helper import *
 HTMLDIR = "HTML"
 
 def get_header(head = "", urlpre = ""):
+    """Writes the top required HTML lines for a report webpage.  head = extra lines to stick in the <head>,
+    urlpre = the directory containing HTML, or by default './' """
     h = ""
     h += "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n"
     h += "<html>\n"  
@@ -23,6 +25,8 @@ def get_header(head = "", urlpre = ""):
     h += " | <a href='" + urlpre + "trees.html'>Trees & Ancestors</a>"
     if os.path.exists("SIMULATION"):
         h += " | <a href='" + urlpre + "errorsimulation.html'>Accuracy Assessment</a>"
+    if os.path.exists("SCRIPTS/compareanc_commands.sh"):
+        h += " | <a href='" + urlpre + "anccomp.html'>Functional Loci Prediction</a>"    
     #
     # to-do: bayesian samples, with an interactive widget
     #
@@ -364,7 +368,9 @@ def write_ppdistro_plot(data):
     out += "</script>\n"
     return out
 
+
 def write_ancestors_indi():
+    """Writes on HTML page for each ancestor."""
     for d in ap.params["msa_algorithms"]:
         for model in ap.params["raxml_models"]:
             outdir = HTMLDIR + "/asr." + get_runid(d, model)
@@ -408,7 +414,30 @@ def write_ancestors_indi():
                     out += get_footer()
                     fout = open(outpath, "w")
                     fout.write(out)
-               
+
+def write_anccomp():
+    """Writes the header for the anccomp page, plus calls the method write_anccomp_indi."""
+    outpath = HTMLDIR + "/anccomp.html"
+    fout = open( outpath, "w")
+    fout.write( get_header() )
+    for pair in ap.params["compareanc"]:
+        fout.write("<p>Compare " + pair[0] + " to " + pair[1] + "</p>\n")
+    fout.write( get_footer() )
+    fout.close()
+    
+    
+def write_anccomp_indi():
+    """Writes on HTML page for each ancestral comparison"""
+    for d in ap.params["msa_algorithms"]:
+        for model in ap.params["raxml_models"]:
+            outpath = HTMLDIR + "/asr." + get_runid(d, model)
+            for f in os.listdir(ancdir):
+                if f.__contains__(".dat"):            
+                    data = get_pp_distro( ancdir + "/" + f )
+
+                    outpath = outdir + "/" + f.split(".")[0] + ".html" 
+                    out = ""    
+
 
 def write_css():
     if False == os.path.exists(HTMLDIR):

@@ -31,17 +31,27 @@ def get_runid(dir, model):
     runid = nick + "." + model
     return runid
 
-#
-# The path to the trimmed PHYLIP alignment
-#
 def get_phylippath(DIR):
     nick = DIR_nick[DIR]
     return DIR + "/" + ap.params["geneid"] + SEP + nick + SEP + "phylip"
 
-# depricated:
-#def get_fullphylippath(DIR):
-#    nick = DIR_nick[DIR]
-#    return DIR + "/" + ap.params["geneid"] + SEP + nick + SEP + "phylip"
+def get_full_phylippath(DIR):
+    nick = DIR_nick[DIR]
+    return DIR + "/" + ap.params["geneid"] + SEP + nick + SEP + "full" + SEP + "phylip"
+
+def get_fastapath(DIR):
+    nick = DIR_nick[DIR]
+    return DIR + "/" + ap.params["geneid"] + SEP + nick + SEP + "fasta"
+
+def get_full_fastapath(DIR):
+    nick = DIR_nick[DIR]
+    return DIR + "/" + ap.params["geneid"] + SEP + nick + SEP + "full" + SEP + "fasta"
+
+def get_asr_fastapath(DIR):
+    return get_fastapath(DIR)
+
+def get_asr_phylippath(DIR):
+    return get_phylippath(DIR)
 
 def get_phylipstats(path):
     """Input: a path to a phylip-formatted alignment. Returns tuple (ntaxa, nsites)"""
@@ -53,23 +63,16 @@ def get_phylipstats(path):
     nsites = int(tokens[1])
     return (ntaxa, nsites)
 
-#
-# The path to the trimmed FASTA alignment
-#
-def get_fastapath(DIR):
-    nick = DIR_nick[DIR]
-    return DIR + "/" + ap.params["geneid"] + SEP + nick + SEP + "fasta"
 
-#
-# The path to log-L scores
-#
-def get_statspath(DIR, model):
+
+def get_raxml_infopath(DIR, model):
     runid = get_runid(DIR,model)
     return DIR + "/RAxML_info." + runid
 
 def get_raxml_logpath(DIR, model):
     runid = get_runid(DIR,model)
     return DIR + "/RAxML_log." + runid
+
 #
 # The path to the RAxML ML tree
 #
@@ -141,19 +144,11 @@ def get_cladogram_path(d, model):
     fout.close()
     return cladopath
 
-
-#
-# Which tree should we use for ancestral reconstruction?
-#
-#def get_asr_treepath(DIR, runid):
-#    return get_ml_treepath(DIR, runid)
-
-
-def get_seed_sequence(msapath, seed):
+def get_sequence(msapath, taxa):
     """msapath must be a phylip file.  Returns the seed sequence."""
     fin = open(msapath, "r")
     for l in fin.readlines():
-        if l.startswith(seed):
+        if l.startswith(taxa):
             tokens = l.split()
             return tokens[1]
 
@@ -237,50 +232,48 @@ def probForBin(b):
         return x
     return x + 0.025
     
-def get_boundary_sites(msapath, seed):
-    """msapath must be Phylip."""
+def get_boundary_sites(msapath, taxa):
+    """Input: a sequence alignment, a seed taxa, and start/end motifs determined in the config. file.
+    This function then finds those motifs in the seed sequence (which includes gaps),
+    and then returns the translate start/end sites for this alignment.
+    NOTE: msapath must point to a PHYLIP-formatted alignment."""
     start_motif = ap.params["start_motif"] #"YQLI"
     end_motif = ap.params["end_motif"] #"MPFF"
-    startsite = 1
-    endsite = -1
-    fin = open(msapath, "r")
-    #print msapath, seed
-    for l in fin.readlines():
-        #print l
-        if l.startswith(seed):
-            seq = l.split()[1]
-            #print "tools 71:", seq
-            # find the starting motif                                                                                               
-            if start_motif != None:
-                for i in range(0, seq.__len__()):
-                    if seq[i] == start_motif[0]:
-                        here = ""
-                        j = i
-                        while here.__len__() < start_motif.__len__() and j < seq.__len__():
-                            if seq[j] != "-":
-                                here += seq[j]
-                            j += 1
-                        if here  == start_motif:
-                            startsite = i + 1
-                            #print here, seq[startsite-1:(startsite-1)+4]                     
-                                          
-                            break
-            
-            if end_motif != None:
 
-                for i in range(i, seq.__len__()):
-                    if seq[i] == end_motif[0]:
-                        here = ""
-                        j = i
-                        while here.__len__() < end_motif.__len__() and j < seq.__len__():
-                            if seq[j] != "-":
-                                here += seq[j]
-                            j += 1
-                    #print here, end_motif                                                
-                                          
-                        if here  == end_motif:
-                            endsite = j
-                        #print seq[endsite-1:(endsite-1)+3]
-                            break
-    fin.close()
+    #print "248:", start_motif
+    #print "249:", end_motif
+
+    seq = get_sequence(msapath, taxa)
+    #print seq
+    startsite = 1
+    endsite = seq.__len__()
+                                                                  
+    if start_motif != None:
+        for i in range(0, seq.__len__()):
+            #print "258:", i, seq[i], start_motif[0]
+            if seq[i] == start_motif[0]:
+                here = ""
+                j = i
+                while here.__len__() < start_motif.__len__() and j < seq.__len__():
+                    #print "262:", j, here
+                    if seq[j] != "-":
+                        here += seq[j]
+                    j += 1
+                
+                if here  == start_motif:
+                    startsite = i + 1         
+                    break
+    
+    if end_motif != None:
+        for i in range(i, seq.__len__()):
+            if seq[i] == end_motif[0]:
+                here = ""
+                j = i
+                while here.__len__() < end_motif.__len__() and j < seq.__len__():
+                    if seq[j] != "-":
+                        here += seq[j]
+                    j += 1          
+                if here  == end_motif:
+                    endsite = j
+                    break
     return [startsite, endsite]

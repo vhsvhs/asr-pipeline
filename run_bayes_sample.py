@@ -13,9 +13,9 @@ for d in ap.params["msa_algorithms"]:
         for a in ap.params["ingroup"]:
             [start,stop] = get_boundary_sites( get_phylippath(d), ap.params["seedtaxa"][a] )
             print "\n\t .", a
-            apath = d + "/asr." + runid + "/anc." + a + ".dat"
+            apath = d + "/asr." + runid + "/" + a + ".dat"
             command = "python SCRIPTS/asr_bayes.py --in " + apath 
-            command += " --out " + d + "/asr." + runid + "/anc." + a + ".bayes.txt"
+            command += " --out " + d + "/asr." + runid + "/" + a + ".bayes.txt"
             command += " --id " + a
             command += " --n " + N_BAYES_SAMPLES.__str__()
             command += " --start " + start.__str__()

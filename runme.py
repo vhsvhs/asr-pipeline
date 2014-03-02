@@ -41,8 +41,8 @@ if jump <= 1.1 and stop > 1.1:
     print "\n. Converting the alignments to PHYLIP..."
     convert_all_fasta_to_phylip(ap)
 
-#if jump <= 2:
-#    trim_alignments(ap)
+if jump <= 2:
+    trim_alignments(ap)
 
 """ ML Trees """
 if jump <= 3 and stop > 3:
@@ -60,13 +60,12 @@ if jump <= 4 and stop > 4:
 
 """ A.S.R. """
 if jump <= 5 and stop > 5:
-    if "ancestors" in ap.params:
-        print "\n. Reconstructing ancestral sequences..."
-        x = get_asr_commands(ap)
-        run_script(x)
-        
-        x = get_getanc_commands(ap)
-        run_script(x)
+    print "\n. Reconstructing ancestral sequences..."
+    x = get_asr_commands(ap)
+    run_script(x)
+    
+    x = get_getanc_commands(ap)
+    run_script(x)
 
 """ Predict sites of functional evolution """
 if jump <= 6 and stop > 6:
@@ -84,7 +83,7 @@ if jump <= 7 and stop > 7:
     write_alignments()
     write_treesancs()
     write_ancestors_indi() # write individual ancestor pages
-
+    write_anccomp()
 
 """The maximum jump step index is 100.  See the command-line argument --stop"""
 

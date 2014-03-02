@@ -20,6 +20,7 @@ write_index()
 write_alignments()
 write_treesancs()
 write_ancestors_indi() # write individual ancestor pages
+write_anccomp()
 
 
 

@@ -95,12 +95,19 @@ def get_mlalpha_pp(ap):
                 maxl = lnl
             if lnl < minl:
                 minl = lnl
-#             elif l.startswith("alpha[0]:"):
-#                 l = l.strip()
-#                 tokens = l.split()
-#                 this_alpha = tokens[1]
-#                 ap.params["runid_alpha"][runid] = this_alpha
 
+            lpath = get_raxml_infopath(msa, model)
+            if False == os.path.exists(lpath):
+                print "Something is wrong. I can't find the info file from RAxML:", lpath
+                exit()
+            fin = open(lpath, "r")
+            for l in fin.xreadlines():
+                if l.startswith("alpha[0]:"):
+                    l = l.strip()
+                    tokens = l.split()
+                    this_alpha = float(tokens[1])
+                    ap.params["runid_alpha"][runid] = this_alpha
+            fin.close()
     
         for runid in runid_lnl:
             suml += (runid_lnl[runid] - minl)
@@ -113,10 +120,11 @@ def get_mlalpha_pp(ap):
             else:
                 pp = (lnl-minl)/suml
             ap.params["runid_pp"][runid] = pp
+            alpha = ap.params["runid_alpha"][runid]
             special = ""
             if lnl == maxl:
                 special = " (ML) "
-            line = runid + "\t" + lnl.__str__() + "\t" + "%.4f"%pp + "\t" + special
+            line = runid + "\t" + lnl.__str__() + "\t" + "%.4f"%pp + "\t%.4f"%alpha + special
             fout.write(line + "\n")
         fout.close()
         
@@ -220,9 +228,9 @@ def get_asr_commands(ap):
         for model in ap.params["raxml_models"]:
             runid = get_runid(msa, model)
             
-            fastapath = get_fastapath(msa)
+            fastapath = get_asr_fastapath(msa)
             
-            fin = open(get_fastapath(msa), "r")
+            fin = open(fastapath, "r")
             lines = fin.readlines()
             fin.close()
             innames = [] # array of taxa in the trimmed alignment:
@@ -281,7 +289,7 @@ def get_getanc_commands(ap):
         for model in ap.params["raxml_models"]:
             runid = get_runid(msa, model)
             here = os.getcwd()
-            asrmsa = get_fastapath(msa)
+            asrmsa = get_asr_fastapath(msa)
             asrtree = get_raxml_treepath(msa, runid)
             modelstr = ap.params["mmfolder"]
             if runid.__contains__("JTT"):
@@ -292,8 +300,8 @@ def get_getanc_commands(ap):
                 modelstr += "/lg.dat"
             for ing in ap.params["ingroup"]:
                 getanc_commands.append(ap.params["lazarus_exe"] + " --alignment " + asrmsa + " --tree " + asrtree + " --model " + modelstr + " --outputdir " + here + "/" + msa + "/asr." + model + " --outgroup " + ap.params["outgroup"] + " --ingroup " + ap.params["ingroup"][ing] + " --getanc True")
-                getanc_commands.append("mv " + msa + "/asr." + model + "/ancestor-ml.dat " + msa + "/asr." + model + "/anc." + ing + ".dat")
-                getanc_commands.append("mv " + msa + "/asr." + model + "/ancestor.out.txt " + msa + "/asr." + model + "/anc." + ing + ".txt")
+                getanc_commands.append("mv " + msa + "/asr." + model + "/ancestor-ml.dat " + msa + "/asr." + model + "/" + ing + ".dat")
+                getanc_commands.append("mv " + msa + "/asr." + model + "/ancestor.out.txt " + msa + "/asr." + model + "/" + ing + ".txt")
     
     fout = open("SCRIPTS/getanc_commands.txt", "w")
     for a in getanc_commands:
@@ -321,7 +329,7 @@ def get_compareanc_commands(ap):
                     
                     #msapathlines += msapath + " "
                     msanamelines += "msaname " + msapath + " " + runid + "\n"
-                    comparelines += "compare " + msa + "/asr." + model + "/anc." + pair[0] + ".dat " + msa + "/asr." + model + "/anc." + pair[1] + ".dat " + runid + "\n"
+                    comparelines += "compare " + msa + "/asr." + model + "/" + pair[0] + ".dat " + msa + "/asr." + model + "/" + pair[1] + ".dat " + runid + "\n"
                     weightlines += "msaweight " + runid + " " + pp.__str__() + "\n"
             
         specpath = "compare_ancs." + pair[0] + "-" + pair[1] + ".config.txt"
@@ -341,8 +349,8 @@ def get_compareanc_commands(ap):
         # boundaries earlier, in the trim_alignment method
         #
         #[startsite,endsite] = get_boundary_sites(  get_phylipfull_path("msaprobs",ap))
-    
-        c = "python ~/Documents/SourceCode/anccomp/compare_ancs.py "
+            
+        c = ap.params["anccomp"]
         c += " --specpath " + specpath
         c += " --modelpath " + modelstr
         c += " --window_sizes 1"

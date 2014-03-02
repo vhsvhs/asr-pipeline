@@ -56,6 +56,9 @@ def read_config_file(ap):
         elif tokens[0].startswith("PRANK"):
             ap.params["prank_exe"] = tokens[1].strip()
         
+        elif tokens[0].startswith("ANCCOMP"):
+            ap.params["anccomp"] = tokens[1].strip()
+        
         elif tokens[0].startswith("ALIGNMENT_ALGORITHMS"):
             x = tokens[1].split()
             ap.params["msa_algorithms"] = []
@@ -70,11 +73,17 @@ def read_config_file(ap):
         
         elif tokens[0].startswith("START_MOTIF"):
             ap.params["start_motif"] = re.sub(" ", "", tokens[1])
+            if ap.params["start_motif"].__contains__("None"):
+                ap.params["start_motif"] = None 
         
         elif tokens[0].startswith("END_MOTIF"):
             ap.params["end_motif"] = re.sub(" ", "", tokens[1])
-        
-        elif tokens[0].startswith("SEED_MOTIF_TAXA"):
+            if ap.params["end_motif"].__contains__("None"):
+                ap.params["end_motif"] = None 
+ 
+# depricated: 
+# continue here... and look in the msa get_bondary_sites function      
+        elif tokens[0].startswith("SEED"):
             ap.params["seed_motif_seq"] = re.sub(" ", "", tokens[1])
         
         elif tokens[0].startswith("N_BAYES_SAMPLES"):
@@ -82,12 +91,13 @@ def read_config_file(ap):
         
         elif tokens[0].startswith("OUTGROUP"):
             ap.params["outgroup"] = re.sub(" ", "", tokens[1])
-        
-        elif tokens[0].startswith("ANCESTORS"):
-            x = tokens[1].split()
-            ap.params["ancestors"] = []
-            for i in x:
-                ap.params["ancestors"].append( i )
+
+# depricated:
+#        elif tokens[0].startswith("ANCESTORS"):
+#            x = tokens[1].split()
+#            ap.params["ancestors"] = []
+#            for i in x:
+#                ap.params["ancestors"].append( i )
         
         elif tokens[0].startswith("INGROUP"):
             if "ingroup" not in ap.params:
@@ -96,7 +106,7 @@ def read_config_file(ap):
             ingroup = tokens[0].split()[2]
             ap.params["ingroup"][ anc ] = ingroup
         
-        elif tokens[0].startswith("SEED"):
+        elif tokens[0].startswith("ASRSEED"):
             if "seedtaxa" not in ap.params:
                 ap.params["seedtaxa"] = {}
             anc = tokens[0].split()[1]
