@@ -446,7 +446,7 @@ def write_anccomp_indi(pair):
     #
     # Score across sites
     #
-    fout.write("<div id=\"chart_div\" style=\"width: 900px; height: 500px;\"></div>")
+    fout.write("<div id=\"chart_div\" style=\"width: 100%; height: 300px;\"></div>")
     fout.write("<img src='../" + pair[0] + "to" + pair[1] + "/hb-by-site.w=1.pdf'>")
     fout.write("<img src='../" + pair[0] + "to" + pair[1] + "/hb-histogram.pdf'>")
     fout.write( get_footer() )
