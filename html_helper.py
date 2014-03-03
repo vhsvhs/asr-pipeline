@@ -19,6 +19,8 @@ def get_header(head = "", urlpre = ""):
     h += head
     h += "</head>\n"    
     h += "<body><br>\n"
+    if "HTML_SPECIAL1" in ap.params:
+        h += ap.params["HTML_SPECIAL1"] + "\n"
     h += "<h1>" + ap.params["project_title"] + " Ancestral Library</h1>\n"    
     h += "<hr>\n"
     h += "<p><a href='" + urlpre + "index.html'>Overview</a>"
@@ -51,6 +53,10 @@ def get_footer():
 def write_index():
     fout = open(HTMLDIR + "/index.html", "w") 
     fout.write( get_header() )
+    
+    fout.write("<p>This library was calculated based on the following curated library of protein sequences:</p>\n")
+    fout.write("<p>Download: <a href=\"../" + ap.params["ergseqpath"] + "\">" + ap.params["ergseqpath"] + "</a></p>\n")
+    
     fout.write( get_footer() )
 
     fout.close()
@@ -424,7 +430,10 @@ def write_anccomp():
     outpath = HTMLDIR + "/anccomp.html"
     fout = open( outpath, "w")
     fout.write( get_header() )
-    fout.write("<h2>&Delta-F Comparisons;</h2>\n")
+    fout.write("<p>The following ancestors were compared using the &Delta;F metric (Hanson-Smith and Baker, 2014).")
+    fout.write("&Delta;F ranks the shift in entropy between ancestral amino acid probability distributions.")
+    fout.write("Sites with extreme &Delta;F scores (either positive or negative) tend to be sites involved in function-shifting amino substitutions.</p>")
+    fout.write("<h2>&Delta;F Comparisons:</h2>\n")
     for pair in ap.params["compareanc"]:
         write_anccomp_indi(pair)
         indi_path = pair[0] + "to" + pair[1] + ".html"
@@ -449,26 +458,27 @@ def write_anccomp_indi(pair):
     
     
     fout.write("<h3>Overview:</h3>\n")
-    fout.write("<p>On the phylogenetic branch(es) leading from " + pair[0] + " to " + pair[1] + ", there occured approx. <strong>XX amino acid mutations</strong> between " + pair[0] + " and " + pair[1] + ".</p>\n")
+    fout.write("<p>On the phylogenetic branch(es) leading from " + pair[0] + " to " + pair[1] + ", the following number of amino acid mutations occurred between " + pair[0] + " and " + pair[1] + ".</p>\n")
     
     fout.write("<table>\n")
-    fin = open("../" + pair[0] + "to" + pair[1] + "/ancestral_changes.txt", "r")
-    for l in fin.xreadlines: 
-        tokens = l.split()
-        fout.write("<tr>\n")
+    fin = open(pair[0] + "to" + pair[1] + "/ancestral_changes.txt", "r")
+    for l in fin.xreadlines(): 
+        tokens = l.split("\t")
+        if l.__contains__("Alignment"):
+            #fout.write("<tr class=\"headerrow\">\n")
+            fout.write("<th>\n")
+        else:
+            fout.write("<tr>\n")
+        
         for t in tokens:
             fout.write("<td>" + t + "</td>")
-        fout.write("<tr>\n")
+        
+        if l.__contains__("Alignment"):
+            fout.write("</th>\n")
+        else:
+            fout.write("</tr>\n")
     fin.close()    
-    fout.close("</table>\n")
-    
-    
-
-    fout.write("<ul>\n")
-    fout.write("<li><strong>XX Type 1</strong> mutations.</li>\n")
-    fout.write("<li><strong>XX Type 2</strong> mutations.</li>\n")
-    fout.write("<li><strong>XX Type 3</strong> mutations.</li>\n")
-    fout.write("</ul>\n")
+    fout.write("</table>\n")
     
     fout.write("\n<hr>\n")
     #

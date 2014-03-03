@@ -24,7 +24,7 @@ def read_config_file(ap):
             ap.params["geneid"] = re.sub(" ", "", tokens[1])
         
         if tokens[0].startswith("PROJECT_TITLE"):
-            ap.params["project_title"] = re.sub(" ", "", tokens[1])
+            ap.params["project_title"] = tokens[1]
 
         if tokens[0].startswith("SEQUENCES"):
             ap.params["ergseqpath"] = re.sub(" ", "", tokens[1])
@@ -127,6 +127,16 @@ def read_config_file(ap):
                 ap.params["usempi"] = True
             else:
                 ap.params["usempi"] = False
+        
+        elif tokens[0].startswith("HTML_SPECIAL1"):
+            thing = ""
+            for i in range(1, tokens.__len__()):
+                t = tokens[i]
+                if i < tokens.__len__():
+                    thing += t + "="
+                else:
+                    thing +=  t
+            ap.params["HTML_SPECIAL1"] = thing
     fin.close()
 
 def verify_config(ap):
