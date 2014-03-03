@@ -132,7 +132,7 @@ def read_config_file(ap):
             thing = ""
             for i in range(1, tokens.__len__()):
                 t = tokens[i]
-                if i < tokens.__len__():
+                if i < tokens.__len__()-1:
                     thing += t + "="
                 else:
                     thing +=  t

@@ -111,7 +111,7 @@ def write_treesancs():
     out += get_header()
 
     for d in ap.params["msa_algorithms"]:
-        out += "<h2>" + d + "</h2>"
+        out += "<p>Calculated from the <strong>" + d + "</strong> alignment:</p>"
         out += "<table width=100%>\n"
         out += "<tr>"
         out += "<th align='left'>Model</th>"
@@ -430,10 +430,11 @@ def write_anccomp():
     outpath = HTMLDIR + "/anccomp.html"
     fout = open( outpath, "w")
     fout.write( get_header() )
-    fout.write("<p>The following ancestors were compared using the &Delta;F metric (Hanson-Smith and Baker, 2014).")
-    fout.write("&Delta;F ranks the shift in entropy between ancestral amino acid probability distributions.")
-    fout.write("Sites with extreme &Delta;F scores (either positive or negative) tend to be sites involved in function-shifting amino substitutions.</p>")
     fout.write("<h2>&Delta;F Comparisons:</h2>\n")
+    fout.write("<p>The following ancestors were compared using the &Delta;F metric (Hanson-Smith and Baker, 2014). ")
+    fout.write("The &Delta;F metric ranks the shift in entropy between ancestral amino acid probability distributions. ")
+    fout.write("Sites with extreme &Delta;F scores (either positive or negative) should be considered strong hypotheses ")
+    fout.write(" for mutational loci that caused functional changes.</p>")
     for pair in ap.params["compareanc"]:
         write_anccomp_indi(pair)
         indi_path = pair[0] + "to" + pair[1] + ".html"
@@ -452,50 +453,58 @@ def write_anccomp_indi(pair):
     fout = open( outpath, "w" )
     plotstring = write_anccomp_plot(pair)    
     fout.write( get_header(head=plotstring) )
-    fout.write("<h2>Comparison of " + pair[0] + " to " + pair[1] + "</h2>\n")
+    fout.write("<h2>Summary of Sequence Changes</h2>\n")
+    fout.write("<p>On the phylogenetic branch(es) leading from " + pair[0] + " to " + pair[1] + ", the following types of amino acid sequence substitutions occurred.</p>\n")
     
-
+    fout.write("<ul>\n")
+    fout.write("<li><strong>Type 1</strong> changes switch the maximum likelihood (ML) state between " + pair[0] + "and " + pair[1] + ", and there is poor support for " + pair[0] + "'s state in " + pair[1] + ", and vice versa.</li>\n")
+    fout.write("<li><strong>Type 2</strong> changes switch the ML state, but " + pair[0] + "'s state has mild support in " + pair[1] + ", or vice versa.</li>\n")
+    fout.write("<li><strong>Type 3</strong> changes keep the same ML state, but either " + pair[0] + " or " + pair[1] + " has uncertainty about this state.</li>\n")
+    fout.write("</ul>\n")
     
-    
-    fout.write("<h3>Overview:</h3>\n")
-    fout.write("<p>On the phylogenetic branch(es) leading from " + pair[0] + " to " + pair[1] + ", the following number of amino acid mutations occurred between " + pair[0] + " and " + pair[1] + ".</p>\n")
-    
-    fout.write("<table>\n")
+    fout.write("<table width=\"100%\">\n")
     fin = open(pair[0] + "to" + pair[1] + "/ancestral_changes.txt", "r")
     for l in fin.xreadlines(): 
         tokens = l.split("\t")
         if l.__contains__("Alignment"):
-            #fout.write("<tr class=\"headerrow\">\n")
-            fout.write("<th>\n")
+            fout.write("<tr class=\"headerrow\">\n")
         else:
             fout.write("<tr>\n")
-        
         for t in tokens:
             fout.write("<td>" + t + "</td>")
-        
-        if l.__contains__("Alignment"):
-            fout.write("</th>\n")
-        else:
-            fout.write("</tr>\n")
+        fout.write("</tr>\n")
     fin.close()    
     fout.write("</table>\n")
     
     fout.write("\n<hr>\n")
+    
     #
     # Score across sites
     #
     #fout.write("<div id=\"chart_div\" style=\"width: 100%; height: 300px;\"></div>")
-    fout.write("<h2>Prediction of Functional Loci:</h2>\n")
-    fout.write("<p>Download: <a href='../" + pair[0] + "to" + pair[1] + "/Df-by-site.w=1.pdf'>pdf</a> | <a href='../" + pair[0] + "to" + pair[1] + "/Df-by-site.w=1.png'>png</a></p>\n")
+    fout.write("<h2>&Delta;F Scores</h2>\n")
+    fout.write("<h3>Scores Across Sequence Sites</h3>")
+    fout.write("<p>Download: <a href='../" + pair[0] + "to" + pair[1] + "/Df-by-site.w=1.pdf'>pdf</a> | <a href='../" + pair[0] + "to" + pair[1] + "/Df-by-site.w=1.png'>png</a> | <a href='../" + pair[0] + "to" + pair[1] + "/Df-by-site.w=1.pdf.rscript'>R script</a> | <a href='../" + pair[0] + "to" + pair[1] + "/Df.ranked.txt'>spreadsheet</a></p>\n")
     fout.write("<a href='../" + pair[0] + "to" + pair[1] + "/Df-by-site.w=1.pdf'><img src='../" + pair[0] + "to" + pair[1] + "/Df-by-site.w=1.png'></a>\n")
     fout.write("<br>\n")
-    fout.write("<h2>Prediction of Functional Loci:</h2>\n")
-    fout.write("<p>Download <a href='../" + pair[0] + "to" + pair[1] + "/Df-histogram.pdf'>pdf</a> | <a href='../" + pair[0] + "to" + pair[1] + "/Df-histogram.png'>png</a></p>\n")
+    
+    fout.write("<h3>Histogram of &Delta;F Scores</strong></h3>\n")
+    fout.write("<p>Download <a href='../" + pair[0] + "to" + pair[1] + "/Df-histogram.pdf'>pdf</a> | <a href='../" + pair[0] + "to" + pair[1] + "/Df-histogram.png'>png</a> | <a href='../" + pair[0] + "to" + pair[1] + "/Df-histogram.rscript'>R script</a></p>")
     fout.write("<a href='../" + pair[0] + "to" + pair[1] + "/Df-histogram.pdf'><img src='../" + pair[0] + "to" + pair[1] + "/Df-histogram.png'></a>\n")
+    fout.write("<br>\n")
     
     #
     # Print the detailed sites summary (pre-computed in a text file).
     #
+    
+    fout.write("<br>\n")
+    fout.write("<h3>&Delta;F Scores By Site</h3>\n")
+    fout.write("<p>Download: <a href='../" + pair[0] + "to" + pair[1] + "/Df.details.txt'>spreadsheet</a></p>")
+    
+    fout.write("<h3>Full Details of &Delta;F Analaysis</strong></h3>")
+    fout.write("<p>Download: <a href='../" + pair[0] + "to" + pair[1] + "/summary.txt'>spreadsheet</a></p>")
+    
+    """
     fout.write("<hr>\n")
     fout.write("<h3>Prediction Summary For Each Site:</h3>\n")
     
@@ -513,6 +522,7 @@ def write_anccomp_indi(pair):
                 fin.close()
 
                 fout.write("</div>\n")
+    """
     
     fout.write( get_footer() )
     fout.close()
