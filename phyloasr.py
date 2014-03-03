@@ -354,7 +354,7 @@ def get_compareanc_commands(ap):
         c += " --specpath " + specpath
         c += " --modelpath " + modelstr
         c += " --window_sizes 1"
-        c += " --metrics k p hb"
+        c += " --metrics k p Df"
         c += " --runid " + pair[0] + "to" + pair[1]
         c += " --restrict_to_seed True"
         c += " --renumber_sites True"
@@ -362,6 +362,7 @@ def get_compareanc_commands(ap):
         #if startsite != None and endsite != None:
         #    c += " --highlight_sites " + startsite.__str__() + "-" + endsite.__str__()
         compare_commands.append(c)
+        compare_commands.append("source run_rscripts.sh")
     
     fout = open("SCRIPTS/compareanc_commands.sh", "w")
     for c in compare_commands:

@@ -2,6 +2,7 @@ import os, sys, time
 from configuration import *
 from tools import *
 from phyloxml_helper import *
+from sorttable import *
 
 HTMLDIR = "HTML"
 
@@ -388,6 +389,8 @@ def write_ancestors_indi():
                     out += get_header(urlpre="../",head=google_header)
                     nodenum = f.split(".")[0]
                     nodenum = re.sub("node", "", nodenum)
+                    
+                    
                     out += "<h2>Ancestral Node " + nodenum + ", Alignment: " + DIR_nick[d] + ", Model: " + model + "</h2>\n"
                     #out += "<hr>\n"
                     out += "<div>\n"
@@ -438,22 +441,87 @@ def write_anccomp_indi(pair):
     """Writes on HTML page for each ancestral comparison"""
     outpath = HTMLDIR + "/" + pair[0] + "to" + pair[1] + ".html"    
     fout = open( outpath, "w" )
-    plotstring = write_anccomp_plot(pair)
-    #print "442:", plotstring
+    plotstring = write_anccomp_plot(pair)    
     fout.write( get_header(head=plotstring) )
-    fout.write("<h2>Comparison of" + pair[0] + " to " + pair[1] + "</h2>\n")
+    fout.write("<h2>Comparison of " + pair[0] + " to " + pair[1] + "</h2>\n")
     
+
+    
+    
+    fout.write("<h3>Overview:</h3>\n")
+    fout.write("<p>On the phylogenetic branch(es) leading from " + pair[0] + " to " + pair[1] + ", there occured approx. <strong>XX amino acid mutations</strong> between " + pair[0] + " and " + pair[1] + ".</p>\n")
+    
+    fout.write("<table>\n")
+    fin = open("../" + pair[0] + "to" + pair[1] + "/ancestral_changes.txt", "r")
+    for l in fin.xreadlines: 
+        tokens = l.split()
+        fout.write("<tr>\n")
+        for t in tokens:
+            fout.write("<td>" + t + "</td>")
+        fout.write("<tr>\n")
+    fin.close()    
+    fout.close("</table>\n")
+    
+    
+
+    fout.write("<ul>\n")
+    fout.write("<li><strong>XX Type 1</strong> mutations.</li>\n")
+    fout.write("<li><strong>XX Type 2</strong> mutations.</li>\n")
+    fout.write("<li><strong>XX Type 3</strong> mutations.</li>\n")
+    fout.write("</ul>\n")
+    
+    fout.write("\n<hr>\n")
     #
     # Score across sites
     #
-    fout.write("<div id=\"chart_div\" style=\"width: 100%; height: 300px;\"></div>")
-    fout.write("<img src='../" + pair[0] + "to" + pair[1] + "/hb-by-site.w=1.pdf'>")
-    fout.write("<img src='../" + pair[0] + "to" + pair[1] + "/hb-histogram.pdf'>")
+    #fout.write("<div id=\"chart_div\" style=\"width: 100%; height: 300px;\"></div>")
+    fout.write("<h2>Prediction of Functional Loci:</h2>\n")
+    fout.write("<p>Download: <a href='../" + pair[0] + "to" + pair[1] + "/Df-by-site.w=1.pdf'>pdf</a> | <a href='../" + pair[0] + "to" + pair[1] + "/Df-by-site.w=1.png'>png</a></p>\n")
+    fout.write("<a href='../" + pair[0] + "to" + pair[1] + "/Df-by-site.w=1.pdf'><img src='../" + pair[0] + "to" + pair[1] + "/Df-by-site.w=1.png'></a>\n")
+    fout.write("<br>\n")
+    fout.write("<h2>Prediction of Functional Loci:</h2>\n")
+    fout.write("<p>Download <a href='../" + pair[0] + "to" + pair[1] + "/Df-histogram.pdf'>pdf</a> | <a href='../" + pair[0] + "to" + pair[1] + "/Df-histogram.png'>png</a></p>\n")
+    fout.write("<a href='../" + pair[0] + "to" + pair[1] + "/Df-histogram.pdf'><img src='../" + pair[0] + "to" + pair[1] + "/Df-histogram.png'></a>\n")
+    
+    #
+    # Print the detailed sites summary (pre-computed in a text file).
+    #
+    fout.write("<hr>\n")
+    fout.write("<h3>Prediction Summary For Each Site:</h3>\n")
+    
+    for msa in ap.params["msa_algorithms"]:
+        for model in ap.params["raxml_models"]:
+            runid = get_runid(msa, model)
+            htmlfrag_path = pair[0] + "to" + pair[1] + "/" + runid + ".html"
+            if os.path.exists(htmlfrag_path):
+                #fout.write("<a onclick=\"ToggleList(" + runid + ")\">toggle</a>")
+                fout.write("<div class=\"divInfo\" id=\"" + runid + "\">\n")
+                fout.write("<h3>" + runid + "</h3>")
+                fin = open(pair[0] + "to" + pair[1] + "/" + runid + ".html", "r")
+                for l in fin.xreadlines():
+                    fout.write( l )
+                fin.close()
+
+                fout.write("</div>\n")
+    
     fout.write( get_footer() )
     fout.close()
     
 def write_anccomp_plot(pair):
-    out = "<script type=\"text/javascript\" src=\"https://www.google.com/jsapi\"></script>"
+    fout = open(HTMLDIR + "/sorttable.js", "w")
+    fout.write( get_sorttable() )
+    fout.close()
+    
+    out = ""
+    #
+    # Sortable table stuff
+    #
+    out += "<script src=\"sorttable.js\"></script>\n"
+    
+    #
+    # Google Chart Stuff
+    #
+    out += "<script type=\"text/javascript\" src=\"https://www.google.com/jsapi\"></script>"
     out += "<script type=\"text/javascript\">"
     out += "google.load(\"visualization\", \"1\", {packages:[\"corechart\"]});"
     out += "google.setOnLoadCallback(drawChart);"
@@ -477,9 +545,60 @@ def write_anccomp_plot(pair):
     out += "var chart = new google.visualization.ColumnChart(document.getElementById('chart_div'));"
     out += "chart.draw(data, options);"
     out += "}"
-    out += "</script>"
-    return out
     
+    out += "\nfunction ToggleList(IDS) {\n"
+    out += "var CState = document.getElementById(IDS);\n"
+    out += "if (CState.style.display != \"none\") { CState.style.display = \"none\"; }\n"
+    out += "else { CState.style.display = \"block\"; }\n"
+    out += "}\n"
+    
+    out += "</script>"
+    
+    #
+    # Collapsible div stuff. . .
+    #
+    """
+    fout = open(HTMLDIR + "/animatedcollapse.js", "w")
+    fout.write( get_animated_div_script() )
+    fout.close()
+    
+    out += "<script type=\"text/javascript\" src=\"http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js\"></script>\n"
+    out += "<script type=\"text/javascript\" src=\"animatedcollapse.js\">\n"
+    out += "\n"
+    out += "/***********************************************\n"
+    out += "* Animated Collapsible DIV v2.4- (c) Dynamic Drive DHTML code library (www.dynamicdrive.com)\n"
+    out += "* This notice MUST stay intact for legal use\n"
+    out += "* Visit Dynamic Drive at http://www.dynamicdrive.com/ for this script and 100s more\n"
+    out += "***********************************************/\n"
+    out += "\n"
+    out += "</script>\n"
+    out += "\n"
+    out += "\n"
+    out += "<script type=\"text/javascript\">\n"
+    out += "\n"
+    out += "animatedcollapse.addDiv('jason', 'fade=1,height=80px')\n"
+    out += "animatedcollapse.addDiv('kelly', 'fade=1,height=100px')\n"
+    out += "animatedcollapse.addDiv('michael', 'fade=1,height=120px')\n"
+    out += "\n"
+    out += "animatedcollapse.addDiv('cat', 'fade=0,speed=400,group=pets')\n"
+    out += "animatedcollapse.addDiv('dog', 'fade=0,speed=400,group=pets,persist=1,hide=1')\n"
+    out += "animatedcollapse.addDiv('rabbit', 'fade=0,speed=400,group=pets,hide=1')\n"
+    out += "\n"
+    out += "animatedcollapse.ontoggle=function($, divobj, state){ //fires each time a DIV is expanded/contracted\n"
+    out += "    //$: Access to jQuery\n"
+    out += "    //divobj: DOM reference to DIV being expanded/ collapsed. Use \"divobj.id\" to get its ID\n"
+    out += "    //state: \"block\" or \"none\", depending on state\n"
+    out += "}\n"
+    out += "\n"
+    out += "animatedcollapse.init()\n"
+    out += "\n"
+    out += "</script>\n"
+    """
+
+    return out
+
+
+
 def write_css():
     if False == os.path.exists(HTMLDIR):
         os.system("mkdir " + HTMLDIR)
@@ -569,10 +688,15 @@ def write_css():
     fout.write(".aqua{color: #3399ff;}\n")
     fout.write(".yellow{color: #ffcc33;}\n")
     fout.write(".white{color: #ffffff;}\n")
+    fout.write(".redrow{background: #ffcccc;}\n")
+    fout.write(".orangerow{background: #ffffcc;}\n")
+    fout.write(".whiterow{background: #ffffff;}\n")
+    fout.write(".bluerow{background: #C2E0FF;}\n")
     fout.write("\n")
     fout.write(".smalltext{font-size: 9pt;}\n")
     fout.write("div{word-wrap: break-word;}\n")
     fout.write(".ppheader{background: #C0C0C0;}\n")
+    fout.write(".headerrow{background: #C0C0C0; font-weight: bold; font-size: 12pt;}\n")
     fout.write(".ppfull{background: #1E90FF;}\n")
     fout.write(".pp9{background: #00BFFF;}\n")
     fout.write(".pp8{background: #90EE90;}\n")
@@ -580,5 +704,6 @@ def write_css():
     fout.write(".pp6{background: #FFD700;}\n")
     fout.write(".pp5{background: #FFA07A;}\n")
     fout.write(".pplow{background: #FFB6C1;}\n")
+    fout.write(".divInfo { display:block; }\n")
     fout.write("\n")
     fout.close()

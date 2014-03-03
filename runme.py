@@ -74,7 +74,8 @@ if jump <= 6 and stop > 6:
         if (jump > 4):
             get_mlalpha_pp(ap)
         x = get_compareanc_commands(ap)
-        run_script(x)
+        os.system( ap.params["run_exe"] + " " + x)
+        #run_script(x)
 
 """ Build an HTML Report """
 if jump <= 7 and stop > 7:

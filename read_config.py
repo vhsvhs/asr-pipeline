@@ -132,6 +132,10 @@ def read_config_file(ap):
 def verify_config(ap):
     """Will return nothing if the configuration is ok.  Will error and quit if the
     configuration is flawed."""
+    
+    if "run_exe" not in ap.params:
+        ap.params["run_exe"] = "source"
+    
     if "ancestors" in ap.params:
         for a in ap.params["ancestors"]:
             print a, ap.params["seedtaxa"]
