@@ -1,7 +1,7 @@
 from configuration import *
 from dendropy import Tree
 import math, re, os
-from Bio import Phylo
+from Bio import Phylo # Note, this must be version 1.63 or newer.
 
 from argParser import *
 ap = ArgParser(sys.argv)
@@ -175,7 +175,7 @@ def get_ml_sequence(site_states_probs, start=0, stop=-1):
         #print site_states_probs, site, maxc
     return mlseq
 
-def get_ml_sequence_from_file(path):
+def get_ml_sequence_from_file(path, getindels=False):
     fin = open(path, "r")
     mlseq = ""
     for l in fin.xreadlines():
@@ -184,6 +184,8 @@ def get_ml_sequence_from_file(path):
             state = tokens[1]
             if state != "-":
                 mlseq += state.upper()
+            elif getindels:
+                mlseq += "-"
     return mlseq
 
 def get_pp_distro(path):

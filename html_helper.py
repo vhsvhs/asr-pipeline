@@ -111,9 +111,9 @@ def write_treesancs():
     out += get_header()
 
     for d in ap.params["msa_algorithms"]:
-        out += "<p>Calculated from the <strong>" + d + "</strong> alignment:</p>"
         out += "<table width=100%>\n"
         out += "<tr>"
+        out += "<th align='left'>Alignment</th>"
         out += "<th align='left'>Model</th>"
         out += "<th align='right'>log(Likelihood)</th>"
         out += "<th>Relative Probability</th>"
@@ -127,6 +127,7 @@ def write_treesancs():
             tpath = get_alrt_treepath(d, model)
             tlength = get_tree_length( tpath )
             out += "<tr>"
+            out += "<td>" + d + "</td>"
             out += "<td>" + model + "</td>"
             out += "<td align='right'>" + model_data[model][0].__str__() + "</td>"
             out += "<td align='center'>" + model_data[model][1].__str__() + "</td>"
@@ -148,8 +149,12 @@ def write_anctree(d, model):
     rid = get_runid(d, model)
     tpath = get_alrt_treepath(d, model)
 
-    js = "<script type=\"text/javascript\" src=\"../SCRIPTS/HTML_SUPPORT/raphael-min.js\" ></script>\n"
-    js += "<script type=\"text/javascript\" src=\"../SCRIPTS/HTML_SUPPORT/jsphylosvg-min.js\"></script>\n"
+    #
+    # to-do: copy the contents of HTML_SUPPORT to HTMLDIR. Otherwise, the necessary Javascript will be missing.
+    #
+
+    js = "<script type=\"text/javascript\" src=\"HTML_SUPPORT/raphael-min.js\" ></script>\n"
+    js += "<script type=\"text/javascript\" src=\"HTML_SUPPORT/jsphylosvg-min.js\"></script>\n"
 
     js += "<script type=\"text/javascript\">"
     js += "window.onload = function(){\n"
@@ -159,17 +164,13 @@ def write_anctree(d, model):
 
     js += "       var dataObject = { phyloxml: "
     js += "'" + xmlstring + "' ,"
-    #js += "'" + xmlpath + "' ,"
     js += "fileSource:false};\n"
 
-    #js += "YUI().use('oop', 'json-stringify', 'io-base', 'event', 'event-delegate', function(Y){"
     width = 800
     (ntaxa,nsites) = get_phylipstats( get_phylippath(d) )
     height = ntaxa * 16
-    #print height
     js += "\nphylocanvas = new Smits.PhyloCanvas(dataObject,\"svgCanvas\","
     js += "800," + height.__str__() + ");\n"
-    #js += "});\n" # closes use
     js += "};\n" # closes onload
 
     """
@@ -188,13 +189,10 @@ def write_anctree(d, model):
 
     out = ""
     out += get_header(head=js)
-    
     out += "<h2>Cladogram of Ancestors, Alignment: " + DIR_nick[d] + ", Model: " + model + "</h2>\n"
     out += "<h3>Click an ancestral node for details.</h3>\n"
     out += "<div id=\"svgCanvas\"> </div>\n"
-
     out += get_footer()
-
     fout = open(HTMLDIR + "/tree." + d + "." + model + ".html", "w")
     fout.write( out )
     fout.close()
@@ -430,51 +428,112 @@ def write_anccomp():
     outpath = HTMLDIR + "/anccomp.html"
     fout = open( outpath, "w")
     fout.write( get_header() )
-    fout.write("<h2>&Delta;F Comparisons:</h2>\n")
+    fout.write("<h2>Predicting Functional Loci, Using &Delta;F</h2>\n")
     fout.write("<p>The following ancestors were compared using the &Delta;F metric (Hanson-Smith and Baker, 2014). ")
-    fout.write("The &Delta;F metric ranks the shift in entropy between ancestral amino acid probability distributions. ")
+    fout.write("The &Delta;F metric ranks the shift in entropy between two ancestral amino acid probability distributions, ")
+    fout.write("corresponding to an <em>ancient</em> ancestor and a more-recent <em>derived</em> ancestor.")
     fout.write("Sites with extreme &Delta;F scores (either positive or negative) should be considered strong hypotheses ")
-    fout.write(" for mutational loci that caused functional changes.</p>")
+    fout.write(" for mutational loci that caused functional changes. Sites with positive $Delta;F scores indicate that ")
+    fout.write("the derived ancestor gained conservation at that site, which may have played a role in constructing or shifting ")
+    fout.write(" the protein's function. Sites with negative $Delta;F scores indicate that ")
+    fout.write("the derived ancestor lost conservation at the site, which may have played a role in degenerating or relaxing ")
+    fout.write(" the protein's function.</p>\n")
+    
+    fout.write("<h3>Select an Ancestral Comparison:</h3>\n")
+    fout.write("<ul>\n")
     for pair in ap.params["compareanc"]:
         write_anccomp_indi(pair)
         indi_path = pair[0] + "to" + pair[1] + ".html"
-        fout.write("<p>")
+        fout.write("<li><p>")
         fout.write("<a href='" + indi_path + "'>")
         fout.write(pair[0] + " to " + pair[1])
         fout.write("</a>")
-        fout.write("</p>\n")
+        fout.write("</p></li>\n")
+    fout.write("</ul>\n")
     fout.write( get_footer() )
     fout.close()
     
     
 def write_anccomp_indi(pair):
+    colwidth = {}
+    colwidth[0] = "10%"
+    colwidth[1] = "16%"
+    colwidth[2] = "10%"
+    colwidth[3] = "12%"
+    colwidth[4] = "12%"
+    colwidth[5] = "12%"
+    colwidth[6] = "12%"
+    colwidth[7] = "16%"
+    
     """Writes on HTML page for each ancestral comparison"""
     outpath = HTMLDIR + "/" + pair[0] + "to" + pair[1] + ".html"    
     fout = open( outpath, "w" )
     plotstring = write_anccomp_plot(pair)    
     fout.write( get_header(head=plotstring) )
     fout.write("<h2>Summary of Sequence Changes</h2>\n")
-    fout.write("<p>On the phylogenetic branch(es) leading from " + pair[0] + " to " + pair[1] + ", the following types of amino acid sequence substitutions occurred.</p>\n")
+    fout.write("<p>On the phylogenetic branch(es) leading from " + pair[0] + " to " + pair[1] + ", three types of mutational events occurred:</p>\n")
     
     fout.write("<ul>\n")
-    fout.write("<li><strong>Type 1</strong> changes switch the maximum likelihood (ML) state between " + pair[0] + "and " + pair[1] + ", and there is poor support for " + pair[0] + "'s state in " + pair[1] + ", and vice versa.</li>\n")
-    fout.write("<li><strong>Type 2</strong> changes switch the ML state, but " + pair[0] + "'s state has mild support in " + pair[1] + ", or vice versa.</li>\n")
-    fout.write("<li><strong>Type 3</strong> changes keep the same ML state, but either " + pair[0] + " or " + pair[1] + " has uncertainty about this state.</li>\n")
+    fout.write("<li><strong>Type 1 Changes:</strong> the maximum likelihood (ML) amino acid changed between " + pair[0] + " and " + pair[1] + ", and there is poor support for " + pair[0] + "'s ML amino acid in " + pair[1] + ", and vice versa.</li>\n")
+    fout.write("<li><strong>Type 2 Changes:</strong> the ML amino acid changed, but the ML residue in " + pair[0] + " is supported in " + pair[1] + ", or vice versa.</li>\n")
+    fout.write("<li><strong>Type 3 Changes:</strong> the ML state did not change, but either " + pair[0] + " or " + pair[1] + " has uncertainty about this state.</li>\n")
     fout.write("</ul>\n")
+        
+    #get_ml_sequence_from_file(path, getindels=False)
+    #for msa in ap.params["msa_algorithms"]:
+    #        for model in ap.params["raxml_models"]:
+    #            asrpath1 = msa + "/asr." + model + "/" + pair[0] + ".dat"
+    #            asrpath2 = msa + "/asr." + model + "/" + pair[1] + ".dat"
+    #            fout.write("<p>" + msa + ":" + model + ":" + get_ml_sequence_from_file(asrpath1, getindels=True) + "<\p>\n")
+    #            fout.write("<p>" + msa + ":" + model + ":" + get_ml_sequence_from_file(asrpath1, getindels=True) + "<\p>\n")
     
-    fout.write("<table width=\"100%\">\n")
     fin = open(pair[0] + "to" + pair[1] + "/ancestral_changes.txt", "r")
     for l in fin.xreadlines(): 
-        tokens = l.split("\t")
+        fout.write("<table width=\"100%\">\n")
+        tokens = l.split("\t")        
+
+        # Write a row for this msa and model
+        fout.write("<tr>\n")
+        if False == l.__contains__("Alignment") and l.__len__() > 2:
+            msa = tokens[0]
+            model = tokens[1]
+        
         if l.__contains__("Alignment"):
-            fout.write("<tr class=\"headerrow\">\n")
+            for tt in range(0, tokens.__len__()):
+                align = "left"
+                if tt > 1:
+                    align = "center"
+                t = tokens[tt]
+                fout.write("<th width=\"" + colwidth[tt] + "\" align='" + align + "'>" + t + "</th>")
         else:
-            fout.write("<tr>\n")
-        for t in tokens:
-            fout.write("<td>" + t + "</td>")
+            for tt in range(0, tokens.__len__()):
+                align = "left"
+                if tt > 1:
+                    align = "center"
+                t = tokens[tt]
+                if tt == tokens.__len__()-1: 
+
+                    fout.write("<td style='tinytext' width=\"" + colwidth[tt] + "\" align='" + align + "'>" + t + "</td>")
+                else:
+                    fout.write("<td width=\"" + colwidth[tt] + "\" align='" + align + "'>" + t + "</td>")
+
+        if False == l.__contains__("Alignment") and l.__len__() > 2:
+            fout.write("<td><div id='show" + msa + "." + model + "' style='display:block;'><a style='tinytext' onclick=\"toggle_visibility('tr" + msa + "." + model + "'); toggle_visibility('hide" + msa + "." + model + "'); toggle_visibility('show" + msa + "." + model + "');\">show details</a></div><div id='hide" + msa + "." + model + "' style='display:none;'><a style='tinytext' onclick=\"toggle_visibility('tr" + msa + "." + model + "'); toggle_visibility('hide" + msa + "." + model + "'); toggle_visibility('show" + msa + "." + model + "');\">hide details</a></div></td>")
+        else:
+            fout.write("<th>&nbsp;</th>")
         fout.write("</tr>\n")
-    fin.close()    
-    fout.write("</table>\n")
+        fout.write("</table>\n")
+        #fout.write("<br>\n")
+
+        if False == l.__contains__("Alignment") and l.__len__() > 2:
+            fout.write("<div style='display:none;' id='tr" + msa + "." + model + "'>\n")
+            fin = open(pair[0] + "to" + pair[1] + "/ancestral_changes." + msa + "." + model + ".html", "r")
+            for seql in fin.xreadlines():
+                fout.write(seql)
+            fin.close()
+            fout.write("</div>\n")
+    fin.close() 
+   
     
     fout.write("\n<hr>\n")
     
@@ -483,12 +542,12 @@ def write_anccomp_indi(pair):
     #
     #fout.write("<div id=\"chart_div\" style=\"width: 100%; height: 300px;\"></div>")
     fout.write("<h2>&Delta;F Scores</h2>\n")
-    fout.write("<h3>Scores Across Sequence Sites</h3>")
+    fout.write("<h3>Scores Across Sequence Sites:</h3>")
     fout.write("<p>Download: <a href='../" + pair[0] + "to" + pair[1] + "/Df-by-site.w=1.pdf'>pdf</a> | <a href='../" + pair[0] + "to" + pair[1] + "/Df-by-site.w=1.png'>png</a> | <a href='../" + pair[0] + "to" + pair[1] + "/Df-by-site.w=1.pdf.rscript'>R script</a> | <a href='../" + pair[0] + "to" + pair[1] + "/Df.ranked.txt'>spreadsheet</a></p>\n")
     fout.write("<a href='../" + pair[0] + "to" + pair[1] + "/Df-by-site.w=1.pdf'><img src='../" + pair[0] + "to" + pair[1] + "/Df-by-site.w=1.png'></a>\n")
     fout.write("<br>\n")
     
-    fout.write("<h3>Histogram of &Delta;F Scores</strong></h3>\n")
+    fout.write("<h3>Histogram of &Delta;F Scores:</strong></h3>\n")
     fout.write("<p>Download <a href='../" + pair[0] + "to" + pair[1] + "/Df-histogram.pdf'>pdf</a> | <a href='../" + pair[0] + "to" + pair[1] + "/Df-histogram.png'>png</a> | <a href='../" + pair[0] + "to" + pair[1] + "/Df-histogram.rscript'>R script</a></p>")
     fout.write("<a href='../" + pair[0] + "to" + pair[1] + "/Df-histogram.pdf'><img src='../" + pair[0] + "to" + pair[1] + "/Df-histogram.png'></a>\n")
     fout.write("<br>\n")
@@ -498,10 +557,10 @@ def write_anccomp_indi(pair):
     #
     
     fout.write("<br>\n")
-    fout.write("<h3>&Delta;F Scores By Site</h3>\n")
+    fout.write("<h3>&Delta;F Scores Ranked By Site:</h3>\n")
     fout.write("<p>Download: <a href='../" + pair[0] + "to" + pair[1] + "/Df.details.txt'>spreadsheet</a></p>")
     
-    fout.write("<h3>Full Details of &Delta;F Analaysis</strong></h3>")
+    fout.write("<h3>Full Details of &Delta;F Analaysis:</strong></h3>")
     fout.write("<p>Download: <a href='../" + pair[0] + "to" + pair[1] + "/summary.txt'>spreadsheet</a></p>")
     
     """
@@ -528,15 +587,15 @@ def write_anccomp_indi(pair):
     fout.close()
     
 def write_anccomp_plot(pair):
-    fout = open(HTMLDIR + "/sorttable.js", "w")
-    fout.write( get_sorttable() )
-    fout.close()
+    #fout = open(HTMLDIR + "/sorttable.js", "w")
+    #fout.write( get_sorttable() )
+    #fout.close()
     
     out = ""
     #
     # Sortable table stuff
     #
-    out += "<script src=\"sorttable.js\"></script>\n"
+    #out += "<script src=\"sorttable.js\"></script>\n"
     
     #
     # Google Chart Stuff
@@ -577,43 +636,15 @@ def write_anccomp_plot(pair):
     #
     # Collapsible div stuff. . .
     #
-    """
-    fout = open(HTMLDIR + "/animatedcollapse.js", "w")
-    fout.write( get_animated_div_script() )
-    fout.close()
-    
-    out += "<script type=\"text/javascript\" src=\"http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js\"></script>\n"
-    out += "<script type=\"text/javascript\" src=\"animatedcollapse.js\">\n"
-    out += "\n"
-    out += "/***********************************************\n"
-    out += "* Animated Collapsible DIV v2.4- (c) Dynamic Drive DHTML code library (www.dynamicdrive.com)\n"
-    out += "* This notice MUST stay intact for legal use\n"
-    out += "* Visit Dynamic Drive at http://www.dynamicdrive.com/ for this script and 100s more\n"
-    out += "***********************************************/\n"
-    out += "\n"
-    out += "</script>\n"
-    out += "\n"
-    out += "\n"
     out += "<script type=\"text/javascript\">\n"
-    out += "\n"
-    out += "animatedcollapse.addDiv('jason', 'fade=1,height=80px')\n"
-    out += "animatedcollapse.addDiv('kelly', 'fade=1,height=100px')\n"
-    out += "animatedcollapse.addDiv('michael', 'fade=1,height=120px')\n"
-    out += "\n"
-    out += "animatedcollapse.addDiv('cat', 'fade=0,speed=400,group=pets')\n"
-    out += "animatedcollapse.addDiv('dog', 'fade=0,speed=400,group=pets,persist=1,hide=1')\n"
-    out += "animatedcollapse.addDiv('rabbit', 'fade=0,speed=400,group=pets,hide=1')\n"
-    out += "\n"
-    out += "animatedcollapse.ontoggle=function($, divobj, state){ //fires each time a DIV is expanded/contracted\n"
-    out += "    //$: Access to jQuery\n"
-    out += "    //divobj: DOM reference to DIV being expanded/ collapsed. Use \"divobj.id\" to get its ID\n"
-    out += "    //state: \"block\" or \"none\", depending on state\n"
-    out += "}\n"
-    out += "\n"
-    out += "animatedcollapse.init()\n"
-    out += "\n"
+    out += "   function toggle_visibility(id) {\n"
+    out += "       var e = document.getElementById(id);\n"
+    out += "       if(e.style.display == 'block')\n"
+    out += "          e.style.display = 'none';\n"
+    out += "       else\n"
+    out += "          e.style.display = 'block';\n"
+    out += "   }\n"
     out += "</script>\n"
-    """
 
     return out
 
@@ -708,12 +739,19 @@ def write_css():
     fout.write(".aqua{color: #3399ff;}\n")
     fout.write(".yellow{color: #ffcc33;}\n")
     fout.write(".white{color: #ffffff;}\n")
+    
     fout.write(".redrow{background: #ffcccc;}\n")
     fout.write(".orangerow{background: #ffffcc;}\n")
     fout.write(".whiterow{background: #ffffff;}\n")
     fout.write(".bluerow{background: #C2E0FF;}\n")
+    
+    fout.write(".redtd{background: #ffcccc; font-size: 9pt;}\n")
+    fout.write(".orangetd{background: #ffffcc; font-size: 9pt;}\n")
+    fout.write(".whitetd{font-size: 9pt;}\n")
+    fout.write(".bluetd{background: #C2E0FF; font-size: 9pt;}\n")
     fout.write("\n")
     fout.write(".smalltext{font-size: 9pt;}\n")
+    fout.write(".tinytext{font-size: 5pt;}\n")
     fout.write("div{word-wrap: break-word;}\n")
     fout.write(".ppheader{background: #C0C0C0;}\n")
     fout.write(".headerrow{background: #C0C0C0; font-weight: bold; font-size: 12pt;}\n")
@@ -725,5 +763,24 @@ def write_css():
     fout.write(".pp5{background: #FFA07A;}\n")
     fout.write(".pplow{background: #FFB6C1;}\n")
     fout.write(".divInfo { display:block; }\n")
+    
+    fout.write()
+    fout.write(".#blanket {\n")
+    fout.write(".background-color:#111;\n")
+    fout.write(".opacity: 0.65;\n")
+    fout.write(".filter:alpha(opacity=65);\n")
+    fout.write("position:absolute;\n")
+    fout.write("z-index: 9001;\n")
+    fout.write("top:0px;\n")
+    fout.write("left:0px;\n")
+    fout.write("width:100%;\n")
+    fout.write("}\n")
+    fout.write("#popUpDiv {\n")
+    fout.write("position:absolute;\n")
+    fout.write("background-color:#eeeeee;\n")
+    fout.write("width:300px;\n")
+    fout.write("height:300px;\n")
+    fout.write("z-index: 9002;}\n")
+    
     fout.write("\n")
     fout.close()

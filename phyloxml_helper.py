@@ -1,5 +1,11 @@
 import os, re, sys, dendropy
-from Bio import Phylo
+import Bio
+if float(Bio.__version__) < 1.63:
+    print "\n\nPlease update your BioPython library."
+    print "You are currently using version", Bio.__version__
+    print "However, this ASR pipeline requires version 1.63 or newer."
+    exit()
+from Bio import Phylo # Note, this must be version 1.63 or newer.
 from tools import *
 
 def annotate_phyloxml(line, ancdir):
@@ -19,6 +25,7 @@ def annotate_phyloxml(line, ancdir):
         name = re.sub(" ", "", name)
         name = re.sub("<name>", "", name)
         name = re.sub("<\/name>", "", name)
+        #print "22: name=", name
         if name.isdigit(): # this taxa name is all numbers, and therefore, an ancestor
             line += "<annotation>"
             line += "<desc>Ancestor #" + name + "</desc>"
@@ -35,6 +42,7 @@ def newick_to_xml(dir, model):
 
     """Builds PhyloXML version of newick tree at npath."""
     tree = Phylo.read(npath,'newick')
+    #print "39:", tree
     xmlpath = re.sub(".tre", ".xml", npath)
     Phylo.write(tree, xmlpath, 'phyloxml')
     fin = open(xmlpath, "r")
