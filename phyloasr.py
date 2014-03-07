@@ -312,6 +312,36 @@ def get_getanc_commands(ap):
 
 #exit()
 
+def setup_pdb_maps(ap):
+    """The goal of this method is to build ap.params["map2pdb"][ anc ] from the PHYRE output folder."""
+        
+    if "phyre_out" not in ap.params:
+        return
+        #print "\n. I can't find any PHYRE output."
+    if False == os.path.exists(os.getcwd() + "/" + ap.params["phyre_out"]):
+        print "\n. I can't find your PHYRE output folder at", os.getcwd() + "/" + ap.params["phyre_out"]
+        print "\n. Check your configuration file and try again.\n"
+        exit()
+    if False == os.path.exists(os.getcwd() + "/" + ap.params["phyre_out"] + "/summaryInfo"):
+        print "\n. I can't find the file 'summaryInfo' in your PHYRE output folder at", ap.params["phyre_out"]
+        print "\n. Did your PHYRE output get corrupted or deleted?n"
+        exit()
+        
+    fin = open( os.getcwd() + "/" + ap.params["phyre_out"] + "/summaryInfo", "r" )
+    lines = fin.readlines()[1:]
+    for l in lines:
+        if l.__len__() > 2:
+            tokens = l.split()
+            datpath = tokens[0]
+            this_msa = datpath.split("/")[0]
+            this_model = datpath.split("/")[1].split(".")[1]
+            this_anc = datpath.split("/")[2].split(".")[0] 
+            
+            pdbpath = os.getcwd() + "/" + ap.params["phyre_out"] + "/" + tokens[2] + ".final.pdb"
+            
+            ap.params["map2pdb"][ this_anc ] = pdbpath
+    fin.close()
+
 #ap.params["compareanc"]
 def get_compareanc_commands(ap):
     compare_commands = []
@@ -334,8 +364,10 @@ def get_compareanc_commands(ap):
             
         specpath = "compare_ancs." + pair[0] + "-" + pair[1] + ".config.txt"
         fout = open(specpath, "w")
-        fout.write("seed " + ap.params["seedtaxa"][ pair[0] ] + "\n")
-        #fout.write(msapathlines)
+
+        fout.write("seed " + ap.params["seedtaxa"][ pair[1] ] + "\n")
+        if pair[1] in ap.params["map2pdb"]: # there was a definition to map scores on this PDB:
+            fout.write("pdb " + ap.params["map2pdb"][pair[1]] + "\n")
         fout.write(msanamelines)
         fout.write(comparelines)
         fout.write(weightlines)
@@ -358,6 +390,9 @@ def get_compareanc_commands(ap):
         c += " --runid " + pair[0] + "to" + pair[1]
         c += " --restrict_to_seed True"
         c += " --renumber_sites True"
+        if ap.params["do_pdb_analysis"]:
+            c += " --pdbtoolsdir " + ap.params["pdbtoolsdir"]
+            c += " --pymol_exe " + ap.params["pymol_exe"]
         #c += " --force_bin_width 0.25"
         #if startsite != None and endsite != None:
         #    c += " --highlight_sites " + startsite.__str__() + "-" + endsite.__str__()

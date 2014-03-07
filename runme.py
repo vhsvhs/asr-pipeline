@@ -6,6 +6,7 @@ from splash import *
 from read_config import *
 from run_msas import *
 from html_helper import *
+from struct_analysis import *
 
 print_splash()
 
@@ -73,6 +74,7 @@ if jump <= 6 and stop > 6:
     if "compareanc" in ap.params:
         if (jump > 4):
             get_mlalpha_pp(ap)
+        setup_pdb_maps(ap)
         x = get_compareanc_commands(ap)
         os.system( ap.params["run_exe"] + " " + x)
         #run_script(x)
@@ -87,7 +89,10 @@ if jump <= 7 and stop > 7:
     write_ancestors_indi() # write individual ancestor pages
 
 if jump <= 7.1 and stop > 7.1:
-    write_anccomp()
+    write_anccomp(ap)
+
+if jump <= 7.2 and stop > 7.3:
+    write_ancseq_fasta(ap)
 
 """The maximum jump step index is 100.  See the command-line argument --stop"""
 

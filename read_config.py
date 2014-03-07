@@ -59,6 +59,9 @@ def read_config_file(ap):
         elif tokens[0].startswith("ANCCOMP"):
             ap.params["anccomp"] = tokens[1].strip()
         
+        elif tokens[0].startswith("PYMOL"):
+            ap.params["pymol_exe"] = tokens[1].strip()
+        
         elif tokens[0].startswith("ALIGNMENT_ALGORITHMS"):
             x = tokens[1].split()
             ap.params["msa_algorithms"] = []
@@ -113,6 +116,8 @@ def read_config_file(ap):
             seed = tokens[0].split()[2]
             ap.params["seedtaxa"][ anc ] = re.sub(" ", "", seed)
 
+
+        
         elif tokens[0].startswith("COMPARE"):
             anc1 = tokens[0].split()[1]
             anc2 = tokens[0].split()[2]
@@ -127,6 +132,24 @@ def read_config_file(ap):
                 ap.params["usempi"] = True
             else:
                 ap.params["usempi"] = False
+        
+        elif tokens[0].startswith("PHYRE_OUTPUT"):
+            ap.params["phyre_out"] = re.sub("\ ", "", tokens[1])
+            ap.params["phyre_out"].strip()
+
+        elif tokens[0].startswith("PDBTOOLSDIR"):
+            ap.params["pdbtoolsdir"] = re.sub("\ ", "", tokens[1])
+            ap.params["pdbtoolsdir"].strip()
+
+        elif tokens[0].startswith("PYMOL"):
+            ap.params["pymol_exe"] = tokens[1].strip()
+
+        elif tokens[0].startswith("MAP2PDB"): # map Df scores for this ancestor onto the PDB path
+            anc = tokens[0].split()[1]
+            pdbpath = tokens[0].split()[2]
+            if "map2pdb" not in ap.params:
+                ap.params["map2pdb"] = {}
+            ap.params["map2pdb"][ anc ] = pdbpath
         
         elif tokens[0].startswith("HTML_SPECIAL1"):
             thing = ""
@@ -178,7 +201,15 @@ def verify_config(ap):
             print "\n. Something is wrong. Your config file doesn't have an executable path for MSAPROBS."
         if msa == "PRANK" and "prank_exe" not in ap.params:
             print "\n. Something is wrong. Your config file doesn't have an executable path for PRANK."
+    
+    if "map2pdb" not in ap.params:
+        ap.params["map2pdb"] = {}
         
+    if "pdbtoolsdir" in ap.params and "pymol_exe" in ap.params:
+        ap.params["do_pdb_analysis"] = True
+    else:
+        ap.params["do_pdb_analysis"] = False
+    
     return ap
 
 def print_config(ap):
