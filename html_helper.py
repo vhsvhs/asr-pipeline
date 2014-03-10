@@ -28,7 +28,9 @@ def get_header(head = "", urlpre = ""):
     if os.path.exists("SIMULATION"):
         h += " | <a href='" + urlpre + "errorsimulation.html'>Accuracy Assessment</a>"
     if os.path.exists("SCRIPTS/compareanc_commands.sh"):
-        h += " | <a href='" + urlpre + "anccomp.html'>Mutations</a>"    
+        pair = ap.params["compareanc"][ 0 ]
+        indi_path = pair[0] + "to" + pair[1] + ".html"
+        h += " | <a href='" + urlpre + indi_path + "'>Mutations</a>"    
     #
     # to-do: bayesian samples, with an interactive widget
     #
@@ -266,7 +268,7 @@ def pp_distro_to_html(data):
 
 def get_ppdistro_key():
     out = "<table>"
-    out += "<tr><td colspan=8 align='left' class='ppheader'><strong>Legend</strong></td></tr>\n"
+    out += "<tr><td colspan='8' align='left' class='ppheader'><strong>Legend</strong></td></tr>\n"
     out += "<tr>"
     out += "<td cellpadding=4>Probability:</td>"
     out += "<td class='ppfull'>1.0</td>"
@@ -430,132 +432,171 @@ def write_ancestors_indi():
                     fout.write(out)
 
 
-def write_anccomp(ap):
-    """Writes the header for the anccomp page, plus calls the method write_anccomp_indi."""
-    outpath = HTMLDIR + "/anccomp.html"
-    fout = open( outpath, "w")
-    fout.write( get_header() )
-    #fout.write("<h2>Predicting Functional Loci, Using &Delta;F</h2>\n")
-    #fout.write("<p>The following ancestors were compared using the &Delta;F metric (Hanson-Smith and Baker, 2014).</p>")
-
-    fout.write("<h3>Select a Phylogenetic Branch:</h3>\n")
-    fout.write("<ul>\n")
-    for pair in ap.params["compareanc"]:
-        write_anccomp_indi(pair, ap)
-        indi_path = pair[0] + "to" + pair[1] + ".html"
-        fout.write("<li><p>")
-        fout.write("<a href='" + indi_path + "'>")
-        fout.write(pair[0] + " to " + pair[1])
-        fout.write("</a>")
-        fout.write("</p></li>\n")
-    fout.write("</ul>\n")
-    fout.write( get_footer() )
-    fout.close()
+# def write_anccomp(ap):
+#     """Writes the header for the anccomp page, plus calls the method write_anccomp_indi."""
+#     outpath = HTMLDIR + "/anccomp.html"
+#     fout = open( outpath, "w")
+#     fout.write( get_header() )
+#     #fout.write("<h2>Predicting Functional Loci, Using &Delta;F</h2>\n")
+#     #fout.write("<p>The following ancestors were compared using the &Delta;F metric (Hanson-Smith and Baker, 2014).</p>")
+# 
+#     fout.write("<h3>Select a Phylogenetic Branch:</h3>\n")
+#     fout.write("<ul>\n")
+#     for pair in ap.params["compareanc"]:
+#         write_anccomp_indi(pair, ap)
+#         indi_path = pair[0] + "to" + pair[1] + ".html"
+#         fout.write("<li><p>")
+#         fout.write("<a href='" + indi_path + "'>")
+#         fout.write(pair[0] + " to " + pair[1])
+#         fout.write("</a>")
+#         fout.write("</p></li>\n")
+#     fout.write("</ul>\n")
+#     fout.write( get_footer() )
+#     fout.close()
     
+    
+def write_anccomp_header(ap):
+    """Returns an HTML fragment that is the sub-header bar for the Mutations page."""
+    frag = ""
+    frag += "<p>Select a branch: "
+    count = 0
+    for pair in ap.params["compareanc"]:
+        indi_path = pair[0] + "to" + pair[1] + ".html"
+        frag += "<a href='" + indi_path + "' class='smalltext'>"
+        frag += pair[0] + "&rarr;" + pair[1]
+        frag += "</a>"
+        count += 1
+        if count < ap.params["compareanc"].__len__():
+            frag += " | "
+    frag += "</p>\n"
+    frag += "<hr>"
+    return frag
     
 def write_anccomp_indi(pair, ap):
-    colwidth = {}
-    colwidth[0] = "10%"
-    colwidth[1] = "16%"
-    colwidth[2] = "10%"
-    colwidth[3] = "12%"
-    colwidth[4] = "12%"
-    colwidth[5] = "12%"
-    colwidth[6] = "12%"
-    colwidth[7] = "16%"
-    
     """Writes on HTML page for each ancestral comparison"""
     outpath = HTMLDIR + "/" + pair[0] + "to" + pair[1] + ".html"    
     fout = open( outpath, "w" )
     plotstring = write_anccomp_plot(pair)    
     fout.write( get_header(head=plotstring) )
+    fout.write ( write_anccomp_header(ap) )
+    
     fout.write("<h2>" + pair[0] + " &#10142; " + pair[1] + "</h2>\n")
-    fout.write("<p>On the phylogenetic branch(es) leading from " + pair[0] + " to " + pair[1] + ", several amino acid substitutions occurred. These substitutions can be classified into the following categories:</p>\n")
+    fout.write("<p>On the phylogenetic branch leading from " + pair[0] + " to " + pair[1] + ", several amino acid substitutions occurred. These substitutions can be classified into the following categories:</p>\n")
     
     fout.write("<ul>\n")    
     fout.write("<li><strong>Type 1:</strong> the maximum likelihood (ML) amino acid changed between " + pair[0] + " and " + pair[1] + ", and there is poor support for " + pair[0] + "'s ML amino acid in " + pair[1] + ", and vice versa.</li>\n")
     fout.write("<li><strong>Type 2:</strong> the ML amino acid changed, but the ML residue in " + pair[0] + " is supported as an alternate residue in " + pair[1] + ", or vice versa.</li>\n")
-    fout.write("<li><strong>Type 3:</strong> the ML state did not change, but either " + pair[0] + " or " + pair[1] + " has uncertainty about this state.</li>\n")
-    fout.write("<li><strong>Indel Events:</strong> a residue was inserted or deleted in the sequence.</li>\n")
+    #fout.write("<li><strong>Type 3:</strong> the ML state did not change, but there was a significant increase or decrease in the probabilistic support for the ML state.</li>\n")
+    fout.write("<li><strong>Indels:</strong> a residue was inserted or deleted in the sequence.</li>\n")
     fout.write("</ul>\n")
+    
+    fout.write("<p>The following table summarizes the number of sequence sites that were assigned to each category. The numbers vary depending on")
+    fout.write(" which alignment and phylogenetic model were used to reconstruct the ancestors. If you wish to use only")
+    fout.write(" one set of scores, then choose the alignment-model combination with the highest relative probability")
+    fout.write(" (<em>Rel. Prob.</em>). The results can be downloaded as a tab-sepearted spreadsheet, or viewed as a")
+    fout.write(" \"painted\" homology model in a saved PyMOL session.</p>\n")
         
-    #get_ml_sequence_from_file(path, getindels=False)
-    #for msa in ap.params["msa_algorithms"]:
-    #        for model in ap.params["raxml_models"]:
-    #            asrpath1 = msa + "/asr." + model + "/" + pair[0] + ".dat"
-    #            asrpath2 = msa + "/asr." + model + "/" + pair[1] + ".dat"
-    #            fout.write("<p>" + msa + ":" + model + ":" + get_ml_sequence_from_file(asrpath1, getindels=True) + "<\p>\n")
-    #            fout.write("<p>" + msa + ":" + model + ":" + get_ml_sequence_from_file(asrpath1, getindels=True) + "<\p>\n")
     
-    
+    #
+    # Parse the data in **/ancestral_changes.txt and turn it into a table.
+    # Some additional columns get injected into this data (see below)
+    #    
     fin = open(pair[0] + "to" + pair[1] + "/ancestral_changes.txt", "r")
-    for l in fin.xreadlines(): 
-        fout.write("<table width=\"100%\">\n")
-        tokens = l.split("\t")        
-
+    line_tokens = []
+    for l in fin.xreadlines():
+        if False == l.__contains__("Alignment"):
+            tokens = l.split("\t") # the file is tab separated
+            line_tokens.append( tokens )
+    fin.close()
+    
+    fout.write("<table width=\"100%\">\n")
+    # Write the header row:
+    fout.write("<tr>")
+    fout.write("<th>&nbsp;</th>")
+    fout.write("<th align='center' >Alignment</th>")
+    fout.write("<th align='center'>Model</th>")
+    fout.write("<th align='center'>Rel. Prob.</th>")
+    fout.write("<th align='center'>Indels</th>")
+    fout.write("<th align='center'>Type 1</th>")
+    fout.write("<th align='center'>Type 2</th>")
+    #fout.write("<th align='center'>Type 3</th>")
+    fout.write("<th align='center'>Download</th>")
+    fout.write("</tr>\n")
+    
+    # For each msa-model combo:
+    for ii in range(0, line_tokens.__len__() ):
+        tokens = line_tokens[ii]
+       
         # Write a row for this msa and model
         fout.write("<tr>\n")
-        if False == l.__contains__("Alignment") and l.__len__() > 2:
-            msa = tokens[0]
-            model = tokens[1]
+            
+        msa = tokens[0]
+        model = tokens[1]
         
-        if l.__contains__("Alignment"):
-            #fout.write("<th>&nbsp;</th>")
-            for tt in range(0, tokens.__len__()):
-                align = "left"
-                if tt > 1:
-                    align = "center"
-                t = tokens[tt]
-                fout.write("<th width=\"" + colwidth[tt] + "\" align='" + align + "'>" + t + "</th>")
-        else:
-            #fout.write("<td><p style='tinytext'><a onclick=\"toggle_visibility('tr" + msa + "." + model + "'); toggle_visibility('hide" + msa + "." + model + "'); toggle_visibility('show" + msa + "." + model + "');\">(X)</a></p></td>")
-            for tt in range(0, tokens.__len__()):
-                align = "left"
-                if tt > 1:
-                    align = "center"
-                t = tokens[tt]
-                if tt == tokens.__len__()-1: 
-
-                    fout.write("<td style='tinytext' width=\"" + colwidth[tt] + "\" align='" + align + "'><p>" + t + "</p></td>")
-                else:
-                    fout.write("<td width=\"" + colwidth[tt] + "\" align='" + align + "'><p>" + t + "</p></td>")
-
-        if False == l.__contains__("Alignment") and l.__len__() > 2:
-            fout.write("<td align='center'>")
-            fout.write("<div id='show" + msa + "." + model + "' style='display:block; background:#ffff99;'>")
-            fout.write("<p><a onclick=\"toggle_visibility('tr" + msa + "." + model + "'); ")
-            fout.write("    toggle_visibility('hide" + msa + "." + model + "'); ")
-            fout.write("    toggle_visibility('show" + msa + "." + model + "');\">(+) show details</a></p></div>")
-            fout.write("<div id='hide" + msa + "." + model + "' style='display:none; background:#ffff99;'>")
-            fout.write("<p><a onclick=\"toggle_visibility('tr" + msa + "." + model + "'); ")
-            fout.write("    toggle_visibility('hide" + msa + "." + model + "'); ")
-            fout.write("    toggle_visibility('show" + msa + "." + model + "');\">(-) hide details</a></p></div>")
-            fout.write("</td>")
-        else:
-            fout.write("<th>&nbsp;</th>")
+        # Insert a column with the +/- toggle details button
+        fout.write("<td align='center'>")
+        fout.write("<div id='show" + msa + "." + model + "' style='display:block; background:#ffff99;'>")
+        fout.write("<a tabindex='0' class='smalltext' onclick=\"toggle_visibility('tr" + msa + "." + model + "'); ")
+        fout.write("    toggle_visibility('hide" + msa + "." + model + "'); ")
+        fout.write("    toggle_visibility('show" + msa + "." + model + "');\">&darr; show</a></div>")
+        fout.write("<div id='hide" + msa + "." + model + "' style='display:none; background:#ffff99;'>")
+        fout.write("<a tabindex='0' class='smalltext'  onclick=\"toggle_visibility('tr" + msa + "." + model + "'); ")
+        fout.write("    toggle_visibility('hide" + msa + "." + model + "'); ")
+        fout.write("    toggle_visibility('show" + msa + "." + model + "');\">&uarr; hide</a></div>")
+        fout.write("</td>")
+        
+        # Get the PP for this msa-model
+        model_data = read_lnllog(msa)
+        pp = model_data[model][1]
+    
+        fout.write("<td align='center'><p>" + tokens[0] + "</p></td>") #msa
+        fout.write("<td align='center'><p>" + tokens[1] + "</p></td>") #model
+        fout.write("<td align='center'><p>" + pp +        "</p></td>") #pp
+        fout.write("<td align='center'><p>" + tokens[2] +  "</p></td>") #indels
+        fout.write("<td align='center'><p>" + tokens[3] +  "</p></td>") # type 1
+        fout.write("<td align='center'><p>" + tokens[4] +  "</p></td>") # type 2
+        #fout.write("<td align='center'><p>" + tokens[5] +  "</p></td>") # type 3
+        
+        # Insert a column to download a spreadsheet with Type 1/2/3 scores for every site in this msa-model combo.
+        fout.write("<td>")
+        fout.write("<p><a href=\"../" + pair[0] + "to" + pair[1] + "/ancestral_changes." + msa + "." + model + ".txt\">spreadsheet</a>")
+        if ap.params["do_pdb_analysis"]:
+            fout.write(" | <a href=\"../" + pair[0] + "to" + pair[1] + "/pymol_script.types." + msa + "." + model + "." + pair[1] + ".pse\">pymol</a>")   
+        fout.write("</p>")    
+        fout.write("</td>")
+        
+        fout.write("</tr>\n") # close the row for this msa-model combo.
+        
+        # Write a hidden row containing details.
+        
+        fout.write("<tr>")
+        fout.write("<td colspan='9'>")
+        
+        # Div outer
+        fout.write("<div width='100\%' align='left' style='display:none;' id='tr" + msa + "." + model + "'>\n")
+        
+        fout.write("<hr class='thinhr'>")
+        
+        # Key:
+        fout.write("<table width='40%' align='center'><tr><td align='center'><p class='smalltext'>Key:</p></td><td class='redrow' align='center'><p class='smalltext'>Type 1</p></td><td class='orangerow' align='center'><p class='smalltext'>Type 2</p></td><td class='bluerow' align='center'><p class='smalltext'>Type 3</p></td><td class='indelrow' align='center'><p class='smalltext'>Indel Event</p></td></tr></table>")
+        
+        # HTML table, pre-built by anccomp_tools.py
+        fout.write("<hr class='thinhr'>")
+        
+        fout.write("<div align='left'>\n")
+        fin = open(pair[0] + "to" + pair[1] + "/ancestral_changes." + msa + "." + model + ".html", "r")
+        for seql in fin.xreadlines():
+            fout.write(seql)
+        fin.close()
+        fout.write("</div>")
+        fout.write("<hr class='thinhr'>")
+        fout.write("</div>\n") # close Div outer
+        
+        fout.write("</td>")
         fout.write("</tr>\n")
-        fout.write("</table>\n")
-        #fout.write("<br>\n")
+        
 
-        if False == l.__contains__("Alignment") and l.__len__() > 2:
-            fout.write("<div align='left' style='display:none;' id='tr" + msa + "." + model + "'>\n")
-            fout.write("<hr class='thinhr'>")
-            
-            # Key:
-            fout.write("<table width='40%' align='center'><tr><td align='center'><p class='smalltext'>Key:</p></td><td class='redrow' align='center'><p class='smalltext'>Type 1</p></td><td class='orangerow' align='center'><p class='smalltext'>Type 2</p></td><td class='bluerow' align='center'><p class='smalltext'>Type 3</p></td><td class='indelrow' align='center'><p class='smalltext'>Indel Event</p></td></tr></table>")
-            
-            # HTML table, pre-built by anccomp_tools.py
-            fout.write("<hr class='thinhr'>")
-            fout.write("<div align='left'>\n")
-            fin = open(pair[0] + "to" + pair[1] + "/ancestral_changes." + msa + "." + model + ".html", "r")
-            for seql in fin.xreadlines():
-                fout.write(seql)
-            fin.close()
-            fout.write("</div>")
-            fout.write("<hr class='thinhr'>")
-            fout.write("</div>\n")
-    fin.close() 
-   
+    fout.write("</table>\n")
     
     fout.write("\n<hr>\n")
     
@@ -563,68 +604,126 @@ def write_anccomp_indi(pair, ap):
     # Score across sites
     #
     #fout.write("<div id=\"chart_div\" style=\"width: 100%; height: 300px;\"></div>")
-    fout.write("<h2>&Delta;F Scores</h2>\n")
-    fout.write("<p>The &Delta;F metric ranks the shift in entropy between two ancestral amino acid probability distributions, ")
-    fout.write("from an ancient ancestor and a more-recently derived ancestor.")
-    fout.write("Sites with extreme &Delta;F scores (either positive or negative) should be considered strong hypotheses ")
-    fout.write(" for genetic loci that caused changes to the overall protein function. Sites with positive &Delta;F scores indicate that ")
+    fout.write("<h2>Prediction of Function-Shifting Mutations</h2>\n")
+    fout.write("<p>The amino acid posterior probability distributions from " + pair[0] + " and " + pair[1])
+    fout.write(" were compared at every sequence site, in order to detect statistical signatures of functional evolution. ")
+    fout.write("A composite metric, called &Delta;F, was used to compare probability distributions.")
+    fout.write(" Sites with extreme &Delta;F scores (either positive or negative) should be considered strong hypotheses ")
+    fout.write(" for genetic loci at which historic mutations may have changed to the overall protein function. Sites with positive &Delta;F scores indicate that ")
     fout.write("the derived ancestor gained conservation at that site, which may have played a role in constructing or shifting ")
-    fout.write(" the protein's function. Sites with negative $Delta;F scores indicate that ")
+    fout.write(" the protein's function. Sites with negative &Delta;F scores indicate that ")
     fout.write("the derived ancestor lost conservation at the site, which may have played a role in degenerating or relaxing ")
     fout.write(" the protein's function.</p>\n")
-
-    fout.write("<div align='center'>")
-    fout.write("<table width='50%'>\n")
-    fout.write("<tr>")
-    fout.write("<td>")
-    fout.write("<h3>&Delta;F Scores, Ranked:</h3>\n")
-    fout.write("<p>Download: <a href='../" + pair[0] + "to" + pair[1] + "/Df.details.txt'>spreadsheet</a></p>")
-    fout.write("</td>")
-    fout.write("<td>")
-    fout.write("<h3>Full Details of &Delta;F Analaysis:</strong></h3>")
-    fout.write("<p>Download: <a href='../" + pair[0] + "to" + pair[1] + "/summary.txt'>spreadsheet</a></p>")
-    fout.write("<td>")
-    fout.write("</tr>\n")
-    fout.write("</table>\n")
-    fout.write("</div>\n")
     
+    fout.write("<p>The following tables present the &Delta;F scores in multiple different formats and graphic formats.")
+    fout.write("A &Delta;F score at a site is a composite of two scores: (1) the KL Divergence (<em>k</em>) between the probability distributions of " + pair[0] + " and " + pair[1])
+    fout.write(", and (1) the extent of model violation (<em>p</em>) between the two probability distributions, given their phylogenetic distance.")
+    
+    fout.write("<p>In the following tables, the scores for &Delta;F, <em>k</em>, and <em>p</em> are presented in multiple formats.</p>")
+
+    fout.write("<h3>All Data:</h3>")
+    
+    fout.write("<p>Scores Ranked: <a href='../" + pair[0] + "to" + pair[1] + "/Df.details.txt'>text file</a></p>\n")
+    fout.write("<p>Scores by Site: <a href='../" + pair[0] + "to" + pair[1] + "/Df.details.txt'>spreadsheet</a></p>\n")
+
+    #fout.write("<p align='left'>Peaks: Download: <a href='../" + pair[0] + "to" + pair[1] + "/Df-by-site.w=1.pdf'>pdf</a> | <a href='../" + pair[0] + "to" + pair[1] + "/Df-by-site.w=1.png'>png</a> | <a href='../" + pair[0] + "to" + pair[1] + "/Df-by-site.w=1.pdf.rscript'>R script</a> | <a href='../" + pair[0] + "to" + pair[1] + "/Df.ranked.txt'>spreadsheet</a></p>\n")
+    #fout.write("<a href='../" + pair[0] + "to" + pair[1] + "/Df-by-site.w=1.pdf'><img width='200px' src='../" + pair[0] + "to" + pair[1] + "/Df-by-site.w=1.png'></a>\n")
+    #fout.write("<br>\n")
+    
+    #fout.write("<p align='left'>Download <a href='../" + pair[0] + "to" + pair[1] + "/Df-histogram.pdf'>pdf</a> | <a href='../" + pair[0] + "to" + pair[1] + "/Df-histogram.png'>png</a> | <a href='../" + pair[0] + "to" + pair[1] + "/Df-histogram.rscript'>R script</a></p>")
+    #fout.write("<a href='../" + pair[0] + "to" + pair[1] + "/Df-histogram.pdf'><img width='200px' src='../" + pair[0] + "to" + pair[1] + "/Df-histogram.png'></a>\n")
+    #fout.write("<br>\n")
+    
+    
+    #
+    # Write the scores into an interactive table. . . 
+    #
     fout.write("<hr class='thinhr'>")
-    
-    #fout.write("<h3>&Delta;F Scores Across Sequence Sites:</h3>")
-    fout.write("<p align='left'>Download: <a href='../" + pair[0] + "to" + pair[1] + "/Df-by-site.w=1.pdf'>pdf</a> | <a href='../" + pair[0] + "to" + pair[1] + "/Df-by-site.w=1.png'>png</a> | <a href='../" + pair[0] + "to" + pair[1] + "/Df-by-site.w=1.pdf.rscript'>R script</a> | <a href='../" + pair[0] + "to" + pair[1] + "/Df.ranked.txt'>spreadsheet</a></p>\n")
-    fout.write("<a href='../" + pair[0] + "to" + pair[1] + "/Df-by-site.w=1.pdf'><img src='../" + pair[0] + "to" + pair[1] + "/Df-by-site.w=1.png'></a>\n")
-    fout.write("<br>\n")
-    
-    fout.write("<p align='left'>Download <a href='../" + pair[0] + "to" + pair[1] + "/Df-histogram.pdf'>pdf</a> | <a href='../" + pair[0] + "to" + pair[1] + "/Df-histogram.png'>png</a> | <a href='../" + pair[0] + "to" + pair[1] + "/Df-histogram.rscript'>R script</a></p>")
-    fout.write("<a href='../" + pair[0] + "to" + pair[1] + "/Df-histogram.pdf'><img src='../" + pair[0] + "to" + pair[1] + "/Df-histogram.png'></a>\n")
-    fout.write("<br>\n")
-    
-    #
-    #
-    #
-    if ap.params["do_pdb_analysis"]:
-        fout.write("<hr>\n")
-        fout.write("<h3>&Delta;F Scores on Structural Homology Models</h3>\n")
-        fout.write("<table>\n")
-        fout.write("<tr>\n")
-        for metric in ["Df", "k", "p"]:
-            fout.write("<td>")
-            fout.write("<a href=\"../" + pair[0] + "to" + pair[1] + "/pymol_script." + metric + "." + pair[1] + ".pse\">")
-            fout.write("<img width=\"200px\" height=\"200px\" src=\"../" + pair[0] + "to" + pair[1] + "/pymol_ray." + metric + "." + pair[1] + ".png\">\n")
-            fout.write("</a>")
-            fout.write("</td>")
-        fout.write("</tr>\n")
+    fout.write("<h3>Scores for each alignment-model combination:</h3>")
+    fout.write("<table width=\"100%\">\n")
+    # Write the header row:
+    fout.write("<tr>")
+    #fout.write("<th>&nbsp;</th>")
+    fout.write("<th align='center' >Alignment</th>")
+    fout.write("<th align='center'>Model</th>")
+    fout.write("<th align='center'>Rel. Prob.</th>")
+    fout.write("<th align='center'>Df Scores</th>")
+    fout.write("<th align='center'>K Scores</th>")
+    fout.write("<th align='center'>P Scores</th>")
+    fout.write("</tr>\n")
 
-        fout.write("<tr>\n")
-        for metric in ["Df", "k", "p"]:
-            fout.write("<td align='center'><p>" + metric + " scores</p></td>")
-        fout.write("</tr>")
-        
-        fout.write("<tr>\n")
-        for metric in ["Df", "k", "p"]:
-            fout.write("<td align='center'><p>Download: <a href=\"../" + pair[0] + "to" + pair[1] + "/pymol_script." + metric + "." + pair[1] + ".pse\"><p>pymol</a></p></td>")
-        fout.write("</tr>")
-        fout.write("</table>\n")
+    fout.write("<tr>")
+    
+    # Insert a column with the +/- toggle details button
+    """
+    fout.write("<td align='center'>")
+    fout.write("<div id='show" + msa + "." + model + "' style='display:block; background:#ffff99;'>")
+    fout.write("<a tabindex='0' class='smalltext' onclick=\"toggle_visibility('tr" + msa + "." + model + "'); ")
+    fout.write("    toggle_visibility('hide" + msa + "." + model + "'); ")
+    fout.write("    toggle_visibility('show" + msa + "." + model + "');\">&darr; show</a></div>")
+    fout.write("<div id='hide" + msa + "." + model + "' style='display:none; background:#ffff99;'>")
+    fout.write("<a tabindex='0' class='smalltext'  onclick=\"toggle_visibility('tr" + msa + "." + model + "'); ")
+    fout.write("    toggle_visibility('hide" + msa + "." + model + "'); ")
+    fout.write("    toggle_visibility('show" + msa + "." + model + "');\">&uarr; hide</a></div>")
+    fout.write("</td>")
+    """
+    
+    fout.write("<td align='center' colspan='2'>Bayesian average</td>\n")
+    fout.write("<td align='center'>n/a</td>\n")
+    
+    for metric in ["Df", "k", "p"]:
+        fout.write("<td align='left' class='smalltext'>")
+        fout.write("peaks: <a href='../" + pair[0] + "to" + pair[1] + "/" + metric + "-by-site.w=1.png'>png</a> | <a href='../" + pair[0] + "to" + pair[1] + "/" + metric + "-by-site.w=1.pdf'>pdf</a> | <a href='../" + pair[0] + "to" + pair[1] + "/" + metric + "-by-site.w=1.pdf.rscript'>R script</a>")
+        fout.write("<br>")
+        fout.write("histogram: <a href='../" + pair[0] + "to" + pair[1] + "/" + metric + "-histogram.png'>png</a> | <a href='../" + pair[0] + "to" + pair[1] + "/" + metric + "-histogram.pdf'>pdf</a> | <a href='../" + pair[0] + "to" + pair[1] + "/" + metric + "pdf-histogram.rscript'>R script</a>")
+        fout.write("<br>")
+        if ap.params["do_pdb_analysis"]:
+            fout.write("structure: <a href='../" + pair[0] + "to" + pair[1] + "/pymol_script.scores." + metric + "." + pair[0] + ".pse'>pymol</a> | <a href='../" + pair[0] + "to" + pair[1] + "/pymol_ray.scores." + metric + "." + pair[1] + ".png'>png</a>")
+            fout.write("</td>\n")
+
+    fout.write("</tr>\n")
+    
+    for msa in ap.params["msa_algorithms"]:
+        for model in ap.params["raxml_models"]:
+            testpath = "../" + pair[0] + "to" + pair[1] + "/Df-pdf-by-site.w=1.rscript"
+            #if False == os.path.exists( testpath ):
+            #    continue
+            
+            fout.write("<tr>")
+            
+            # Insert a column with the +/- toggle details button
+            """
+            fout.write("<td align='center'>")
+            fout.write("<div id='show" + msa + "." + model + "' style='display:block; background:#ffff99;'>")
+            fout.write("<a tabindex='0' class='smalltext' onclick=\"toggle_visibility('tr" + msa + "." + model + "'); ")
+            fout.write("    toggle_visibility('hide" + msa + "." + model + "'); ")
+            fout.write("    toggle_visibility('show" + msa + "." + model + "');\">&darr; show</a></div>")
+            fout.write("<div id='hide" + msa + "." + model + "' style='display:none; background:#ffff99;'>")
+            fout.write("<a tabindex='0' class='smalltext'  onclick=\"toggle_visibility('tr" + msa + "." + model + "'); ")
+            fout.write("    toggle_visibility('hide" + msa + "." + model + "'); ")
+            fout.write("    toggle_visibility('show" + msa + "." + model + "');\">&uarr; hide</a></div>")
+            fout.write("</td>")
+            """
+            
+            fout.write("<td align='center'>" + msa + "</td>\n")
+            fout.write("<td align='center'>" + model + "</td>\n")
+            
+            model_data = read_lnllog(msa)
+            pp = model_data[model][1]
+            fout.write("<td align='center'>" + pp + "</td>\n")
+            
+            for metric in ["Df", "k", "p"]:
+                fout.write("<td align='left' class='smalltext'>")
+                fout.write("peaks: <a href='../" + pair[0] + "to" + pair[1] + "/" + metric + "-by-site.w=1.png'>png</a> | <a href='../" + pair[0] + "to" + pair[1] + "/" + metric + "-by-site.w=1.pdf'>pdf</a> | <a href='../" + pair[0] + "to" + pair[1] + "/" + metric + "-by-site.w=1.pdf.rscript'>R script</a>")
+                fout.write("<br>")
+                fout.write("histogram: <a href='../" + pair[0] + "to" + pair[1] + "/" + metric + "-histogram.png'>png</a> | <a href='../" + pair[0] + "to" + pair[1] + "/" + metric + "-histogram.pdf'>pdf</a> | <a href='../" + pair[0] + "to" + pair[1] + "/" + metric + "pdf-histogram.rscript'>R script</a>")
+                fout.write("<br>")
+                if ap.params["do_pdb_analysis"]:
+                    fout.write("structure: <a href='../" + pair[0] + "to" + pair[1] + "/pymol_script.scores." + metric + "." + msa + "." + model + "." + pair[1] + ".pse'>pymol</a> | <a href='../" + pair[0] + "to" + pair[1] + "/pymol_ray.scores." + metric + "." + msa + "." + model + "." + pair[1] + ".png'>png</a>")
+                    fout.write("</td>\n")
+
+            fout.write("</tr>\n")
+    fout.write("</table>\n")
     
     #
     # Print the detailed sites summary (pre-computed in a text file).
@@ -667,45 +766,9 @@ def write_anccomp_indi(pair, ap):
                     msa_site_pp[last_msa][site] += l 
                 else:
                     msa_site_pp[last_msa][site] = l
-    
-    """
-    fout.write("<table width='100%'>\n")
-    fout.write("<tr>")
-    fout.write("<th>Alignment</th><th>Model</th><th>Rel. Probability</th><th>show Df scores</th>\n")
-    fout.write("</tr>\n")
-    for msa in msa_site_df:
-        msanick = msa.split(".")[0]
-        model
-        if msa != "averaged":
-            print msa
-            #model = msa.split(".")[1]
-            model_data = read_lnllog(msanick)
-
-        fout.write("<tr>")
-        if msa != "averaged":
-            fout.write("<td>" + msa + "</td><td>" + model + "</td><td>" + "%.3f"%model_data[model][1] + "</td><td onclick=\"toggle_visibility('tr" + msa + "');>show Df scores</td>\n")
-        else:
-            fout.write("<td>averaged</td><td>averaged</td><td>n/a</td><td onclick=\"toggle_visibility('tr" + msa + "');>show Df scores</td>\n")
-        fout.write("</tr>\n")    
-        fout.write("<tr id='tr" + msa + "'><td  colspan=\"4\"><div width='100%'>")
-        fout.write("<table>")
-        fout.write("<tr>\n")
-        fout.write("<th>Df Score</th><th>Site #</th><th>Site in Seed</th><th>Probabilities:</th>\n")
-        fout.write("</tr>\n")
-        for site in msa_site_df[msa]:
-            fout.write("<tr>\n")
-            fout.write("<td><p class='smalltext'>" + msa_site_df[msa][site] + "</p></td>")
-            fout.write("<td><p class='smalltext'>" + site + "</p></td>")
-            fout.write("<td><p class='smalltext'>???</p></td>")
-            fout.write("<td><p class='smalltext'>" + msa_site_pp[msa][site] + "</p></td>")
-            fout.write("</tr>\n")
-        fout.write("</table>")
-        fout.write("</div></td></tr>\n")
-    fout.write("</table>\n")
-    """
-    
+        
     fin.close()
-    fout.write("<hr>\n")
+    
     fout.write("")
 
     
@@ -771,18 +834,20 @@ def write_anccomp_plot(pair):
     out += "chart.draw(data, options);"
     out += "}"
     
-    out += "\nfunction ToggleList(IDS) {\n"
-    out += "var CState = document.getElementById(IDS);\n"
-    out += "if (CState.style.display != \"none\") { CState.style.display = \"none\"; }\n"
-    out += "else { CState.style.display = \"block\"; }\n"
-    out += "}\n"
-    
-    out += "</script>"
+    #
+    # depricated? - I think everyone is using toggle_visibility now, rather than ToggleList
+    # Hide/Collapse button
+    #
+    #out += "\nfunction ToggleList(IDS) {\n"
+    #out += "var CState = document.getElementById(IDS);\n"
+    #out += "if (CState.style.display != \"none\") { CState.style.display = \"none\"; }\n"
+    #out += "else { CState.style.display = \"block\"; }\n"
+    #out += "}\n"
     
     #
     # Collapsible div stuff. . .
     #
-    out += "<script type=\"text/javascript\">\n"
+    out += "\n"
     out += "   function toggle_visibility(id) {\n"
     out += "       var e = document.getElementById(id);\n"
     out += "       if(e.style.display == 'block')\n"
@@ -790,6 +855,10 @@ def write_anccomp_plot(pair):
     out += "       else\n"
     out += "          e.style.display = 'block';\n"
     out += "   }\n"
+    
+    
+    
+    
     out += "</script>\n"
 
     return out
@@ -808,27 +877,39 @@ def write_css():
     fout.write("font-family: sans-serif;\n")
     fout.write("line-height: 140%;\n")
     fout.write("}\n")
+    
+    fout.write(".buttontext {\n")
+    fout.write("color: #0066ff;\n")
+    fout.write("text-decoration: none;\n")
+    fout.write("cursor: pointer;}\n")
+
     fout.write("a:link {\n")
     fout.write("text-decoration: none;\n")
     fout.write("color: #0066ff;\n")
+    fout.write("cursor: pointer;\n")    
     fout.write("}\n")
     fout.write("a:visited {\n")
     fout.write("color: #0066ff;\n")
     fout.write("text-decoration: none;\n")
+    fout.write("cursor: pointer;\n")    
     fout.write("}\n")
     fout.write("a:mouseover {\n")
     fout.write("color: #ff9900;\n")
     fout.write("text-decoration: underline;\n")
+    fout.write("cursor: pointer;\n")    
     fout.write("}\n")
     fout.write("a:hover {\n")
     fout.write("color: #ff9900;\n")
     fout.write("text-decoration: underline;\n")
+    fout.write("cursor: pointer;\n")    
     fout.write("}\n")
     fout.write("a:active {\n")
     fout.write("text-decoration: none;\n")
     fout.write("color: #0066ff;\n")
+    fout.write("cursor: pointer;\n")    
     fout.write("}\n")
     fout.write("\n")
+    
     fout.write("h1{ /* Big titles */\n")
     fout.write("color: #444444;\n")
     fout.write("font-size: 25pt;\n")

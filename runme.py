@@ -89,7 +89,8 @@ if jump <= 7 and stop > 7:
     write_ancestors_indi() # write individual ancestor pages
 
 if jump <= 7.1 and stop > 7.1:
-    write_anccomp(ap)
+    for pair in ap.params["compareanc"]:
+        write_anccomp_indi(pair, ap)
 
 if jump <= 7.2 and stop > 7.3:
     write_ancseq_fasta(ap)
