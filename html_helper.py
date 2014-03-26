@@ -511,7 +511,7 @@ def write_anccomp_indi(pair, ap):
     fout.write(pair[1] + " acquired a substitution that was poorly conserved in descendants, which may have played a role in degenerating or relaxing ")
     fout.write(" the protein's function.</p>\n")
     
-    fout.write("<p>The following tables present the &Delta;F scores in multiple different formats and graphic formats.")
+    fout.write("<p>The following tables present the &Delta;F scores in multiple different formats.")
     fout.write("The &Delta;F score at each site is a composite of two metrics: (1) the KL Divergence (<em>i.e., k</em>) between the probability distributions of " + pair[0] + " and " + pair[1])
     fout.write(", and (2) the extent of model violation (<em>i.e., p</em>) between the two probability distributions, given their phylogenetic distance.")
     
