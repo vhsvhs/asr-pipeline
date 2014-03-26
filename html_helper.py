@@ -575,7 +575,7 @@ def write_anccomp_indi(pair, ap):
         fout.write("histogram: <a href='../" + pair[0] + "to" + pair[1] + "/" + metric + "-histogram.png'>png</a> | <a href='../" + pair[0] + "to" + pair[1] + "/" + metric + "-histogram.pdf'>pdf</a> | <a href='../" + pair[0] + "to" + pair[1] + "/" + metric + "-pdf-histogram.rscript'>R script</a>")
         fout.write("<br>")
         if ap.params["do_pdb_analysis"]:
-            fout.write("structure: <a href='../" + pair[0] + "to" + pair[1] + "/pymol_script.scores." + metric + "." + pair[0] + ".pse'>pymol</a> | <a href='../" + pair[0] + "to" + pair[1] + "/pymol_ray.scores." + metric + "." + pair[1] + ".png'>png</a>")
+            fout.write("structure: <a href='../" + pair[0] + "to" + pair[1] + "/pymol_script.scores." + metric + "." + pair[1] + ".pse'>pymol</a> | <a href='../" + pair[0] + "to" + pair[1] + "/pymol_ray.scores." + metric + "." + pair[1] + ".png'>png</a>")
             fout.write("</td>\n")
 
     fout.write("</tr>\n")
