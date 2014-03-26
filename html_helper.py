@@ -29,7 +29,7 @@ def get_header(head = "", urlpre = ""):
         h += " | <a href='" + urlpre + "errorsimulation.html'>Accuracy Assessment</a>"
     if os.path.exists("SCRIPTS/compareanc_commands.sh"):
         pair = ap.params["compareanc"][ 0 ]
-        indi_path = pair[0] + "to" + pair[1] + ".html"
+        indi_path = pair[0] + "to" + pair[1] + ".mutations.html"
         h += " | <a href='" + urlpre + indi_path + "'>Mutations</a>"    
         indi_path = pair[0] + "to" + pair[1] + ".anccomp.html"
         h += " | <a href='" + urlpre + indi_path + "'>Functional Loci</a>"
