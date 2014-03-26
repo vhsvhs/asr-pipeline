@@ -517,7 +517,7 @@ def write_anccomp_indi(pair, ap):
     
     fout.write("<h3>Download:</h3>")
     fout.write("<p>Scores Ranked: <a href='../" + pair[0] + "to" + pair[1] + "/Df.details.txt'>text file</a></p>\n")
-    fout.write("<p>Scores by Site: <a href='../" + pair[0] + "to" + pair[1] + "/Df.details.txt'>spreadsheet</a></p>\n")
+    #fout.write("<p>Scores by Site: <a href='../" + pair[0] + "to" + pair[1] + "/Df.details.txt'>spreadsheet</a></p>\n")
 
     fout.write("<p align='left'>Scores Across Sequence Sites: <a href='../" + pair[0] + "to" + pair[1] + "/Df-by-site.w=1.pdf'>pdf</a> | <a href='../" + pair[0] + "to" + pair[1] + "/Df-by-site.w=1.png'>png</a> | <a href='../" + pair[0] + "to" + pair[1] + "/Df-by-site.w=1.pdf.rscript'>R script</a> | <a href='../" + pair[0] + "to" + pair[1] + "/Df.ranked.txt'>spreadsheet</a></p>\n")
     fout.write("<a href='../" + pair[0] + "to" + pair[1] + "/Df-by-site.w=1.pdf'><img width='200px' src='../" + pair[0] + "to" + pair[1] + "/Df-by-site.w=1.png'></a>\n")
