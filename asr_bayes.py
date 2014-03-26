@@ -9,44 +9,28 @@ from argParser import *
 from tools import *
 ap = ArgParser(sys.argv)
 
-inpath = ap.getArg("--in")
-outpath = ap.getArg("--out")
-startsite = ap.getOptionalArg("--start")
-if startsite == False:
-    startsite = 0
-else:
-    startsite = int(startsite)
-stopsite = ap.getOptionalArg("--stop")
-if stopsite == False:
-    stopsite = -1
-else:
-    stopsite = int(stopsite)
-
-
-
-
 
 def cdf(state_prob):
-    #print "33:", state_prob
-    if state_prob.keys().__contains__('-'):
-        return ""
+    for tuple in state_prob:
+        if tuple[0] == "-":
+            return ""
     
     x = random.random()
     
     total = 0.0
-    for c in state_prob.keys():
-        total += state_prob[c]
+    for tuple in state_prob:
+        total += tuple[1]
     
     #print "41:", total
     x *= total
     
     sum = 0.0
 
-    for c in state_prob.keys():
-        sum += state_prob[c]
+    for tuple in state_prob:
+        sum += tuple[1]
         if sum >= x:
-            return c
-    
+            return tuple[0]
+
 
 def sample_data(data):
     """ Returns a sampled sequence from data.
@@ -58,6 +42,7 @@ def sample_data(data):
         seq += cdf( data[s] )
     return seq
 
+
 def make_test_data():
     d = {}
     d[1] = {'A':1.0}
@@ -65,6 +50,7 @@ def make_test_data():
     d[3] = {'-':100}
     d[4] = {'I':0.1,'L':0.9}
     return d
+
 
 def run_test():
     seqs = []
@@ -87,31 +73,37 @@ def run_test():
     print d
 
 
-#
-# main:
-#
+def run_asr_bayes(ap):
+    print "77: run_asr_bayes"
+    for d in ap.params["msa_algorithms"]:
+        for m in ap.params["raxml_models"]:
+            print "\n. Sampling Bayesian Ancestors. . .", d, m
+            runid = get_runid(d,m)
+            for a in ap.params["ingroup"]:
+                [startsite,stopsite] = get_boundary_sites( get_phylippath(d), ap.params["seedtaxa"][a] )
+                    
+                ancdir = d + "/asr." + m + "/tree1"
+                if False == os.path.exists( ancdir ):
+                    continue
+                if False == os.path.exists( ancdir + "/BAYES_SAMPLES" ):
+                    os.system("mkdir " + ancdir + "/BAYES_SAMPLES" )
+                for f in os.listdir(ancdir):
+                    if f.__contains__(".dat"):
 
-#run_test()
-#exit()
+                        print d + "/asr." + m + "/tree1/" + f            
+                        data = get_pp_distro(d + "/asr." + m + "/tree1/" + f)
+                        if data.keys().__len__() < 1:
+                            print "I found no data in the ancestral file ", f
+                        n = 100                        
+                        fout = open(d + "/asr." + m + "/tree1/BAYES_SAMPLES/bayes." + f, "w")
+                        mls = get_ml_sequence(data, start=startsite, stop=stopsite)
+                        shortname = f.split(".")[0]
+                        fout.write(">" + shortname + "ML_ancestral_sequence\n")
+                        fout.write(mls + "\n")
+                        for ii in range(0, n):
+                            fout.write(">" + shortname + ".posterior.sample." + ii.__str__() + "\n")
+                            l = sample_data( data ) 
+                            fout.write(l + "\n")
 
-data = get_pp_distro(inpath)
-if data.keys().__len__() < 1:
-    print "I found no data! ?"
-    
-n = 1
-x = ap.getOptionalArg( "--n") 
-if x != False:
-    n = int(x)
-    
-id = ap.getOptionalArg("--id")
-if id == False:
-    id = ""
 
-fout = open(outpath, "w")
-mls = get_ml_sequence(data, start=startsite, stop=stopsite)
-fout.write(">ML_ancestral_sequence\n")
-fout.write(mls + "\n")
-for ii in range(0, n):
-    fout.write("> posterior.sample." + ii.__str__() + "." + id  + "\n")
-    l = sample_data( data ) 
-    fout.write(l + "\n")
+

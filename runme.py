@@ -5,6 +5,7 @@ from phyloasr import *
 from splash import *
 from read_config import *
 from run_msas import *
+from asr_bayes import *
 from html_helper import *
 from struct_analysis import *
 
@@ -65,9 +66,13 @@ if jump <= 5 and stop > 5:
     print "\n. Reconstructing ancestral sequences..."
     x = get_asr_commands(ap)
     run_script(x)
-    
+
+if jump <= 5.1 and stop > 5.1:
     x = get_getanc_commands(ap)
     run_script(x)
+
+if jump <= 5.2 and stop > 5.2:
+    run_asr_bayes(ap)
 
 """ Predict sites of functional evolution """
 if jump <= 6 and stop > 6:
@@ -91,6 +96,7 @@ if jump <= 7 and stop > 7:
 if jump <= 7.1 and stop > 7.1:
     for pair in ap.params["compareanc"]:
         write_anccomp_indi(pair, ap)
+        write_mutations_indi(pair, ap)
 
 if jump <= 7.2 and stop > 7.3:
     write_ancseq_fasta(ap)
