@@ -527,46 +527,42 @@ def write_anccomp_indi(pair, ap):
     fout.write("<a href='../" + pair[0] + "to" + pair[1] + "/Df-histogram.pdf'><img width='200px' src='../" + pair[0] + "to" + pair[1] + "/Df-histogram.png'></a>\n")
     fout.write("<br>\n")
     
-    
-    #
-    # Write the scores into an interactive table. . . 
-    #
+
     fout.write("<hr class='thinhr'>")
-    #fout.write("<h3>Scores for each alignment-model combination:</h3>")
+
     fout.write("<table width=\"100%\">\n")
-    # Write the header row:
     
+    #
+    # Header Row
+    #
     fout.write("<tr>")
-    #fout.write("<th>&nbsp;</th>")
-    #fout.write("<th align='center' >Alignment</th>")
-    #fout.write("<th align='center'>Model</th>")
-    #fout.write("<th align='center'>Rel. Prob.</th>")
-    #fout.write("<th align='center'>&nbsp;</th>")
-    #fout.write("<th align='center'>&nbsp;</th>")
-    fout.write("<th align='center'>&nbsp;</th>")
-    fout.write("<th align='center'>&nbsp;</th>")
-    fout.write("<th align='center'>Df Scores</th>")
-    fout.write("<th align='center'>K Scores</th>")
-    fout.write("<th align='center'>P Scores</th>")
+    fout.write("<th>&nbsp;</th>") # for the toggle
+    fout.write("<th align='center'>Alignment</th>")
+    fout.write("<th align='center'>Model</th>")
+    fout.write("<th align='center'>Rel. Prob.</th>")
+    for metric in ["Df", "k", "p"]:
+        fout.write("<th align='left'>" + metric + " Scores</th>")
     fout.write("</tr>\n")
-    fout.write("<tr>")
     
-    # Insert a column with the +/- toggle details button
+    #
+    # Bayesian-average row
+    #
+    fout.write("<tr>")
     """
     fout.write("<td align='center'>")
-    fout.write("<div id='show" + msa + "." + model + "' style='display:block; background:#ffff99;'>")
-    fout.write("<a tabindex='0' class='smalltext' onclick=\"toggle_visibility('tr" + msa + "." + model + "'); ")
-    fout.write("    toggle_visibility('hide" + msa + "." + model + "'); ")
-    fout.write("    toggle_visibility('show" + msa + "." + model + "');\">&darr; show</a></div>")
-    fout.write("<div id='hide" + msa + "." + model + "' style='display:none; background:#ffff99;'>")
-    fout.write("<a tabindex='0' class='smalltext'  onclick=\"toggle_visibility('tr" + msa + "." + model + "'); ")
-    fout.write("    toggle_visibility('hide" + msa + "." + model + "'); ")
-    fout.write("    toggle_visibility('show" + msa + "." + model + "');\">&uarr; hide</a></div>")
+    fout.write("<div id='showbayes' style='display:block; background:#ffff99;'>")
+    fout.write("<a tabindex='0' class='smalltext' onclick=\"toggle_visibility('trbayes'); ")
+    fout.write("    toggle_visibility('hidebayes'); ")
+    fout.write("    toggle_visibility('showbayes');\">&darr; show</a></div>")
+    fout.write("<div id='hidebayes' style='display:none; background:#ffff99;'>")
+    fout.write("<a tabindex='0' class='smalltext'  onclick=\"toggle_visibility('trbayes'); ")
+    fout.write("    toggle_visibility('hidebayes'); ")
+    fout.write("    toggle_visibility('showbayes');\">&uarr; hide</a></div>")
     fout.write("</td>")
     """
+    fout.write("<td>&nbsp;</td>")
     
-    fout.write("<td align='center' colspan='2'>Bayesian average</td>\n")
-    #fout.write("<td align='center'>n/a</td>\n")
+    fout.write("<td align='center' colspan='3'>Bayesian average</td>\n")
     
     for metric in ["Df", "k", "p"]:
         fout.write("<td align='left' class='smalltext'>")
@@ -577,23 +573,35 @@ def write_anccomp_indi(pair, ap):
         if ap.params["do_pdb_analysis"]:
             fout.write("structure: <a href='../" + pair[0] + "to" + pair[1] + "/pymol_script.scores." + metric + "." + pair[1] + ".pse'>pymol</a> | <a href='../" + pair[0] + "to" + pair[1] + "/pymol_ray.scores." + metric + "." + pair[1] + ".png'>png</a>")
             fout.write("</td>\n")
-
     fout.write("</tr>\n")
-    fout.write("</table>\n")
-    fout.write( get_footer() )
-    fout.close()
-    return
-    
+
+    #
+    # Hidden row with Bayesian-averaged scores
+    #
+#     fout.write("<tr>")
+#     fout.write("<td colspan='7'>")
+#     fout.write("<div width='100\%' align='left' style='display:none;' id='trbayes'>\n")    
+#     fout.write("<hr class='thinhr'>")
+#     fout.write("<p>(popup detailed data here)</p>")
+#     fout.write("</div>")
+#     fout.write("</td>")
+#     fout.write("</tr>")
+
+    #
+    # One row for each msa-model combo:
+    # 
     for msa in ap.params["msa_algorithms"]:
         for model in ap.params["raxml_models"]:
+            if False == os.path.exists(pair[0] + "to" + pair[1] + "/Df." + msa + "." + model + ".summary.html"):
+                continue
+            
             testpath = "../" + pair[0] + "to" + pair[1] + "/Df-pdf-by-site.w=1.rscript"
             #if False == os.path.exists( testpath ):
             #    continue
             
             fout.write("<tr>")
-            
+
             # Insert a column with the +/- toggle details button
-            """
             fout.write("<td align='center'>")
             fout.write("<div id='show" + msa + "." + model + "' style='display:block; background:#ffff99;'>")
             fout.write("<a tabindex='0' class='smalltext' onclick=\"toggle_visibility('tr" + msa + "." + model + "'); ")
@@ -604,95 +612,36 @@ def write_anccomp_indi(pair, ap):
             fout.write("    toggle_visibility('hide" + msa + "." + model + "'); ")
             fout.write("    toggle_visibility('show" + msa + "." + model + "');\">&uarr; hide</a></div>")
             fout.write("</td>")
-            """
             
-            fout.write("<td align='center'>" + msa + "</td>\n")
-            fout.write("<td align='center'>" + model + "</td>\n")
-            
+            # test:
+            fout.write("<td align='center'>" + msa + "</td>")
+            fout.write("<td align='center'>" + model + "</td>")
             model_data = read_lnllog(msa)
             pp = model_data[model][1]
-            fout.write("<td align='center'>" + pp + "</td>\n")
-            
+            fout.write("<td align='center'>" + pp + "</td>")
             for metric in ["Df", "k", "p"]:
-                fout.write("<td align='left' class='smalltext'>")
-                fout.write("peaks: <a href='../" + pair[0] + "to" + pair[1] + "/" + metric + "-by-site.w=1.png'>png</a> | <a href='../" + pair[0] + "to" + pair[1] + "/" + metric + "-by-site.w=1.pdf'>pdf</a> | <a href='../" + pair[0] + "to" + pair[1] + "/" + metric + "-by-site.w=1.pdf.rscript'>R script</a>")
-                fout.write("<br>")
-                fout.write("histogram: <a href='../" + pair[0] + "to" + pair[1] + "/" + metric + "-histogram.png'>png</a> | <a href='../" + pair[0] + "to" + pair[1] + "/" + metric + "-histogram.pdf'>pdf</a> | <a href='../" + pair[0] + "to" + pair[1] + "/" + metric + "pdf-histogram.rscript'>R script</a>")
-                fout.write("<br>")
-                if ap.params["do_pdb_analysis"]:
-                    fout.write("structure: <a href='../" + pair[0] + "to" + pair[1] + "/pymol_script.scores." + metric + "." + msa + "." + model + "." + pair[1] + ".pse'>pymol</a> | <a href='../" + pair[0] + "to" + pair[1] + "/pymol_ray.scores." + metric + "." + msa + "." + model + "." + pair[1] + ".png'>png</a>")
-                    fout.write("</td>\n")
-
+                fout.write("<td align='left'>data for " + metric + "</td>")
             fout.write("</tr>\n")
+            
+            # Write a hidden row showing details.
+            fout.write("<tr>")
+            fout.write("<td colspan='7'>")
+            fout.write("<div width='100\%' align='left' style='display:none;' id='tr" + msa + "." + model + "'>\n")    
+            fout.write("<hr class='thinhr'>")
+            
+            fout.write("<div align='left'>\n")
+            fin = open(pair[0] + "to" + pair[1] + "/Df." + msa + "." + model + ".summary.html", "r")
+            for seql in fin.xreadlines():
+                fout.write(seql)
+            fin.close()
+            fout.write("</div>")
+            fout.write("<hr class='thinhr'>")
+            #fout.write("<p>(popup detailed data here for " + msa + "-" + model + ")</p>")
+            fout.write("</div>")
+            fout.write("</td>")
+            fout.write("</tr>")
+            
     fout.write("</table>\n")
-    
-    #
-    # Print the detailed sites summary (pre-computed in a text file).
-    #
-    
-    #fout.write("<br>\n")
-    fin = open(pair[0] + "to" + pair[1] + "/Df.details.txt", "r")
-    msa_site_df = {}
-    msa_site_rank = {}
-    msa_site_pp = {}
-    for msa in ap.params["msa_algorithms"]:
-        msa_site_df[msa] = {}
-        msa_site_rank[msa] = {}
-        msa_site_pp[msa] = {}
-    msa_site_df["averaged"] = {}
-    msa_site_rank["averaged"] = {}
-    msa_site_pp["averaged"] = {}
-        
-    last_msa = "averaged"
-    for l in fin.xreadlines():
-        if l.startswith("-->"):
-            last_msa = "averaged"
-            tokens = l.split()
-            df = float(tokens[3])
-            rank = int(tokens[5])
-            site = int(tokens[ tokens.__len__()-2 ])
-            msa_site_df[last_msa][site] = df
-            msa_site_rank[last_msa][site] = rank
-        elif l.__len__() > 2:
-            tokens = l.split()
-            if tokens[0] in ap.params["msa_algorithms"]:
-                last_msa = tokens[0]
-                df = float(tokens[5])
-                site = int(tokens[2])
-                msa_site_df[last_msa][site] = df
-                msa_site_pp[last_msa][site] = ""
-            elif tokens.__len__() > 3: # skip the seed context lines
-                site = int(tokens[2])
-                if site in msa_site_pp[last_msa]:
-                    msa_site_pp[last_msa][site] += l 
-                else:
-                    msa_site_pp[last_msa][site] = l
-        
-    fin.close()
-    
-    fout.write("")
-
-    
-    """
-    fout.write("<hr>\n")
-    fout.write("<h3>Prediction Summary For Each Site:</h3>\n")
-    
-    for msa in ap.params["msa_algorithms"]:
-        for model in ap.params["raxml_models"]:
-            runid = get_runid(msa, model)
-            htmlfrag_path = pair[0] + "to" + pair[1] + "/" + runid + ".html"
-            if os.path.exists(htmlfrag_path):
-                #fout.write("<a onclick=\"ToggleList(" + runid + ")\">toggle</a>")
-                fout.write("<div class=\"divInfo\" id=\"" + runid + "\">\n")
-                fout.write("<h3>" + runid + "</h3>")
-                fin = open(pair[0] + "to" + pair[1] + "/" + runid + ".html", "r")
-                for l in fin.xreadlines():
-                    fout.write( l )
-                fin.close()
-
-                fout.write("</div>\n")
-    """
-    
     fout.write( get_footer() )
     fout.close()
     
@@ -1054,7 +1003,7 @@ def write_mutations_indi(pair, ap):
         #fout.write("<td align='center'><p>" + tokens[5] +  "</p></td>") # type 3
         
         # Insert a column to download a spreadsheet with Type 1/2/3 scores for every site in this msa-model combo.
-        fout.write("<td>")
+        fout.write("<td align='center'>")
         fout.write("<p><a href=\"../" + pair[0] + "to" + pair[1] + "/ancestral_changes." + msa + "." + model + ".txt\">spreadsheet</a>")
         if ap.params["do_pdb_analysis"]:
             fout.write(" | <a href=\"../" + pair[0] + "to" + pair[1] + "/pymol_script.types." + msa + "." + model + "." + pair[1] + ".pse\">pymol</a>")   
