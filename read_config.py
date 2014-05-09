@@ -226,7 +226,6 @@ def print_config(ap):
     for p in ap.params:
         print p, ":", ap.params[p]
 
-
 def setup_workspace(ap):
     for msa in ap.params["msa_algorithms"]:
         if False == os.path.exists(msa):

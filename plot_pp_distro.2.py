@@ -43,9 +43,6 @@ for d in dirs:
             short = re.sub(".dat", "", f)
             print dir, f
 
-            
-            
-
             #
             # Analyze full length protein sequences
             #

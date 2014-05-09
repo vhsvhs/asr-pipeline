@@ -2,38 +2,37 @@
 log.py - a logging system for the ASR pipeline
 """
 import os
+from tools import *
 
-LOGPATH = None
-ERRPATH = None
-
-def init_log(dir):
+def init_log(ap, overwrite=True):
     """
     Initialize the log in the directory 'dir'
     If the log already exists, then it will be overwritten.
     """
-    if os.path.exists(dir):
-        LOGPATH = dir + "/log.txt"
-        fout = open(LOGPATH, "w")
-        fout.close()
-        ERRPATH = dir + "/logerr.txt"
-        fout = open(ERRPATH, "w")
-        fout.close()
-    else:
-        print "ERROR: The output directory", dir, "doesn't exist!"
+    
+    action = "a"
+    if overwrite:
+        action = "w"        
+    ap.params["logpath"]  = "log.txt"
+    fout = open(ap.params["logpath"], action)
+    fout.close()
+    ap.params["errpath"] = "logerr.txt"
+    fout = open(ap.params["errpath"], action)
+    fout.close()
 
-def write_log(checkpoint, message):
+def write_log(ap, checkpoint, message):
     """
     Writes to the log file
     """
-    fout = open(LOGPATH, "a")
-    fout.write(checkpoint.__str__() + "\t" + message)
+    fout = open(ap.params["logpath"], "a")
+    fout.write(checkpoint.__str__() + "\t" + message + "\n")
     fout.close()
 
 
-def write_error(message):
+def write_error(ap, message):
     """
     Writes to the log file
     """
-    fout = open(ERRPATH, "a")
-    fout.write(message)
+    fout = open(ap.params["errpath"], "a")
+    fout.write(message + "\n")
     fout.close()
