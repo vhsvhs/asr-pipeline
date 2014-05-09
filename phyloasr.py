@@ -49,6 +49,8 @@ def write_raxml_commands(ap):
             command += " -e 0.001"
             command += " -m " + model
             command += " -p 12345"
+            if ap.params["constraint_tree"] != None:
+                command += " -g " + ap.params["constraint_tree"]
             command += " > " + here + "/" + msa + "/catch." + runid + ".txt" 
             commands.append(command)
     p = "SCRIPTS/raxml.commands.sh"
@@ -282,7 +284,7 @@ def get_asr_commands(ap):
 
 #
 # Get ancestors
-#
+#ancseqs
 def get_getanc_commands(ap):
     getanc_commands = []
     for msa in ap.params["msa_algorithms"]:

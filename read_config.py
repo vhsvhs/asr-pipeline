@@ -9,6 +9,7 @@ def read_config_file(ap):
     #
     ap.params["end_motif"] = None
     ap.params["start_motif"] = None
+    ap.params["constraint_tree"] = None
 
     for l in fin.xreadlines():
         l = l.strip()
@@ -83,6 +84,15 @@ def read_config_file(ap):
             ap.params["end_motif"] = re.sub(" ", "", tokens[1])
             if ap.params["end_motif"].__contains__("None"):
                 ap.params["end_motif"] = None 
+ 
+        elif tokens[0].startswith("CONSTRAINT_TREE"):
+            ap.params["constraint_tree"] = re.sub(" ", "", tokens[1])
+            if False == os.path.exists(ap.params["constraint_tree"]):
+                print "\n. I can't find your constraint tree at", ap.params["constraint_tree"]
+                exit()
+
+        elif tokens[0].startswith("FAMILY_DESCRIPTION"):
+            ap.params["family_description"] = tokens[1] 
  
 # depricated: 
 # continue here... and look in the msa get_bondary_sites function      

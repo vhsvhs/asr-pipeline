@@ -8,6 +8,7 @@ from run_msas import *
 from asr_bayes import *
 from html_helper import *
 from struct_analysis import *
+from log import *
 
 print_splash()
 
@@ -30,32 +31,38 @@ verify_config(ap)
 setup_workspace(ap)
 
 if jump <= 0 and stop > 0:
+    init_log( os.getcwd() )
     print "\n. Reading your FASTA sequences..."
+    write_log(0, "Reading sequences")
     clean_erg_seqs(ap)
     
 
 """ MSAs """
 if jump <= 1 and stop > 1:
     print "\n. Aligning sequences..."
+    write_log(1, "Aligning sequences")
     p = write_msa_commands(ap)
     run_script(p)
 
 if jump <= 1.1 and stop > 1.1:
     print "\n. Converting the alignments to PHYLIP..."
+    write_log(1.1, "Creating Phylip-formatted versions of the alignments.")
     convert_all_fasta_to_phylip(ap)
 
-if jump <= 2:
-    trim_alignments(ap)
+#if jump <= 2:
+#    trim_alignments(ap)
 
 """ ML Trees """
 if jump <= 3 and stop > 3:
     print "\n. Inferring ML phylogenies with RAxML..."
+    write_log(3, "Inferring ML phylogenies with RAxML.")
     p = write_raxml_commands(ap)
     run_script(p)
 
 """ Branch Support """
 if jump <= 4 and stop > 4:
     print "\n. Calculating aLRT branch support with PhyML..."
+    write_log(4, "Calculating aLRT branch support values with PhyML.")
     get_mlalpha_pp(ap)
     x = calc_alrt(ap)
     run_script(x)
@@ -64,10 +71,12 @@ if jump <= 4 and stop > 4:
 """ A.S.R. """
 if jump <= 5 and stop > 5:
     print "\n. Reconstructing ancestral sequences..."
+    write_log(5, "Reconstructing ancestral sequences, using Lazarus.")
     x = get_asr_commands(ap)
     run_script(x)
 
 if jump <= 5.1 and stop > 5.1:
+    write_log(5.1, "Extracting relevant ancestors")
     x = get_getanc_commands(ap)
     run_script(x)
 
@@ -79,14 +88,16 @@ if jump <= 6 and stop > 6:
     if "compareanc" in ap.params:
         if (jump > 4):
             get_mlalpha_pp(ap)
+        write_log(6, "Setting up PDB maps")
         setup_pdb_maps(ap)
+        write_log(6.1, "Screening for functional loci.")
         x = get_compareanc_commands(ap)
         os.system( ap.params["run_exe"] + " " + x)
         #run_script(x)
 
 """ Build an HTML Report """
 if jump <= 7 and stop > 7:
-
+    write_log(7, "Writing an HTML report.")
     write_css()
     write_index()
     write_alignments()
@@ -101,13 +112,4 @@ if jump <= 7.1 and stop > 7.1:
 if jump <= 7.2 and stop > 7.3:
     write_ancseq_fasta(ap)
 
-"""The maximum jump step index is 100.  See the command-line argument --stop"""
-
-"""
-python run_msas.py ime2
-source run_msa_cleanup.sh cmgc.erg.raw.fasta cmgc
-python run_phyloasr.py
-source compareanc_commands.sh
-python write_ancestral_summary.py
-python plot_pp_distro.2.py > ancestral_summary.txt
-"""
+write_log(8, "Complete!")
