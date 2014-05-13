@@ -1,6 +1,6 @@
 from configuration import *
 from dendropy import Tree
-import math, re, os
+import math, re, subprocess, os
 from Bio import Phylo # Note, this must be version 1.63 or newer.
 
 from argParser import *
