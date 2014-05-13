@@ -58,15 +58,15 @@ for d in dirs:
             #
             # Kinase domain structural sites:
             #
-            os.system("rm -rf " + d + "/tree1/*.32-387.*")
-            if d.__contains__("msaprobs"):
-                os.system("python ~/Documents/SourceCode/Lazarus/plot_pp_distribution.py " + d + "/tree1/" + f + " " + msaprobs_struct_sites + " > " + d + "/tree1/" + short + ".struct_only.summary.txt")
-            else:
-                os.system("python ~/Documents/SourceCode/Lazarus/plot_pp_distribution.py " + d + "/tree1/" + f + " " + muscle_struct_sites + " > " + d + "/tree1/" + short + ".struct_only.summary.txt")
-            parse_summary(d + "/tree1/" + short + ".struct_only.summary.txt", d + "/" + f + "-struct_only")
-            os.system("mv barplot.anc.pdf " + d + "/tree1/" + short + ".struct_only.barplot.pdf")
-            os.system("mv barplot.anc.cran " + d + "/tree1/" + short + ".struct_only.barplot.cran")
-            os.system("mv barplot.table.anc.txt " + d + "/tree1/" + short + ".struct_only.pptable.txt")
+#             os.system("rm -rf " + d + "/tree1/*.32-387.*")
+#             if d.__contains__("msaprobs"):
+#                 os.system("python ~/Documents/SourceCode/Lazarus/plot_pp_distribution.py " + d + "/tree1/" + f + " " + msaprobs_struct_sites + " > " + d + "/tree1/" + short + ".struct_only.summary.txt")
+#             else:
+#                 os.system("python ~/Documents/SourceCode/Lazarus/plot_pp_distribution.py " + d + "/tree1/" + f + " " + muscle_struct_sites + " > " + d + "/tree1/" + short + ".struct_only.summary.txt")
+#             parse_summary(d + "/tree1/" + short + ".struct_only.summary.txt", d + "/" + f + "-struct_only")
+#             os.system("mv barplot.anc.pdf " + d + "/tree1/" + short + ".struct_only.barplot.pdf")
+#             os.system("mv barplot.anc.cran " + d + "/tree1/" + short + ".struct_only.barplot.cran")
+#             os.system("mv barplot.table.anc.txt " + d + "/tree1/" + short + ".struct_only.pptable.txt")
 
             """
             #

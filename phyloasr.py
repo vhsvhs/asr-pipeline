@@ -25,6 +25,7 @@
 # If you have questions, please contact Victor @ victor.hanson-smith@ucsf.edu
 #
 
+from log import *
 from tools import *
 from alrt2alr import *
 
@@ -37,13 +38,13 @@ def write_raxml_commands(ap):
     here = os.popen('pwd').read().strip()
     commands = []
     for msa in ap.params["msa_algorithms"]:
-        faspath = get_fastapath(msa)
+        phypath = get_phylippath(msa)
         for model in ap.params["raxml_models"]:
             runid = get_runid(msa, model) 
             if os.path.exists(here + "/" + msa + "/RAxML_info." + runid): # Remove dirty RAxML data.
-                os.system("rm " + here + "/" + msa + "/RAxML_*" + runid)
+                run_subprocess("rm " + here + "/" + msa + "/RAxML_*" + runid)
             command = ap.params["raxml_exe"]
-            command += "  -s " + faspath
+            command += "  -s " + phypath
             command += " -n " + runid
             command += " -w " + here + "/" + msa
             command += " -e 0.001"
@@ -59,6 +60,18 @@ def write_raxml_commands(ap):
         fout.write(c + "\n")
     fout.close()
     return p
+
+def check_raxml_output(ap):
+    here = os.popen('pwd').read().strip()
+    commands = []
+    for msa in ap.params["msa_algorithms"]:
+        phypath = get_phylippath(msa)
+        for model in ap.params["raxml_models"]:
+            runid = get_runid(msa, model) 
+            if False == os.path.exists(here + "/" + msa + "/RAxML_bestTree." + runid):
+                print "I can't find the expected result from RAxML at " + here + "/" + msa + "/RAxML_bestTree." + runid
+                write_error(ap, "I can't find the expected result from RAxML at " + here + "/" + msa + "/RAxML_bestTree." + runid)
+                exit()
 
 def get_mlalpha_pp(ap):
     #
@@ -270,7 +283,7 @@ def get_asr_commands(ap):
                 outlines.append(linecache)
         
             if False == os.path.exists(msa + "/asr." + model):
-                os.system("mkdir " + msa + "/asr." + model)
+                run_subprocess("mkdir " + msa + "/asr." + model)
             modelstr = get_model_path(model, ap)
             asrtreepath = get_raxml_treepath(msa, runid)
             asr_commands.append(ap.params["lazarus_exe"] + " --alignment " + fastapath + " --tree " + asrtreepath + " --model " + modelstr + " --outputdir " + msa + "/asr." + model + " --branch_lengths fixed --asrv 8 --codeml --gapcorrect True --outgroup " + ap.params["outgroup"] + " --cleanup True")
@@ -307,7 +320,7 @@ def get_getanc_commands(ap):
     
     fout = open("SCRIPTS/getanc_commands.txt", "w")
     for a in getanc_commands:
-        os.system(a)
+        run_subprocess(a)
         fout.write(a + "\n")
     fout.close()
     return "SCRIPTS/getanc_commands.txt"

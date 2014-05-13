@@ -1,8 +1,15 @@
 import re,sys,os
 from tools import *
+from log import *
 
 def read_config_file(ap):
     cpath = ap.getArg("--configpath")
+    print "7:", cpath
+    if False == os.path.exists("./" + cpath):
+        print "ERROR: I can't find your configfile at", cpath
+        write_error(ap, "I can't find your configfile at " + cpath)
+        exit()
+    
     fin = open(cpath, "r")
 
     # Default values:
@@ -136,8 +143,8 @@ def read_config_file(ap):
             ap.params["compareanc"].append( (anc1,anc2) )
             
         elif tokens[0].startswith("USE_MPI"):
-            print tokens[0]
-            answer = re.sub(" ", "", tokens[0].split()[1])
+            print tokens[1]
+            answer = re.sub(" ", "", tokens[1])
             if answer == "on" or answer == "True":
                 ap.params["usempi"] = True
             else:
@@ -184,19 +191,23 @@ def verify_config(ap):
             print a, ap.params["seedtaxa"]
             if a not in ap.params["seedtaxa"]:
                 print "\n. ERROR: You did not specify a SEED for the ancestor", a
+                write_error(ap, "You did not specify a SEED for the ancestor " + a)
                 exit()
         for c in ap.params["compareanc"]:
             a1 = c[0]
             a2 = c[1]
             if a1 not in ap.params["ancestors"]:
                 print "\n. ERROR: you specified a comparison between ancestors", a1, "and", a2, "but", a1,"was not defined in the ANCESTORS line."
+                write_error(ap, "you specified a comparison between ancestors " + a1, " and " + a2 + " but " + a1 + " was not defined in the ANCESTORS line.") 
                 exit() 
             if a1 not in ap.params["ancestors"]:
                 print "\n. ERROR: you specified a comparison between ancestors", a1, "and", a2, "but", a2,"was not defined in the ANCESTORS line."
+                write_error(ap, "you specified a comparison between ancestors " + a1, " and " + a2 + " but " + a2 + " was not defined in the ANCESTORS line.")
                 exit()
                 
     if False == os.path.exists(ap.params["ergseqpath"]):
         print "\n. I could not find your sequences at", ap.params["ergseqpath"]
+        write_error(ap, "I could not find your sequences at " + ap.params["ergseqpath"])
         exit()
 
     if ap.params["start_motif"] == None:
@@ -207,10 +218,16 @@ def verify_config(ap):
     for msa in ap.params["msa_algorithms"]:
         if msa == "MUSCLE" and "muscle_exe" not in ap.params:
             print "\n. Something is wrong. Your config file doesn't have an executable path for MUSCLE."
+            write_error(ap, "Something is wrong. Your config file doesn't have an executable path for MUSCLE.")
+            exit()
         if msa == "MSAPROBS" and "msaprobs_exe" not in ap.params:
             print "\n. Something is wrong. Your config file doesn't have an executable path for MSAPROBS."
+            write_error(ap, "Something is wrong. Your config file doesn't have an executable path for MSAPROBS.")
+            exit()
         if msa == "PRANK" and "prank_exe" not in ap.params:
             print "\n. Something is wrong. Your config file doesn't have an executable path for PRANK."
+            write_error(ap, "Something is wrong. Your config file doesn't have an executable path for PRANK.")
+            exit()
     
     if "map2pdb" not in ap.params:
         ap.params["map2pdb"] = {}
@@ -230,6 +247,10 @@ def setup_workspace(ap):
     for msa in ap.params["msa_algorithms"]:
         if False == os.path.exists(msa):
             os.system("mkdir " + msa)
+        if False == os.path.exists(msa):
+            print "I can't make the directory for output of " + msa
+            write_error(ap, "I can't make the directory for output of " + msa)
+            exit()
     if False == os.path.exists("SCRIPTS"):
         os.system("mkdir SCRIPTS")
             

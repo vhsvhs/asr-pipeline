@@ -7,10 +7,17 @@ from argParser import *
 ap = ArgParser(sys.argv)
 
 def run_script(path):
+    exe = None
     if ap.params["usempi"]:
-        os.system(ap.params["mpirun_exe"] + " " + path)
+        exe = ap.params["mpirun_exe"] + " " + path
     else:
-        os.system(ap.params["run_exe"] + " " + path)
+        exe = ap.params["run_exe"] + " " + path
+    args = exe.split()
+    proc = subprocess.Popen( args, preexec_fn=os.setsid ) # see http://pymotw.com/2/subprocess/
+
+def run_subprocess(command):
+    args = command.split()
+    proc = subprocess.Popen( args, preexec_fn=os.setsid )
 
 def get_mean(values):
     sum = 0.0
@@ -62,8 +69,6 @@ def get_phylipstats(path):
     ntaxa = int(tokens[0])
     nsites = int(tokens[1])
     return (ntaxa, nsites)
-
-
 
 def get_raxml_infopath(DIR, model):
     runid = get_runid(DIR,model)

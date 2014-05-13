@@ -24,6 +24,11 @@ if stop == False:
 else:
     stop = float( stop )
 
+if jump <=0 and stop > 0:
+    ap = init_log(ap)
+else:
+    ap = init_log(ap, overwrite=False)
+
 """ Setup """
 read_config_file( ap )
 print_config(ap)
@@ -31,14 +36,11 @@ verify_config(ap)
 setup_workspace(ap)
 
 if jump <= 0 and stop > 0:
-    init_log(ap)
+    ap = init_log(ap)
     print "\n. Reading your FASTA sequences..."
     write_log(ap, 0, "Reading sequences")
     clean_erg_seqs(ap)
-else:
-    init_log(ap, overwrite=False)
 
-    
 
 """ MSAs """
 if jump <= 1 and stop > 1:
@@ -61,6 +63,7 @@ if jump <= 3 and stop > 3:
     write_log(ap, 3, "Inferring ML phylogenies with RAxML.")
     p = write_raxml_commands(ap)
     run_script(p)
+    check_raxml_output(ap)
 
 """ Branch Support """
 if jump <= 4 and stop > 4:
@@ -77,11 +80,17 @@ if jump <= 5 and stop > 5:
     write_log(ap, 5, "Reconstructing ancestral sequences, using Lazarus.")
     x = get_asr_commands(ap)
     run_script(x)
+    #
+    # to-do: insert check that ancestors were created
+    #
 
 if jump <= 5.1 and stop > 5.1:
     write_log(ap, 5.1, "Extracting relevant ancestors")
     x = get_getanc_commands(ap)
     run_script(x)
+    #
+    # to-do: insert check that ancestors were gotten.
+    #
 
 if jump <= 5.2 and stop > 5.2:
     run_asr_bayes(ap)
@@ -94,8 +103,11 @@ if jump <= 6 and stop > 6:
         write_log(ap, 6, "Setting up PDB maps")
         setup_pdb_maps(ap)
         write_log(ap, 6.1, "Screening for functional loci.")
-        x = get_compareanc_commands(ap)
-        os.system( ap.params["run_exe"] + " " + x)
+        x = ap.params["run_exe"] + " " + get_compareanc_commands(ap)
+        args = x.split()
+        ap.params["run_exe"]
+        proc = subprocess.Popen( args, preexec_fn=os.setsid ) # see http://pymotw.com/2/subprocess/
+        #os.system( ap.params["run_exe"] + " " + x)
         #run_script(x)
 
 """ Build an HTML Report """

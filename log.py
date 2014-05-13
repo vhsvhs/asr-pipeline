@@ -16,9 +16,11 @@ def init_log(ap, overwrite=True):
     ap.params["logpath"]  = "log.txt"
     fout = open(ap.params["logpath"], action)
     fout.close()
+    
     ap.params["errpath"] = "logerr.txt"
     fout = open(ap.params["errpath"], action)
     fout.close()
+    return ap
 
 def write_log(ap, checkpoint, message):
     """
