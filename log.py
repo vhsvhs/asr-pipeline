@@ -22,12 +22,12 @@ def init_log(ap, overwrite=True):
     fout.close()
     return ap
 
-def write_log(ap, checkpoint, message):
+def write_log(ap, message):
     """
     Writes to the log file
     """
     fout = open(ap.params["logpath"], "a")
-    fout.write(checkpoint.__str__() + "\t" + message + "\n")
+    fout.write(ap.params["checkpoint"].__str__() + "\t" + message + "\n")
     fout.close()
 
 
@@ -36,5 +36,5 @@ def write_error(ap, message):
     Writes to the log file
     """
     fout = open(ap.params["errpath"], "a")
-    fout.write(message + "\n")
+    fout.write(ap.params["pending_checkpoint"].__str__() + "\t" + message + "\n")
     fout.close()

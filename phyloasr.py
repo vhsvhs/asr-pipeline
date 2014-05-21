@@ -42,7 +42,7 @@ def write_raxml_commands(ap):
         for model in ap.params["raxml_models"]:
             runid = get_runid(msa, model) 
             if os.path.exists(here + "/" + msa + "/RAxML_info." + runid): # Remove dirty RAxML data.
-                run_subprocess("rm " + here + "/" + msa + "/RAxML_*" + runid)
+                p = run_subprocess("rm " + here + "/" + msa + "/RAxML_*")
             command = ap.params["raxml_exe"]
             command += "  -s " + phypath
             command += " -n " + runid
@@ -294,7 +294,6 @@ def get_asr_commands(ap):
     fout.close()
     return "SCRIPTS/asr_commands.sh"
 
-
 #
 # Get ancestors
 #ancseqs
@@ -326,6 +325,21 @@ def get_getanc_commands(ap):
     return "SCRIPTS/getanc_commands.txt"
 
 #exit()
+
+def check_getanc_output(ap):
+    # Returns (bool, message)
+    #
+    # Read the Lazarus job status log file, look for errors.
+    #
+    for msa in ap.params["msa_algorithms"]:
+        for model in ap.params["raxml_models"]:
+            logpath = msa + "/asr." + model + "/lazarus_job_status.log"
+            if os.path.exists(logpath):
+                fin = open(logpath, "r")
+                line1 = fin.readline()
+                if line1.__contains__("error") or line1.__contains__("Error"):
+                    return (False, line1)
+    return (True, None)
 
 def setup_pdb_maps(ap):
     """The goal of this method is to build ap.params["map2pdb"][ anc ] from the PHYRE output folder."""

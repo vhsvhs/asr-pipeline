@@ -9,7 +9,6 @@ from asr_bayes import *
 from html_helper import *
 from struct_analysis import *
 from log import *
-
 print_splash()
 
 jump = ap.getOptionalArg("--jump") # Will start the script at this point.
@@ -36,22 +35,28 @@ verify_config(ap)
 setup_workspace(ap)
 
 if jump <= 0 and stop > 0:
+    ap.params["checkpoint"] = -1
+    ap.params["pending_checkpoint"] = 0
     ap = init_log(ap)
     print "\n. Reading your FASTA sequences..."
-    write_log(ap, 0, "Reading sequences")
+    write_log(ap, "Reading sequences")
     clean_erg_seqs(ap)
 
 
 """ MSAs """
 if jump <= 1 and stop > 1:
+    ap.params["checkpoint"] = 0
+    ap.params["pending_checkpoint"] = 1
     print "\n. Aligning sequences..."
-    write_log(ap, 1, "Aligning sequences")
+    write_log(ap, "Aligning sequences")
     p = write_msa_commands(ap)
     run_script(p)
 
 if jump <= 1.1 and stop > 1.1:
+    ap.params["checkpoint"] = 1
+    ap.params["pending_checkpoint"] = 1.1
     print "\n. Converting the alignments to PHYLIP..."
-    write_log(ap, 1.1, "Creating Phylip-formatted versions of the alignments.")
+    write_log(ap, "Creating Phylip-formatted versions of the alignments.")
     convert_all_fasta_to_phylip(ap)
 
 #if jump <= 2:
@@ -59,16 +64,20 @@ if jump <= 1.1 and stop > 1.1:
 
 """ ML Trees """
 if jump <= 3 and stop > 3:
+    ap.params["checkpoint"] = 2
+    ap.params["pending_checkpoint"] = 3
     print "\n. Inferring ML phylogenies with RAxML..."
-    write_log(ap, 3, "Inferring ML phylogenies with RAxML.")
+    write_log(ap, "Inferring ML phylogenies with RAxML.")
     p = write_raxml_commands(ap)
     run_script(p)
     check_raxml_output(ap)
 
 """ Branch Support """
 if jump <= 4 and stop > 4:
+    ap.params["checkpoint"] = 3
+    ap.params["pending_checkpoint"] = 4
     print "\n. Calculating aLRT branch support with PhyML..."
-    write_log(ap, 4, "Calculating aLRT branch support values with PhyML.")
+    write_log(ap, "Calculating aLRT branch support values with PhyML.")
     get_mlalpha_pp(ap)
     x = calc_alrt(ap)
     run_script(x)
@@ -76,8 +85,10 @@ if jump <= 4 and stop > 4:
 
 """ A.S.R. """
 if jump <= 5 and stop > 5:
+    ap.params["checkpoint"] = 4
+    ap.params["pending_checkpoint"] = 5
     print "\n. Reconstructing ancestral sequences..."
-    write_log(ap, 5, "Reconstructing ancestral sequences, using Lazarus.")
+    write_log(ap, "Reconstructing ancestral sequences, using Lazarus.")
     x = get_asr_commands(ap)
     run_script(x)
     #
@@ -85,14 +96,23 @@ if jump <= 5 and stop > 5:
     #
 
 if jump <= 5.1 and stop > 5.1:
-    write_log(ap, 5.1, "Extracting relevant ancestors")
+    ap.params["checkpoint"] = 5
+    ap.params["pending_checkpoint"] = 5.1
+    write_log(ap, "Extracting relevant ancestors")
     x = get_getanc_commands(ap)
     run_script(x)
+    (flag, msg) = check_getanc_output(ap)
+    if not flag:
+        write_error(ap, msg)
+        exit()
+    
     #
     # to-do: insert check that ancestors were gotten.
     #
 
 if jump <= 5.2 and stop > 5.2:
+    ap.params["checkpoint"] = 5.1
+    ap.params["pending_checkpoint"] = 5.2
     run_asr_bayes(ap)
 
 """ Predict sites of functional evolution """
@@ -100,9 +120,11 @@ if jump <= 6 and stop > 6:
     if "compareanc" in ap.params:
         if (jump > 4):
             get_mlalpha_pp(ap)
-        write_log(ap, 6, "Setting up PDB maps")
+        ap.params["checkpoint"] = 5.2
+        ap.params["pending_checkpoint"] = 6
+        write_log(ap, "Setting up PDB maps")
         setup_pdb_maps(ap)
-        write_log(ap, 6.1, "Screening for functional loci.")
+        write_log(ap, "Screening for functional loci.")
         x = ap.params["run_exe"] + " " + get_compareanc_commands(ap)
         args = x.split()
         ap.params["run_exe"]
@@ -112,7 +134,9 @@ if jump <= 6 and stop > 6:
 
 """ Build an HTML Report """
 if jump <= 7 and stop > 7:
-    write_log(ap, 7, "Writing an HTML report.")
+    ap.params["checkpoint"] = 6
+    ap.params["pending_checkpoint"] = 7
+    write_log(ap, "Writing an HTML report.")
     write_css()
     write_index()
     write_alignments()
@@ -120,11 +144,17 @@ if jump <= 7 and stop > 7:
     write_ancestors_indi() # write individual ancestor pages
 
 if jump <= 7.1 and stop > 7.1:
+    ap.params["checkpoint"] = 7
+    ap.params["pending_checkpoint"] = 7.1
     for pair in ap.params["compareanc"]:
         write_anccomp_indi(pair, ap)
         write_mutations_indi(pair, ap)
 
 if jump <= 7.2 and stop > 7.3:
+    ap.params["checkpoint"] = 7.1
+    ap.params["pending_checkpoint"] = 7.2
     write_ancseq_fasta(ap)
 
-write_log(ap, 8, "Complete!")
+if stop >= 8:
+    ap.params["checkpoint"] = 100
+    write_log(ap, "Done")

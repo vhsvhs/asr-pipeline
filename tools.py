@@ -12,12 +12,26 @@ def run_script(path):
         exe = ap.params["mpirun_exe"] + " " + path
     else:
         exe = ap.params["run_exe"] + " " + path
+    
+    # to-do: why does version 1 fail on the Johnson lab server?
+    
+    #
+    # version 1
+    #
     args = exe.split()
     proc = subprocess.Popen( args, preexec_fn=os.setsid ) # see http://pymotw.com/2/subprocess/
+    proc.wait()
+    
+    #
+    # version 2
+    #
+    #os.system(exe)
 
 def run_subprocess(command):
     args = command.split()
-    proc = subprocess.Popen( args, preexec_fn=os.setsid )
+    proc = subprocess.Popen( args, preexec_fn=os.setsid)
+    proc.wait()
+    return proc
 
 def get_mean(values):
     sum = 0.0
@@ -255,7 +269,7 @@ def get_boundary_sites(msapath, taxa):
     startsite = 1
     endsite = seq.__len__()
                                                                   
-    if start_motif != None:
+    if start_motif != None and start_motif.__len__() > 0:
         for i in range(0, seq.__len__()):
             #print "258:", i, seq[i], start_motif[0]
             if seq[i] == start_motif[0]:
@@ -271,7 +285,7 @@ def get_boundary_sites(msapath, taxa):
                     startsite = i + 1         
                     break
     
-    if end_motif != None:
+    if end_motif != None and end_motif.__len__() > 0:
         for i in range(i, seq.__len__()):
             if seq[i] == end_motif[0]:
                 here = ""
