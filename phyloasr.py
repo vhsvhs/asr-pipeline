@@ -44,7 +44,7 @@ def write_raxml_commands(ap):
             if os.path.exists(here + "/" + msa + "/RAxML_info." + runid): # Remove dirty RAxML data.
                 p = run_subprocess("rm " + here + "/" + msa + "/RAxML_*")
             command = ap.params["raxml_exe"]
-            command += "  -s " + phypath
+            command += " -s " + phypath
             command += " -n " + runid
             command += " -w " + here + "/" + msa
             command += " -e 0.001"
@@ -166,6 +166,12 @@ def calc_alrt(ap):
                 modelstr = "WAG"
             elif runid.__contains__("LG"):
                 modelstr = "LG"
+            elif runid.__contains__("CPREV"):
+                modelstr = "CpREV"
+            elif runid.__contains__("RTREV"):
+                modelstr = "RtREV"
+            elif runid.__contains__("DAYHOFF"):
+                modelstr = "Dayhoff"
             gammastr = ""
             if runid.__contains__("GAMMA"):
                 gammastr = " --nclasses 8 --alpha " + ap.params["runid_alpha"][runid].__str__()
@@ -313,6 +319,7 @@ def get_getanc_commands(ap):
             elif runid.__contains__("LG"):
                 modelstr += "/lg.dat"
             for ing in ap.params["ingroup"]:
+                print ". phyloast.py 316 - ", msa, model, ing
                 getanc_commands.append(ap.params["lazarus_exe"] + " --alignment " + asrmsa + " --tree " + asrtree + " --model " + modelstr + " --outputdir " + here + "/" + msa + "/asr." + model + " --outgroup " + ap.params["outgroup"] + " --ingroup " + ap.params["ingroup"][ing] + " --getanc True")
                 getanc_commands.append("mv " + msa + "/asr." + model + "/ancestor-ml.dat " + msa + "/asr." + model + "/" + ing + ".dat")
                 getanc_commands.append("mv " + msa + "/asr." + model + "/ancestor.out.txt " + msa + "/asr." + model + "/" + ing + ".txt")

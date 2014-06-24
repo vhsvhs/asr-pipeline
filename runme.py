@@ -125,12 +125,12 @@ if jump <= 6 and stop > 6:
         write_log(ap, "Setting up PDB maps")
         setup_pdb_maps(ap)
         write_log(ap, "Screening for functional loci.")
-        x = ap.params["run_exe"] + " " + get_compareanc_commands(ap)
+        x = get_compareanc_commands(ap)
         args = x.split()
         ap.params["run_exe"]
-        proc = subprocess.Popen( args, preexec_fn=os.setsid ) # see http://pymotw.com/2/subprocess/
+        #proc = subprocess.Popen( args, preexec_fn=os.setsid ) # see http://pymotw.com/2/subprocess/
         #os.system( ap.params["run_exe"] + " " + x)
-        #run_script(x)
+        run_script(x)
 
 """ Build an HTML Report """
 if jump <= 7 and stop > 7:

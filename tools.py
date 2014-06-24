@@ -18,14 +18,16 @@ def run_script(path):
     #
     # version 1
     #
-    args = exe.split()
-    proc = subprocess.Popen( args, preexec_fn=os.setsid ) # see http://pymotw.com/2/subprocess/
-    proc.wait()
+    #args = exe.split()
+    #proc = subprocess.Popen( args, preexec_fn=os.setsid ) # see http://pymotw.com/2/subprocess/
+    #proc.wait()
     
     #
     # version 2
     #
-    #os.system(exe)
+    print "\n. ASR pipeline: Running the system command:"
+    print exe
+    os.system(exe)
 
 def run_subprocess(command):
     args = command.split()

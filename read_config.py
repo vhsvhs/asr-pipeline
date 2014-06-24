@@ -129,12 +129,11 @@ def read_config_file(ap):
         elif tokens[0].startswith("ASRSEED"):
             if "seedtaxa" not in ap.params:
                 ap.params["seedtaxa"] = {}
-            anc = tokens[0].split()[1]
-            seed = tokens[0].split()[2]
+            ts = tokens[0].split()
+            anc = ts[1]
+            seed = ts[2]
             ap.params["seedtaxa"][ anc ] = re.sub(" ", "", seed)
 
-
-        
         elif tokens[0].startswith("COMPARE"):
             anc1 = tokens[0].split()[1]
             anc2 = tokens[0].split()[2]
@@ -166,7 +165,10 @@ def read_config_file(ap):
             pdbpath = tokens[0].split()[2]
             if "map2pdb" not in ap.params:
                 ap.params["map2pdb"] = {}
-            ap.params["map2pdb"][ anc ] = pdbpath
+            if anc not in ap.params["map2pdb"]:
+                ap.params["map2pdb"][anc] = []
+            if pdbpath not in ap.params["map2pdb"][anc]:
+                ap.params["map2pdb"][ anc ].append( pdbpath )
         
         elif tokens[0].startswith("HTML_SPECIAL1"):
             thing = ""
