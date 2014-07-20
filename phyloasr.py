@@ -68,7 +68,8 @@ def check_raxml_output(ap):
         phypath = get_phylippath(msa)
         for model in ap.params["raxml_models"]:
             runid = get_runid(msa, model) 
-            if False == os.path.exists(here + "/" + msa + "/RAxML_bestTree." + runid):
+            raxml_treepath = get_raxml_treepath(msa, runid)
+            if False == os.path.exists(raxml_treepath):
                 print "I can't find the expected result from RAxML at " + here + "/" + msa + "/RAxML_bestTree." + runid
                 write_error(ap, "I can't find the expected result from RAxML at " + here + "/" + msa + "/RAxML_bestTree." + runid)
                 exit()
