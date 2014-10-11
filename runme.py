@@ -59,8 +59,8 @@ if jump <= 1.1 and stop > 1.1:
     write_log(ap, "Creating Phylip-formatted versions of the alignments.")
     convert_all_fasta_to_phylip(ap)
 
-#if jump <= 2:
-#    trim_alignments(ap)
+if jump <= 2:
+    trim_alignments(ap)
 
 """ ML Trees """
 if jump <= 3 and stop > 3:
@@ -118,8 +118,8 @@ if jump <= 5.2 and stop > 5.2:
 """ Predict sites of functional evolution """
 if jump <= 6 and stop > 6:
     if "compareanc" in ap.params:
-        if (jump > 4):
-            get_mlalpha_pp(ap)
+        if "runid_alpha" not in ap.params or "runid_pp" not in ap.params:
+            read_lnl_summary(ap)
         ap.params["checkpoint"] = 5.2
         ap.params["pending_checkpoint"] = 6
         write_log(ap, "Setting up PDB maps")

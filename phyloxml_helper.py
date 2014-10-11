@@ -35,7 +35,6 @@ def annotate_phyloxml(line, ancdir):
     #print "Retline:", line
     return line
 
-
 def newick_to_xml(dir, model):
     npath = get_cladogram_path(dir, model)
     ancdir = "asr." + get_runid(dir, model)

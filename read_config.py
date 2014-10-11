@@ -123,7 +123,9 @@ def read_config_file(ap):
             if "ingroup" not in ap.params:
                 ap.params["ingroup"] = {}
             anc = tokens[0].split()[1]
-            ingroup = tokens[0].split()[2]
+            ingroup = tokens[0].split()[2:]
+            ingroup = "".join(ingroup)
+            ingroup = re.sub(" ", "", ingroup) # tolerate and remove whitespace.
             ap.params["ingroup"][ anc ] = ingroup
         
         elif tokens[0].startswith("ASRSEED"):

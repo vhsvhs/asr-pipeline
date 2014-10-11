@@ -82,7 +82,7 @@ def write_alignments():
     
     for d in ap.params["msa_algorithms"]:
         out += "<tr>"
-        out += "<td aling='left'><p>" + d 
+        out += "<td align='left'><p>" + d 
         if d == "msaprobs":
             out += " <a class='smalltext' href=\"http://msaprobs.sourceforge.net/\">[ref]</a>"
         if d == "muscle":
@@ -104,7 +104,10 @@ def write_alignments():
     fout.close()
 
 def read_lnllog(dir):
-    fin = open(dir + "/raxml.lnl.summary.txt", "r")
+    spath = dir + "/raxml.lnl.summary.txt"
+    if False == os.path.exists(spath):
+        return None
+    fin = open(spath, "r")
     lines = fin.readlines()
     fin.close()
     model_data = {}
@@ -174,7 +177,11 @@ def write_anctree(d, model):
     js += "window.onload = function(){\n"
 
     npath = get_cladogram_path(d, model)
+    print "\n. html_helper.py 177: Reading cladogram from here:", npath
     (xmlpath, xmlstring) = newick_to_xml(d, model)
+
+    #print "\n. html_helper.py 180:", xmlstring
+    #exit()
 
     js += "       var dataObject = { phyloxml: "
     js += "'" + xmlstring + "' ,"
@@ -639,6 +646,12 @@ def write_anccomp_plot(pair):
     #
     # Google Chart Stuff
     #
+    spath = pair[0] + "to" + pair[1] + "/summary.txt"
+    if False == os.path.exists(spath):
+        return ""
+    fin = open(spath, "r")
+    
+    
     out += "<script type=\"text/javascript\" src=\"https://www.google.com/jsapi\"></script>"
     out += "<script type=\"text/javascript\">"
     out += "google.load(\"visualization\", \"1\", {packages:[\"corechart\"]});"
@@ -646,7 +659,7 @@ def write_anccomp_plot(pair):
     out += "function drawChart() {"
     out += "var data = google.visualization.arrayToDataTable(["
     out += "['Site', 'Score'],"
-    fin = open(pair[0] + "to" + pair[1] + "/summary.txt")
+    
     site_score = {}
     for l in fin.xreadlines():
         if l.__len__() > 5 and False == l.startswith("site"):
@@ -852,6 +865,10 @@ def write_mutations_plot(pair):
     #
     # Google Chart Stuff
     #
+    spath = pair[0] + "to" + pair[1] + "/summary.txt"
+    if False == os.path.exists(spath):
+        return ""
+    
     out += "<script type=\"text/javascript\" src=\"https://www.google.com/jsapi\"></script>"
     out += "<script type=\"text/javascript\">"
     out += "google.load(\"visualization\", \"1\", {packages:[\"corechart\"]});"
@@ -859,7 +876,8 @@ def write_mutations_plot(pair):
     out += "function drawChart() {"
     out += "var data = google.visualization.arrayToDataTable(["
     out += "['Site', 'Score'],"
-    fin = open(pair[0] + "to" + pair[1] + "/summary.txt")
+    
+    fin = open(spath, "r")
     site_score = {}
     for l in fin.xreadlines():
         if l.__len__() > 5 and False == l.startswith("site"):
@@ -907,6 +925,10 @@ def write_mutations_header(ap):
     return frag
 
 def write_mutations_indi(pair, ap):
+    acpath = pair[0] + "to" + pair[1] + "/ancestral_changes.txt"
+    if False == os.path.exists(acpath):
+        return
+        
     """Writes on HTML page for each ancestral comparison"""
     outpath = HTMLDIR + "/" + pair[0] + "to" + pair[1] + ".mutations.html"    
     fout = open( outpath, "w" )
@@ -934,12 +956,16 @@ def write_mutations_indi(pair, ap):
     #
     # Parse the data in **/ancestral_changes.txt and turn it into a table.
     # Some additional columns get injected into this data (see below)
-    #    
-    fin = open(pair[0] + "to" + pair[1] + "/ancestral_changes.txt", "r")
+    #
+    
+    
+    fin = open(acpath, "r")
+    print "\n. 942:", acpath
+    #fin.readline() # read and forget the header line
     line_tokens = []
     for l in fin.xreadlines():
-        if False == l.__contains__("Alignment"):
-            tokens = l.split("\t") # the file is tab separated
+        if l.__len__() > 2 and False == l.__contains__("Model"):
+            tokens = l.split() # the file is tab separated
             line_tokens.append( tokens )
     fin.close()
     
@@ -960,12 +986,22 @@ def write_mutations_indi(pair, ap):
     # For each msa-model combo:
     for ii in range(0, line_tokens.__len__() ):
         tokens = line_tokens[ii]
+        if tokens.__len__() <= 1:
+            continue
        
         # Write a row for this msa and model
-        fout.write("<tr>\n")
+        
             
         msa = tokens[0]
         model = tokens[1]
+
+        # Get the PP for this msa-model
+        model_data = read_lnllog(msa)
+        if model_data == None:
+            continue
+        pp = model_data[model][1]
+        
+        fout.write("<tr>\n")
         
         # Insert a column with the +/- toggle details button
         fout.write("<td align='center'>")
@@ -979,10 +1015,6 @@ def write_mutations_indi(pair, ap):
         fout.write("    toggle_visibility('show" + msa + "." + model + "');\">&uarr; hide</a></div>")
         fout.write("</td>")
         
-        # Get the PP for this msa-model
-        model_data = read_lnllog(msa)
-        pp = model_data[model][1]
-    
         fout.write("<td align='center'><p>" + tokens[0] + "</p></td>") #msa
         fout.write("<td align='center'><p>" + tokens[1] + "</p></td>") #model
         fout.write("<td align='center'><p>" + pp +        "</p></td>") #pp

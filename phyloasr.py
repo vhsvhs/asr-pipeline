@@ -42,7 +42,10 @@ def write_raxml_commands(ap):
         for model in ap.params["raxml_models"]:
             runid = get_runid(msa, model) 
             if os.path.exists(here + "/" + msa + "/RAxML_info." + runid): # Remove dirty RAxML data.
-                p = run_subprocess("rm " + here + "/" + msa + "/RAxML_*")
+                rmcmd = "rm " + here + "/" + msa + "/RAxML_*"
+                print rmcmd
+                #p = run_subprocess(rmcmd)
+                os.system(rmcmd)
             command = ap.params["raxml_exe"]
             command += " -s " + phypath
             command += " -n " + runid
@@ -143,7 +146,26 @@ def get_mlalpha_pp(ap):
             line = runid + "\t" + lnl.__str__() + "\t" + "%.4f"%pp + "\t%.4f"%alpha + special
             fout.write(line + "\n")
         fout.close()
-        
+
+def read_lnl_summary(ap):
+    if "runid_alpha" not in ap.params:
+        ap.params["runid_alpha"] = {}
+    if "runid_pp" not in ap.params:
+        ap.params["runid_pp"] = {}
+    
+    for msa in ap.params["msa_algorithms"]:
+        lnlpath = msa + "/raxml.lnl.summary.txt"
+        fin = open(lnlpath, "r")
+        for l in fin.xreadlines():
+            if l.__len__() > 2:
+                tokens = l.split()
+                runid = tokens[0]
+                lnl = float( tokens[1] )
+                pp = float( tokens[2] )
+                alpha = float( tokens[3] )
+                ap.params["runid_alpha"][runid] = alpha
+                ap.params["runid_pp"][runid] = pp 
+        fin.close()
         
 def calc_alrt(ap):
     alrt_commands = []
@@ -293,7 +315,7 @@ def get_asr_commands(ap):
                 run_subprocess("mkdir " + msa + "/asr." + model)
             modelstr = get_model_path(model, ap)
             asrtreepath = get_raxml_treepath(msa, runid)
-            asr_commands.append(ap.params["lazarus_exe"] + " --alignment " + fastapath + " --tree " + asrtreepath + " --model " + modelstr + " --outputdir " + msa + "/asr." + model + " --branch_lengths fixed --asrv 8 --codeml --gapcorrect True --outgroup " + ap.params["outgroup"] + " --cleanup True")
+            asr_commands.append(ap.params["lazarus_exe"] + " --alignment " + fastapath + " --tree " + asrtreepath + " --model " + modelstr + " --outputdir " + msa + "/asr." + model + " --branch_lengths fixed --asrv 8 --codeml --gapcorrect True --outgroup " + ap.params["outgroup"])
 
     fout = open("SCRIPTS/asr_commands.sh", "w")
     for a in asr_commands:
@@ -320,7 +342,6 @@ def get_getanc_commands(ap):
             elif runid.__contains__("LG"):
                 modelstr += "/lg.dat"
             for ing in ap.params["ingroup"]:
-                print ". phyloast.py 316 - ", msa, model, ing
                 getanc_commands.append(ap.params["lazarus_exe"] + " --alignment " + asrmsa + " --tree " + asrtree + " --model " + modelstr + " --outputdir " + here + "/" + msa + "/asr." + model + " --outgroup " + ap.params["outgroup"] + " --ingroup " + ap.params["ingroup"][ing] + " --getanc True")
                 getanc_commands.append("mv " + msa + "/asr." + model + "/ancestor-ml.dat " + msa + "/asr." + model + "/" + ing + ".dat")
                 getanc_commands.append("mv " + msa + "/asr." + model + "/ancestor.out.txt " + msa + "/asr." + model + "/" + ing + ".txt")

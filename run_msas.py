@@ -88,19 +88,16 @@ def convert_all_fasta_to_phylip(ap):
         p = get_asr_phylippath(msa)
         fasta_to_phylip(f, p)
 
-#
-# depricated method:
-#
 def trim_alignments(ap):
     """Trims the alignment to match the start and stop motifs.
     The results are written as both PHYLIP and FASTA formats."""
     for msa in ap.params["msa_algorithms"]:
-        fin = open(get_asr_phylippath(msa), "r")
+        fin = open(get_phylippath(msa), "r")
         lines = fin.readlines()
         ntaxa = lines[0].split()[0]
-        [start,stop] = get_boundary_sites( get_asr_phylippath(msa), ap.params["seed_motif_seq"])
+        [start,stop] = get_boundary_sites( get_phylippath(msa), ap.params["seed_motif_seq"])
         
-        #print "\n103:", start, stop
+        print "\n103:", start, stop
         
         # Trim the sequences, and write the FASTA version and PHYLIP verison.
         poutl = ""
@@ -120,7 +117,7 @@ def trim_alignments(ap):
                 poutl += taxa + "  " + trimmed_seq + "\n"
                 ffout.write(">" + taxa + "\n" + trimmed_seq + "\n")
         ffout.close()
-        pfout = open(get_phylippath(msa), "w")
+        pfout = open(get_phylippath(msa), "w") # note: get_phylippath is the same as get_asr_phylippath
         pfout.write(count_good_taxa.__str__() + "  " + (stop-start+1).__str__() + "\n")
         pfout.write(poutl)
         pfout.close()

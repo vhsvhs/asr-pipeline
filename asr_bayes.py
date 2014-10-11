@@ -74,7 +74,7 @@ def run_test():
 
 
 def run_asr_bayes(ap):
-    print "77: run_asr_bayes"
+    #print "77: run_asr_bayes"
     for d in ap.params["msa_algorithms"]:
         for m in ap.params["raxml_models"]:
             print "\n. Sampling Bayesian Ancestors. . .", d, m

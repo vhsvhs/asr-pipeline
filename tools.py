@@ -267,32 +267,34 @@ def get_boundary_sites(msapath, taxa):
     startsite = 1
     endsite = seq.__len__()
                                                                   
-    if start_motif != None and start_motif.__len__() > 0:
-        for i in range(0, seq.__len__()):
-            #print "258:", i, seq[i], start_motif[0]
-            if seq[i] == start_motif[0]:
-                here = ""
-                j = i
-                while here.__len__() < start_motif.__len__() and j < seq.__len__():
-                    #print "262:", j, here
-                    if seq[j] != "-":
-                        here += seq[j]
-                    j += 1
-                
-                if here  == start_motif:
-                    startsite = i + 1         
-                    break
-    
-    if end_motif != None and end_motif.__len__() > 0:
-        for i in range(i, seq.__len__()):
-            if seq[i] == end_motif[0]:
-                here = ""
-                j = i
-                while here.__len__() < end_motif.__len__() and j < seq.__len__():
-                    if seq[j] != "-":
-                        here += seq[j]
-                    j += 1          
-                if here  == end_motif:
-                    endsite = j
-                    break
+    if start_motif != None:
+        if start_motif.__len__() > 0:
+            for i in range(0, seq.__len__()):
+                #print "258:", i, seq[i], start_motif[0]
+                if seq[i] == start_motif[0]:
+                    here = ""
+                    j = i
+                    while here.__len__() < start_motif.__len__() and j < seq.__len__():
+                        #print "262:", j, here
+                        if seq[j] != "-":
+                            here += seq[j]
+                        j += 1
+                    
+                    if here  == start_motif:
+                        startsite = i + 1         
+                        break
+        
+    if end_motif != None:
+        if end_motif.__len__() > 0:
+            for i in range(i, seq.__len__()):
+                if seq[i] == end_motif[0]:
+                    here = ""
+                    j = i
+                    while here.__len__() < end_motif.__len__() and j < seq.__len__():
+                        if seq[j] != "-":
+                            here += seq[j]
+                        j += 1          
+                    if here  == end_motif:
+                        endsite = j
+                        break
     return [startsite, endsite]
