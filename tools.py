@@ -58,17 +58,9 @@ def get_phylippath(DIR):
     nick = DIR_nick[DIR]
     return DIR + "/" + ap.params["geneid"] + SEP + nick + SEP + "phylip"
 
-def get_full_phylippath(DIR):
-    nick = DIR_nick[DIR]
-    return DIR + "/" + ap.params["geneid"] + SEP + nick + SEP + "full" + SEP + "phylip"
-
 def get_fastapath(DIR):
     nick = DIR_nick[DIR]
     return DIR + "/" + ap.params["geneid"] + SEP + nick + SEP + "fasta"
-
-def get_full_fastapath(DIR):
-    nick = DIR_nick[DIR]
-    return DIR + "/" + ap.params["geneid"] + SEP + nick + SEP + "full" + SEP + "fasta"
 
 def get_asr_fastapath(DIR):
     return get_fastapath(DIR)

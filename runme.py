@@ -61,6 +61,7 @@ if jump <= 1.1 and stop > 1.1:
 
 if jump <= 2:
     trim_alignments(ap)
+    convert_all_fasta_to_phylip(ap)
 
 """ ML Trees """
 if jump <= 3 and stop > 3:

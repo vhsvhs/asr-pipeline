@@ -3,6 +3,15 @@ from tools import *
 from log import *
 
 def read_config_file(ap):
+    """This method reads the user-written configuration file.
+    The format of the file is generally KEYWORD = VALUE,
+    where KEYWORD can be a limited set of parameters, such as GENEID or RAXML,
+    and VALUE is the corresponding parameter value.
+    
+    For more information about valid KEYWORDs and VALUEs, see the user documentation,
+    or simply read this method and look for lines containing if tokens[0].startswith("...")
+    
+    """
     cpath = ap.getArg("--configpath")
     print "7:", cpath
     if False == os.path.exists("./" + cpath):
@@ -181,6 +190,7 @@ def read_config_file(ap):
                 else:
                     thing +=  t
             ap.params["HTML_SPECIAL1"] = thing
+    
     fin.close()
 
 def verify_config(ap):
