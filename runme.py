@@ -147,9 +147,10 @@ if jump <= 7 and stop > 7:
 if jump <= 7.1 and stop > 7.1:
     ap.params["checkpoint"] = 7
     ap.params["pending_checkpoint"] = 7.1
-    for pair in ap.params["compareanc"]:
-        write_anccomp_indi(pair, ap)
-        write_mutations_indi(pair, ap)
+    if "compareanc" in ap.params:
+        for pair in ap.params["compareanc"]:
+            write_anccomp_indi(pair, ap)
+            write_mutations_indi(pair, ap)
 
 if jump <= 7.2 and stop > 7.3:
     ap.params["checkpoint"] = 7.1
