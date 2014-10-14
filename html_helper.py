@@ -27,7 +27,7 @@ def get_header(head = "", urlpre = ""):
     h += " | <a href='" + urlpre + "trees.html'>Trees & Ancestors</a>"
     if os.path.exists("SIMULATION"):
         h += " | <a href='" + urlpre + "errorsimulation.html'>Accuracy Assessment</a>"
-    if os.path.exists("SCRIPTS/compareanc_commands.sh"):
+    if "compareanc" in ap.params:
         pair = ap.params["compareanc"][ 0 ]
         indi_path = pair[0] + "to" + pair[1] + ".mutations.html"
         h += " | <a href='" + urlpre + indi_path + "'>Mutations</a>"    
