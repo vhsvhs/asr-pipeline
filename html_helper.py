@@ -156,7 +156,11 @@ def write_treesancs():
         for model in ap.params["raxml_models"]:
             tpath = get_alrt_treepath(d, model)
             tlength = get_tree_length( tpath )
-            out += "<tr>"
+            if model == max_model:
+                """Highlight the row corresponding to the ML model"""
+                out += "<tr style=\"background-color: #ffff99;\">"
+            else:
+                out += "<tr>"
             out += "<td>" + d + "</td>"
             out += "<td>" + model + "</td>"
             out += "<td align='right'>" + model_data[model][0].__str__() + "</td>"
