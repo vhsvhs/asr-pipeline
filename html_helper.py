@@ -425,19 +425,15 @@ def write_ancestors_indi():
             for f in os.listdir(ancdir):
                 if f.__contains__(".dat"):            
                     data = get_pp_distro( ancdir + "/" + f )
-
                     ancname = re.sub(".dat", "", f)
-
+                    nodenum = re.sub("node", "", ancname)
                     outpath = outdir + "/" + ancname + ".html" 
+                    
                     out = ""
-
+                    
                     # writes the script for a Google barplot
                     google_header = write_ppdistro_plot(data)
                     out += get_header(urlpre="../",head=google_header)
-                    nodenum = re.sub(".dat", "", f)
-                    #f.split(".")[0]
-                    nodenum = re.sub("node", "", nodenum)
-                    
                     
                     out += "<h2>Ancestral Node " + nodenum + ", Alignment: " + DIR_nick[d] + ", Model: " + model + "</h2>\n"
                     #out += "<hr>\n"
