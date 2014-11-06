@@ -96,6 +96,8 @@ def write_alignments():
             out += " <a class='smalltext' href=\"http://msaprobs.sourceforge.net/\">[ref]</a>"
         if d == "muscle":
             out += " <a class='smalltext' href=\"https://www.ebi.ac.uk/Tools/msa/muscle/\">[ref]</a>"
+        if d == "mafft":
+            out += " <a class='smalltext' href=\"http://mafft.cbrc.jp/alignment/software/\">[ref]</a>"
         out += "</p></td>"
         fpath = get_fastapath(d)
         ppath = get_phylippath(d)

@@ -72,6 +72,9 @@ def read_config_file(ap):
 
         elif tokens[0].startswith("PRANK"):
             ap.params["prank_exe"] = tokens[1].strip()
+
+        elif tokens[0].startswith("MAFFT"):
+            ap.params["mafft_exe"] = tokens[1].strip()
         
         elif tokens[0].startswith("ANCCOMP"):
             ap.params["anccomp"] = tokens[1].strip()
@@ -239,6 +242,10 @@ def verify_config(ap):
             write_error(ap, "Something is wrong. Your config file doesn't have an executable path for MSAPROBS.")
             exit()
         if msa == "PRANK" and "prank_exe" not in ap.params:
+            print "\n. Something is wrong. Your config file doesn't have an executable path for PRANK."
+            write_error(ap, "Something is wrong. Your config file doesn't have an executable path for PRANK.")
+            exit()
+        if msa == "MAFFT" and "mafft_exe" not in ap.params:
             print "\n. Something is wrong. Your config file doesn't have an executable path for PRANK."
             write_error(ap, "Something is wrong. Your config file doesn't have an executable path for PRANK.")
             exit()

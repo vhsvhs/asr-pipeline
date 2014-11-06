@@ -56,6 +56,8 @@ def write_msa_commands(ap):
             fout.write(ap.params["prank_exe"] + " -d=" + ap.params["ergseqpath"] + " -o=" + get_fastapath(msa) + "\n")
         elif msa == "msaprobs": 
             fout.write(ap.params["msaprobs_exe"] + " " + ap.params["ergseqpath"] + " > " + get_fastapath(msa) + "\n")
+        elif msa == "mafft": 
+            fout.write(ap.params["mafft_exe"] + " --auto " + ap.params["ergseqpath"] + " > " + get_fastapath(msa) + "\n")
     fout.close()
     return p
     #os.system("mpirun -np 4 --machinefile hosts.txt /common/bin/mpi_dispatch SCRIPTS/msas.commands.sh")
