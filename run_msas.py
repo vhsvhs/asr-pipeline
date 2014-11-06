@@ -27,17 +27,22 @@ def clean_erg_seqs(ap):
     
     outlines = []
     taxanames = []
+    okay = True
     for l in lines:
         l = l.strip()
         if l.__len__() <= 1:
             pass
         elif l.startswith(">"):
+            okay = True
             taxaname = re.sub(">", "", l.split()[0] )
             if taxaname in taxanames:
-                print "Something is wrong. I found the sequence name", taxaname, "twice in your sequences."
-                exit()
-            outlines.append(">" + taxaname)
-        else:
+                print "\n. I found the sequence name", taxaname, "twice in your sequences."
+                print " --> I'm skipping redundant copies of", taxaname
+                okay = False
+                #exit()
+            else:
+                outlines.append(">" + taxaname)
+        elif okay == True:
             outlines.append(l)
     
     cleanpath = ap.params["ergseqpath"]
@@ -99,7 +104,7 @@ def trim_alignments(ap):
         ntaxa = lines[0].split()[0]
         [start,stop] = get_boundary_sites( get_phylippath(msa), ap.params["seed_motif_seq"])
         
-        print "\n103:", start, stop
+        print "\nAlignment", msa, "start=", start, "stop=", stop
         
         # Trim the sequences, and write the FASTA version and PHYLIP verison.
         poutl = ""
