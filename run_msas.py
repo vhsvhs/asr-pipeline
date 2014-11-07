@@ -91,9 +91,13 @@ def fasta_to_phylip(inpath, outpath):
 
 def convert_all_fasta_to_phylip(ap):
     for msa in ap.params["msa_algorithms"]:
-        f = get_asr_fastapath(msa)
-        p = get_asr_phylippath(msa)
+        f = get_fastapath(msa)
+        p = get_phylippath(msa)
         fasta_to_phylip(f, p)
+        f = get_trimmed_fastapath(msa)
+        p = get_trimmed_phylippath(msa)
+        fasta_to_phylip(f, p)
+
 
 def trim_alignments(ap):
     """Trims the alignment to match the start and stop motifs.
@@ -128,3 +132,48 @@ def trim_alignments(ap):
         pfout.write(count_good_taxa.__str__() + "  " + (stop-start+1).__str__() + "\n")
         pfout.write(poutl)
         pfout.close()
+    
+    trim_by_zorro(ap)
+
+def trim_by_zorro(ap):
+    z_commands = []
+    for msa in ap.params["msa_algorithms"]:
+        c = "zorro -sample " + get_fastapath(msa) + " > " + get_fastapath(msa) + ".zorro"
+        z_commands.append( c )
+    
+    fout = open("SCRIPTS/zorro_commands.sh", "w")
+    for c in z_commands:
+        fout.write( c + "\n" )
+    fout.close()
+    run_script("SCRIPTS/zorro_commands.sh")
+
+    for msa in ap.params["msa_algorithms"]:
+        fin = open(get_fastapath(msa) + ".zorro", "r")
+        keep_sites = []
+        site = 0
+        for ll in fin.xreadlines():
+            if ll.__len__() > 2:
+                score = float( ll.strip() )
+                if score > 2.0: # to-do, fix this:
+                    keep_sites.append( site )
+            site += 1
+        fin.close()
+        
+        fout = open( get_trimmed_fastapath(msa), "w")
+        fin = open( get_fastapath(msa), "r")
+        site_count = 0
+        for l in fin.xreadlines():
+            if l.startswith(">"):
+                fout.write("\n" + l)
+                site_count = 0
+            elif l.__len__() > 5:
+                l = l.strip()
+                for c in l:
+                    if site_count in keep_sites:
+                        fout.write(c)
+                    site_count += 1
+        fin.close()
+        fout.close()
+        
+    
+    
