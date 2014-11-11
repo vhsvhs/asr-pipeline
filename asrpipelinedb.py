@@ -43,7 +43,7 @@ def build_db(dbpath = None):
     cur.execute("create table if not exists SiteSetsAlignment(setid INTEGER, almethod INT, fromsite INT, tosite INT)") # alseqid is the ID of an aligned sequence
     
     # for ZORRO:
-    cur.execute("create table if not exists AlignmentSiteScoringMethods(id INTEGER primary key autoincrement, name TEXT)")
+    cur.execute("create table if not exists AlignmentSiteScoringMethods(id INTEGER primary key autoincrement, name TEXT unique)")
     cur.execute("create table if not exists AlignmentSiteScores(almethodid INTEGER, scoringmethodid INTEGER, site INT, score FLOAT)")
     cur.execute("create table if not exists SampledSequences(id INTEGER primary key autoincrement, taxonid INT, samsequence TEXT, datatype INT, almethod INT)")
     

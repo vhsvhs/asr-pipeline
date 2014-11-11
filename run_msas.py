@@ -219,19 +219,64 @@ def trim_alignments(con, ap):
                 write_log(con, "After trimming the alignment " + alid.__str__() + " to the seed boundaries, the taxa " + taxa + " contains no sequence content. This taxa will be obmitted from downstream analysis.")
         ffout.close()
     
-    #trim_by_zorro(ap)
     
-def build_restriction_alignments(con, ap):
-    #
-    # continue here
-    #
-    
+def build_zorro_commands(con, ap):
     # 1. run ZORRO
     # 2. parse the results
     # 3. optimize the set of sites we draw from ZORRO, and the stability of the output tree
     # 4. write the final alignment
-    pass
+        
+    cur = con.cursor()
+
+    sql = "insert or replace into AlignmentSiteScoringMethods (name) VALUES('zorro')"
+    cur.execute(sql)
+    con.commit()
     
+    sql = "select id, name from AlignmentMethods"
+    cur.execute(sql)
+    x = cur.fetchall()
+
+    z_commands = []
+    for ii in x:
+        alid = ii[0]
+        almethod = ii[1]
+        """Write a script for ZORRO for this alignment."""
+        c = "zorro -sample " + get_trimmed_fastapath(almethod) + " > " + get_trimmed_fastapath(almethod) + ".zorro"
+        z_commands.append( c )
+    
+    zorro_scriptpath = "SCRIPTS/zorro_commands.sh"
+    fout = open(zorro_scriptpath, "w")
+    for c in z_commands:
+        fout.write( c + "\n" )
+    fout.close()
+    return zorro_scriptpath
+
+def import_zorro_scores(con):
+    cur = con.cursor()    
+
+    sql = "select id from AlignmentSiteScoringMethods where name='zorro'"
+    cur.execute(sql)
+    zorroid = cur.fetchone()[0]
+    
+    sql = "select id, name from AlignmentMethods"
+    cur.execute(sql)
+    x = cur.fetchall()
+
+    """For each alignment, read & import the zorro scores."""
+    for ii in x:
+        alid = ii[0]
+        almethod = ii[1]
+        zorropath = get_trimmed_fastapath(almethod) + ".zorro"
+        fin = open(zorropath, "r")
+        site = 0
+        for line in fin.xreadlines():
+            site += 1
+            score = float( line.strip() )
+            sql = "insert or replace into AlignmentSiteScores(almethodid,scoringmethodid,site,score) "
+            sql += " VALUES(" + alid.__str__() + "," + zorroid.__str__() + "," + site.__str__() + "," + score.__str__() + ")"
+            cur.execute(sql)
+        con.commit()
+        fin.close()
 
 def trim_by_zorro(ap):
     z_commands = []

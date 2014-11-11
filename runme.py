@@ -53,18 +53,19 @@ if jump <= 1.1 and stop > 1.1:
     ap.params["pending_checkpoint"] = 1.1
     check_aligned_sequences(con, ap)
 
-    #
-    # to-do: continue here: use ZORRO to cull sites for the purposes of tree-building
-    #
-
 if jump <= 1.9 and stop > 1.91:
     clear_sitesets(con, ap)
 
 if jump <= 2 and stop > 2.1:
+    """Trim the alignments to match the seed sequence(s)."""
     trim_alignments(con, ap)
 
 if jump <= 2.1 and stop > 2.2:
-    build_restriction_alignments(con, ap)
+    p = build_zorro_commands(con, ap)
+    run_script(p)
+
+if jump <= 2.2 and stop > 2.3:
+    import_zorro_scores(con)
 
 exit()
 
