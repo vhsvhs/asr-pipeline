@@ -17,8 +17,6 @@
 # --> where "--inputfile" can be really anything.
 #
 # 3. Get the values of optional arguments:
-# x = ap.getOptionalArg("--verbose")
-# --> getOptionalArg will return False if this argument was not specified by the user.
 #
 #
 
@@ -48,7 +46,7 @@ class ArgParser:
 			i = self.args.index(flag)
 			return self.args[i+1]
 		else:
-			return False
+			return None
 	
 	# This method will return a list of tokens following 'flag', but not including
 	# tokens which start with "--"

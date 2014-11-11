@@ -8,6 +8,8 @@
 #
 from argParser import *
 from tools import *
+from asrpipelinedb import *
+from log import *
 
 """"
 The original shelll script....
@@ -19,53 +21,102 @@ cp cgmc.erg.raw.fasta cgmc.txt
 python SCRIPTS/clean_seqs.py cgmc.txt > cgmc.fasta
 mpirun -np 4 SCRIPTS/run_msas.mpi.sh
 """
+from asrpipelinedb_api import *
 
-def clean_erg_seqs(ap):
-    fin = open(ap.params["ergseqpath"], "r")
-    lines = fin.readlines()
-    fin.close()
-    
-    outlines = []
+def read_fasta(fpath):
+    """Ignores redundant taxa."""
+    fin = open(fpath, "r")    
     taxanames = []
+    taxa_seq = {}
+    last_taxa = None
+    last_seq = ""
     okay = True
-    for l in lines:
+    for l in fin.xreadlines():
         l = l.strip()
         if l.__len__() <= 1:
             pass
         elif l.startswith(">"):
             okay = True
             taxaname = re.sub(">", "", l.split()[0] )
-            if taxaname in taxanames:
-                print "\n. I found the sequence name", taxaname, "twice in your sequences."
-                print " --> I'm skipping redundant copies of", taxaname
+            if taxaname in taxa_seq:
                 okay = False
-                #exit()
             else:
-                outlines.append(">" + taxaname)
+                if last_taxa != None:
+                    taxa_seq[last_taxa] = last_seq
+                last_taxa = taxaname
+                last_seq = ""
+                
         elif okay == True:
-            outlines.append(l)
+            last_seq += l
+    taxa_seq[last_taxa] = last_seq
+    fin.close()
+    return taxa_seq
+
+def import_and_clean_erg_seqs(con, ap):    
+    taxa_seq = read_fasta(ap.params["ergseqpath"])
+    
+    for taxon in taxa_seq:
+        import_original_seq(con, taxon, taxa_seq[taxon] )
     
     cleanpath = ap.params["ergseqpath"]
     fout = open(cleanpath, "w")
-    for l in outlines:
-        fout.write(l + "\n")
+    for taxon in taxa_seq:
+        fout.write(">" + taxon + "\n")
+        fout.write(taxa_seq[taxon] + "\n")
     fout.close()
     
-def write_msa_commands(ap):
+    cur = con.cursor()
+    sql = "select count(*) from Taxa"
+    cur.execute(sql)
+    c = cur.fetchone()[0]
+    write_log(con, "There are " + c.__str__() + " taxa in the database.")
+    
+def write_msa_commands(con, ap):
     p = "SCRIPTS/msas.commands.sh"
     fout = open(p, "w")
     for msa in ap.params["msa_algorithms"]:
         if msa == "muscle":
             fout.write(ap.params["muscle_exe"] + " -in " + ap.params["ergseqpath"] + " -out " + get_fastapath(msa) + "\n")
+            import_alignment_method(con, msa, ap.params["muscle_exe"])
         elif msa == "prank":
             fout.write(ap.params["prank_exe"] + " -d=" + ap.params["ergseqpath"] + " -o=" + get_fastapath(msa) + "\n")
+            import_alignment_method(con, msa, ap.params["prank_exe"])
         elif msa == "msaprobs": 
             fout.write(ap.params["msaprobs_exe"] + " " + ap.params["ergseqpath"] + " > " + get_fastapath(msa) + "\n")
+            import_alignment_method(con, msa, ap.params["msaprobs_exe"])
         elif msa == "mafft": 
             fout.write(ap.params["mafft_exe"] + " --auto " + ap.params["ergseqpath"] + " > " + get_fastapath(msa) + "\n")
+            import_alignment_method(con, msa, ap.params["mafft_exe"])
     fout.close()
     return p
     #os.system("mpirun -np 4 --machinefile hosts.txt /common/bin/mpi_dispatch SCRIPTS/msas.commands.sh")
+
+def check_aligned_sequences(con, ap):
+    cur = con.cursor()
+    for msa in ap.params["msa_algorithms"]:
+        expected_fasta = get_fastapath(msa)
+        if False == os.path.exists( expected_fasta ):
+            write_error(con, "I can't find the expected FASTA output from " + msa + " at " + expected_fasta, code=None)
+        taxa_seq = read_fasta(expected_fasta)
+    
+        sql = "select id from AlignmentMethods where name='" + msa + "'"
+        cur.execute(sql)
+        x = cur.fetchall()
+        if x.__len__() == 0:
+            write_error(con, "The alignment method " + msa + " does not exist in the database.")
+            exit()
+        almethodid = x[0][0] 
+
+        for taxa in taxa_seq:
+            taxonid = get_taxonid(con, taxa)
+            import_aligned_seq(con, taxonid, almethodid, taxa_seq[taxa])
+                 
+        cur = con.cursor()
+        sql = "select count(*) from AlignedSequences where almethod=" + almethodid.__str__()
+        cur.execute(sql)
+        c = cur.fetchone()[0]
+        write_log(con, "There are " + c.__str__() + " sequences in the " + msa + " alignment.")
+     
 
 def fasta_to_phylip(inpath, outpath):
     fin = open(inpath, "r")
@@ -99,41 +150,68 @@ def convert_all_fasta_to_phylip(ap):
         fasta_to_phylip(f, p)
 
 
-def trim_alignments(ap):
+def build_seed_sitesets(con, ap):
+    cur = con.cursor()
+    sql = "insert or replace into SiteSets(name) VALUES(\"seed\")"
+    cur.execute(sql)
+    con.commit()
+    
+    
+def trim_alignments(con, ap):
     """Trims the alignment to match the start and stop motifs.
     The results are written as both PHYLIP and FASTA formats."""
-    for msa in ap.params["msa_algorithms"]:
-        fin = open(get_phylippath(msa), "r")
-        lines = fin.readlines()
-        ntaxa = lines[0].split()[0]
-        [start,stop] = get_boundary_sites( get_phylippath(msa), ap.params["seed_motif_seq"])
+    cur = con.cursor()
+    sql = "select id, name from AlignmentMethods"
+    cur.execute(sql)
+    x = cur.fetchall()
+    for ii in x:
+        """Get the seed sequence, and then find the start and end sites."""
+        alid = ii[0]
+        alname = ii[1]        
+        seedid = get_taxonid(con, ap.params["seed_motif_seq"] )
+        seedseq = get_aligned_seq(con, seedid, alid)
+        start_motif = ap.params["start_motif"]
+        end_motif = ap.params["end_motif"]
+        [start, stop] = get_boundary_sites(seedseq, start_motif, end_motif)
         
-        print "\nAlignment", msa, "start=", start, "stop=", stop
+        """Remember these start and end sites."""
+        #
+        # to-do:
+        # 
         
-        # Trim the sequences, and write the FASTA version and PHYLIP verison.
-        poutl = ""
-        ffout = open(get_fastapath(msa), "w")
-        count_good_taxa = 0
-        for ii in range(1, lines.__len__()):
-            tokens = lines[ii].split()
-            taxa = tokens[0]
-            seq = tokens[1]
+        """Write an alignment, trimmed to the seed."""
+        ffout = open( get_trimmed_fastapath(alname), "w")
+        sql = "select taxonid, alsequence from AlignedSequences where almethod=" + alid.__str__()
+        cur.execute(sql)
+        y = cur.fetchall()
+        for jj in y: # for each sequence
+            taxonid = jj[0]
+            taxa = get_taxon_name(con, taxonid)
+            seq = jj[1]
             trimmed_seq = seq[start-1:stop]
-            hasdata = False
+            hasdata = False 
             for c in trimmed_seq:
                 if c != "-":
                     hasdata = True
-            if hasdata == True:
-                count_good_taxa += 1
-                poutl += taxa + "  " + trimmed_seq + "\n"
+            if hasdata == True: # Does this sequence contain at least one non-indel character?
                 ffout.write(">" + taxa + "\n" + trimmed_seq + "\n")
+            else:
+                write_log(con, "After trimming the alignment " + alid.__str__() + " to the seed boundaries, the taxa " + taxa + " contains no sequence content. This taxa will be obmitted from downstream analysis.")
         ffout.close()
-        pfout = open(get_phylippath(msa), "w") # note: get_phylippath is the same as get_asr_phylippath
-        pfout.write(count_good_taxa.__str__() + "  " + (stop-start+1).__str__() + "\n")
-        pfout.write(poutl)
-        pfout.close()
     
-    trim_by_zorro(ap)
+    #trim_by_zorro(ap)
+    
+def build_restriction_alignments(con, ap):
+    #
+    # continue here
+    #
+    
+    # 1. run ZORRO
+    # 2. parse the results
+    # 3. optimize the set of sites we draw from ZORRO, and the stability of the output tree
+    # 4. write the final alignment
+    pass
+    
 
 def trim_by_zorro(ap):
     z_commands = []

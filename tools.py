@@ -251,18 +251,18 @@ def probForBin(b):
         return x
     return x + 0.025
     
-def get_boundary_sites(msapath, taxa):
+def get_boundary_sites(seq, start_motif, end_motif):
     """Input: a sequence alignment, a seed taxa, and start/end motifs determined in the config. file.
     This function then finds those motifs in the seed sequence (which includes gaps),
-    and then returns the translate start/end sites for this alignment.
-    NOTE: msapath must point to a PHYLIP-formatted alignment."""
-    start_motif = ap.params["start_motif"] #"YQLI"
-    end_motif = ap.params["end_motif"] #"MPFF"
+    and then returns the translate start/end sites for this alignment."""
+    
+    #start_motif = ap.params["start_motif"] #"YQLI"
+    #end_motif = ap.params["end_motif"] #"MPFF"
 
     #print "248:", start_motif
     #print "249:", end_motif
 
-    seq = get_sequence(msapath, taxa)
+    #seq = get_sequence(msapath, taxa)
     #print seq
     startsite = 1
     endsite = seq.__len__()

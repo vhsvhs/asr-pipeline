@@ -1,7 +1,6 @@
 from tools import *
 
 
-
 def clean_seqs( apath ):
     fin = open(apath, "r")
     
