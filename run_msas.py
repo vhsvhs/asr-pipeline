@@ -156,11 +156,30 @@ def build_seed_sitesets(con, ap):
     cur.execute(sql)
     con.commit()
     
-    
+
+def clear_sitesets(con, ap):
+    cur = con.cursor()
+    sql = "delete from SiteSets"
+    cur.execute(sql)
+    sql = "delete from SiteSetsAlignment"
+    cur.execute(sql)
+    con.commit()
+
 def trim_alignments(con, ap):
     """Trims the alignment to match the start and stop motifs.
     The results are written as both PHYLIP and FASTA formats."""
     cur = con.cursor()
+    
+    """Create a SiteSet for the sites corresponding to the seed sequence(s)."""
+    sql = "insert or replace into SiteSets(setname) VALUES('seed')"
+    cur.execute(sql)
+    con.commit()
+    sql = "select id from SiteSets where setname='seed'"
+    cur.execute(sql)
+    sitesetid = cur.fetchone()[0]
+    
+    """Now iterate through each alignment, and find the start/stop sites
+    corresponding to the seed sequence(s)."""
     sql = "select id, name from AlignmentMethods"
     cur.execute(sql)
     x = cur.fetchall()
@@ -175,9 +194,10 @@ def trim_alignments(con, ap):
         [start, stop] = get_boundary_sites(seedseq, start_motif, end_motif)
         
         """Remember these start and end sites."""
-        #
-        # to-do:
-        # 
+        sql = "insert or replace into SiteSetsAlignment(setid, almethod, fromsite, tosite) VALUES("
+        sql += sitesetid.__str__() + "," + alid.__str__() + "," + start.__str__() + "," + stop.__str__() + ")"
+        cur.execute(sql)
+        con.commit()
         
         """Write an alignment, trimmed to the seed."""
         ffout = open( get_trimmed_fastapath(alname), "w")

@@ -57,6 +57,9 @@ if jump <= 1.1 and stop > 1.1:
     # to-do: continue here: use ZORRO to cull sites for the purposes of tree-building
     #
 
+if jump <= 1.9 and stop > 1.91:
+    clear_sitesets(con, ap)
+
 if jump <= 2 and stop > 2.1:
     trim_alignments(con, ap)
 
