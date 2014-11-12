@@ -81,6 +81,9 @@ def read_config_file(ap):
         
         elif tokens[0].startswith("PYMOL"):
             ap.params["pymol_exe"] = tokens[1].strip()
+ 
+        elif tokens[0].startswith("ZORRO"):
+            ap.params["zorro_exe"] = tokens[1].strip()
         
         elif tokens[0].startswith("ALIGNMENT_ALGORITHMS"):
             x = tokens[1].split()

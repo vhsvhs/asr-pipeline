@@ -6,14 +6,14 @@ Email: victorhansonsmith@gmail.com
 """
 import sqlite3 as lite
 import os, sys
-from version import *
+from splash import *
 
 def build_db(dbpath = None):
     """Initializes all the tables. Returns the DB connection object.
     If tables already exist, they will NOT be overwritten."""
         
     if dbpath == None or dbpath == False:
-        dbpath = "test.db"
+        dbpath = "asr.db"
         print "\n. Creating a new database at", dbpath
     else:
         print "\n. Restoring the existing database at", dbpath
@@ -29,10 +29,11 @@ def build_db(dbpath = None):
     cur.execute("create table if not exists ErrorLog(id INTEGER primary key, time DATETIME DEFAULT CURRENT_TIMESTAMP,  message TEXT, code INT)")
     
     # Sequence Alignment
-    cur.execute("create table if not exists Taxa(id INTEGER primary key autoincrement, fullname TEXT, shortname TEXT unique)")
-    cur.execute("create table if not exists OriginalSequences(id INTEGER primary key autoincrement, taxonid INT, sequence TEXT, datatype INT)") # taxonid is the ID of a row in Taxa; datatypes: 0=nucleotide, 1=amino acid
+    """Note: each Taxa can have only one sequence; see the 'unique' modified on taxonid table fields."""
+    cur.execute("create table if not exists Taxa(id INTEGER primary key autoincrement, fullname TEXT unique, shortname TEXT unique)")
+    cur.execute("create table if not exists OriginalSequences(id INTEGER primary key autoincrement, taxonid INT unique, sequence TEXT, datatype INT)") # taxonid is the ID of a row in Taxa; datatypes: 0=nucleotide, 1=amino acid
     cur.execute("create table if not exists AlignmentMethods(id INTEGER primary key autoincrement, name TEXT, exe_path TEXT)")
-    cur.execute("create table if not exists AlignedSequences(id INTEGER primary key autoincrement, taxonid INT, alsequence TEXT, almethod INT)") # these sequences contain indels
+    cur.execute("create table if not exists AlignedSequences(id INTEGER primary key autoincrement, taxonid INT unique, alsequence TEXT, almethod INT)") # these sequences contain indels
 
     # When sequences get trimmed, rather than store a new sequence, define a SiteSet mapping from->to site
     # regions.

@@ -9,6 +9,7 @@ from asr_bayes import *
 from html_helper import *
 from struct_analysis import *
 from log import *
+from plots import *
 print_splash()
 
 jump = ap.getOptionalArg("--jump") # Will start the script at this point.
@@ -39,6 +40,8 @@ if jump <= 0 and stop > 0:
     write_log(con, "Reading sequences")
     import_and_clean_erg_seqs(con, ap)
 
+verify_erg_seqs(con)
+
 """ MSAs """
 if jump <= 1 and stop > 1:
     ap.params["checkpoint"] = 0
@@ -63,13 +66,14 @@ if jump <= 2 and stop > 2.1:
 if jump <= 2.1 and stop > 2.2:
     p = build_zorro_commands(con, ap)
     run_script(p)
-
 if jump <= 2.2 and stop > 2.3:
     import_zorro_scores(con)
+if jump <= 2.3 and stop > 2.4:
+    plot_zorro_stats(con)
 
 exit()
 
-if jump <= 2.5 and setop > 2.6:
+if jump <= 2.5 and stop > 2.6:
     convert_all_fasta_to_phylip(ap)
 
 """ ML Trees """

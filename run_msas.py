@@ -10,6 +10,7 @@ from argParser import *
 from tools import *
 from asrpipelinedb import *
 from log import *
+from plots import *
 
 """"
 The original shelll script....
@@ -52,8 +53,18 @@ def read_fasta(fpath):
     fin.close()
     return taxa_seq
 
-def import_and_clean_erg_seqs(con, ap):    
+def import_and_clean_erg_seqs(con, ap):  
+    """This method imports original sequences (unaligned) and builds entries
+    in the SQL tables Taxa and OriginalSequences.
+    Note: these tables are wiped clean before inserting new data."""  
     taxa_seq = read_fasta(ap.params["ergseqpath"])
+    
+    cur = con.cursor()
+    sql = "delete from OriginalSequences"
+    cur.execute(sql)
+    sql = "delete from Taxa"
+    cur.execute(sql)
+    con.commit()
     
     for taxon in taxa_seq:
         import_original_seq(con, taxon, taxa_seq[taxon] )
@@ -65,27 +76,34 @@ def import_and_clean_erg_seqs(con, ap):
         fout.write(taxa_seq[taxon] + "\n")
     fout.close()
     
+def verify_erg_seqs(con):
+    """Sanity Check:"""
     cur = con.cursor()
     sql = "select count(*) from Taxa"
     cur.execute(sql)
     c = cur.fetchone()[0]
     write_log(con, "There are " + c.__str__() + " taxa in the database.")
+
+    sql = "select count(*) from OriginalSequences"
+    cur.execute(sql)
+    c = cur.fetchone()[0]
+    write_log(con, "There are " + c.__str__() + " sequences in the database.")
     
 def write_msa_commands(con, ap):
     p = "SCRIPTS/msas.commands.sh"
     fout = open(p, "w")
     for msa in ap.params["msa_algorithms"]:
         if msa == "muscle":
-            fout.write(ap.params["muscle_exe"] + " -in " + ap.params["ergseqpath"] + " -out " + get_fastapath(msa) + "\n")
+            fout.write(ap.params["muscle_exe"] + " -maxhours 5 -in " + ap.params["ergseqpath"] + " -out " + get_fastapath(msa) + "\n")
             import_alignment_method(con, msa, ap.params["muscle_exe"])
         elif msa == "prank":
             fout.write(ap.params["prank_exe"] + " -d=" + ap.params["ergseqpath"] + " -o=" + get_fastapath(msa) + "\n")
             import_alignment_method(con, msa, ap.params["prank_exe"])
         elif msa == "msaprobs": 
-            fout.write(ap.params["msaprobs_exe"] + " " + ap.params["ergseqpath"] + " > " + get_fastapath(msa) + "\n")
+            fout.write(ap.params["msaprobs_exe"] + " -num_threads 2 " + ap.params["ergseqpath"] + " > " + get_fastapath(msa) + "\n")
             import_alignment_method(con, msa, ap.params["msaprobs_exe"])
         elif msa == "mafft": 
-            fout.write(ap.params["mafft_exe"] + " --auto " + ap.params["ergseqpath"] + " > " + get_fastapath(msa) + "\n")
+            fout.write(ap.params["mafft_exe"] + " --thread 2 --auto " + ap.params["ergseqpath"] + " > " + get_fastapath(msa) + "\n")
             import_alignment_method(con, msa, ap.params["mafft_exe"])
     fout.close()
     return p
@@ -106,6 +124,10 @@ def check_aligned_sequences(con, ap):
             write_error(con, "The alignment method " + msa + " does not exist in the database.")
             exit()
         almethodid = x[0][0] 
+
+        sql = "delete from AlignedSequences where almethod=" + almethodid.__str__()
+        cur.execute(sql)
+        con.commit()
 
         for taxa in taxa_seq:
             taxonid = get_taxonid(con, taxa)
@@ -201,9 +223,12 @@ def trim_alignments(con, ap):
         
         """Write an alignment, trimmed to the seed."""
         ffout = open( get_trimmed_fastapath(alname), "w")
+        pfout = open( get_trimmed_phylippath(alname), "w")
+
         sql = "select taxonid, alsequence from AlignedSequences where almethod=" + alid.__str__()
         cur.execute(sql)
         y = cur.fetchall()
+        pfout.write( y.__len__().__str__() + "   " + y[0][1].__len__().__str__() + "\n")
         for jj in y: # for each sequence
             taxonid = jj[0]
             taxa = get_taxon_name(con, taxonid)
@@ -215,9 +240,11 @@ def trim_alignments(con, ap):
                     hasdata = True
             if hasdata == True: # Does this sequence contain at least one non-indel character?
                 ffout.write(">" + taxa + "\n" + trimmed_seq + "\n")
+                pfout.write(taxa + "    " + trimmed_seq + "\n")
             else:
                 write_log(con, "After trimming the alignment " + alid.__str__() + " to the seed boundaries, the taxa " + taxa + " contains no sequence content. This taxa will be obmitted from downstream analysis.")
         ffout.close()
+        pfout.close()
     
     
 def build_zorro_commands(con, ap):
@@ -241,7 +268,7 @@ def build_zorro_commands(con, ap):
         alid = ii[0]
         almethod = ii[1]
         """Write a script for ZORRO for this alignment."""
-        c = "zorro -sample " + get_trimmed_fastapath(almethod) + " > " + get_trimmed_fastapath(almethod) + ".zorro"
+        c = ap.params["zorro_exe"] + " -sample " + get_trimmed_fastapath(almethod) + " > " + get_trimmed_fastapath(almethod) + ".zorro"
         z_commands.append( c )
     
     zorro_scriptpath = "SCRIPTS/zorro_commands.sh"
@@ -266,7 +293,7 @@ def import_zorro_scores(con):
     for ii in x:
         alid = ii[0]
         almethod = ii[1]
-        zorropath = get_trimmed_fastapath(almethod) + ".zorro"
+        zorropath = get_trimmed_phylippath(almethod) + ".zorro"
         fin = open(zorropath, "r")
         site = 0
         for line in fin.xreadlines():
@@ -278,45 +305,27 @@ def import_zorro_scores(con):
         con.commit()
         fin.close()
 
-def trim_by_zorro(ap):
-    z_commands = []
-    for msa in ap.params["msa_algorithms"]:
-        c = "zorro -sample " + get_fastapath(msa) + " > " + get_fastapath(msa) + ".zorro"
-        z_commands.append( c )
+def plot_zorro_stats(con):
+    cur = con.cursor()
     
-    fout = open("SCRIPTS/zorro_commands.sh", "w")
-    for c in z_commands:
-        fout.write( c + "\n" )
-    fout.close()
-    run_script("SCRIPTS/zorro_commands.sh")
-
-    for msa in ap.params["msa_algorithms"]:
-        fin = open(get_fastapath(msa) + ".zorro", "r")
-        keep_sites = []
-        site = 0
-        for ll in fin.xreadlines():
-            if ll.__len__() > 2:
-                score = float( ll.strip() )
-                if score > 2.0: # to-do, fix this:
-                    keep_sites.append( site )
-            site += 1
-        fin.close()
-        
-        fout = open( get_trimmed_fastapath(msa), "w")
-        fin = open( get_fastapath(msa), "r")
-        site_count = 0
-        for l in fin.xreadlines():
-            if l.startswith(">"):
-                fout.write("\n" + l)
-                site_count = 0
-            elif l.__len__() > 5:
-                l = l.strip()
-                for c in l:
-                    if site_count in keep_sites:
-                        fout.write(c)
-                    site_count += 1
-        fin.close()
-        fout.close()
+    sql = "select id from AlignmentSiteScoringMethods where name='zorro'"
+    cur.execute(sql)
+    zorroid = cur.fetchone()[0]
+    
+    sql = "select id, name from AlignmentMethods"
+    cur.execute(sql)
+    x = cur.fetchall()
+    for ii in x:
+        alid = ii[0]
+        alname = ii[1]
+        sql = "select score from AlignmentSiteScores where almethodid=" + alid.__str__() + " and scoringmethodid=" + zorroid.__str__()
+        cur.execute(sql)
+        y = cur.fetchall()
+        scores = []
+        for jj in y:
+            scores.append( jj[0] )
+        print "301:", scores
+        histogram(scores, alname + "/zorro_scores")
         
     
     

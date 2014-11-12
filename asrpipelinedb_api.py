@@ -13,9 +13,13 @@ from log import *
 def import_original_seq(con, shortname, sequence):
     """Returns the taxonID of the newly imported sequence."""
     cur = con.cursor()
-    sql = "insert or replace into Taxa (fullname, shortname) VALUES('" + shortname + "','" + shortname + "')"
+    sql = "select count(*) from Taxa where shortname='" + shortname + "'"
     cur.execute(sql)
-    con.commit()
+    count = cur.fetchone()[0]
+    if count == 0:
+        sql = "insert or replace into Taxa (fullname, shortname) VALUES('" + shortname + "','" + shortname + "')"
+        cur.execute(sql)
+        con.commit()
     
     taxonid = get_taxonid(con, shortname)
 
