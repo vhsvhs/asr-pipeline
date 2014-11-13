@@ -101,10 +101,10 @@ def write_msa_commands(con, ap):
             fout.write(ap.params["prank_exe"] + " -d=" + ap.params["ergseqpath"] + " -o=" + get_fastapath(msa) + "\n")
             import_alignment_method(con, msa, ap.params["prank_exe"])
         elif msa == "msaprobs": 
-            fout.write(ap.params["msaprobs_exe"] + " -num_threads 2 " + ap.params["ergseqpath"] + " > " + get_fastapath(msa) + "\n")
+            fout.write(ap.params["msaprobs_exe"] + " -num_threads 4 " + ap.params["ergseqpath"] + " > " + get_fastapath(msa) + "\n")
             import_alignment_method(con, msa, ap.params["msaprobs_exe"])
         elif msa == "mafft": 
-            fout.write(ap.params["mafft_exe"] + " --thread 2 --auto " + ap.params["ergseqpath"] + " > " + get_fastapath(msa) + "\n")
+            fout.write(ap.params["mafft_exe"] + " --thread 4 --auto " + ap.params["ergseqpath"] + " > " + get_fastapath(msa) + "\n")
             import_alignment_method(con, msa, ap.params["mafft_exe"])
     fout.close()
     return p
@@ -355,24 +355,33 @@ def launch_specieal_raxml(con, almethod, scoringmethodid):
     alname = cur.fetchone()[0]
     
     scores = get_alignmentsitescore(con, almethod, scoringmethodid)
+    nsites = scores.__len__()
     
     score_sites = {}
     for site in scores:
         if scores[site] not in score_sites:
             score_sites[ scores[site] ] = []
         score_sites[ scores[site] ].append( site )
-    
+        
     sorted_scores = score_sites.keys()
     sorted_scores.sort( reverse=True )
     
     commands = []
-    thresholds = [0.05, 0.1, 0.15, 0.2] # i.e., top 5%, 10%, 15% of scores
+    thresholds = get_zorro_thresholds(con) # i.e., top 5%, 10%, 15% of scores
+    thresholds.sort()
 
     for t in thresholds:
         use_these_sites = []
+        min_score = None
         for score in sorted_scores:
-            if use_these_sites.__len__() < t * scores.__len__():
+            if use_these_sites.__len__() < float(t)*float(nsites):
                 use_these_sites += score_sites[score]
+                if min_score == None:
+                    min_score = score
+                elif min_score > score:
+                    min_score = score
+                #print "385:", t, score, use_these_sites.__len__()
+        write_log(con, "For " + alname + " ZORRO threshold " + t.__str__() + ", min score=" + min_score.__str__() + ", with " + use_these_sites.__len__().__str__() + " sites." )
         #print "\n. 370:", t, use_these_sites.__len__(), use_these_sites
                 
         taxa_alseqs = get_sequences(con, almethod = almethod, sites = use_these_sites)
@@ -383,9 +392,9 @@ def launch_specieal_raxml(con, almethod, scoringmethodid):
             tname = get_taxon_name(con, taxaid)
             seqs[tname] = taxa_alseqs[taxaid]
             ppath = alname + "/" + alname + ".tmp.zorro." + t.__str__() + ".phylip" 
+        write_phylip(seqs, ppath)
 
         """Run raxml on these sites."""
-        write_phylip(seqs, ppath)
         c = make_raxml_quick_command(con, ap, alname, ppath, alname + ".tmp.zorro." + t.__str__() )
         commands.append( c )
         
@@ -417,8 +426,8 @@ def analyze_special_raxml(con, almethod):
     
     sql = "select name from AlignmentMethods where id=" + almethod.__str__()
     cur.execute(sql)
-    alname = cur.fetchone()[0]
-    thresholds = [0.05, 0.1, 0.15, 0.2]
+    alname = cur.fetchone()[0] 
+    thresholds = get_zorro_thresholds(con)
     thresh_treepath = {}
     thresh_infopath = {}
     for t in thresholds:
@@ -440,3 +449,5 @@ def analyze_special_raxml(con, almethod):
 
         write_log(con, "Zorro threshold stat: " + alname + " thresh:" + t.__str__() + " branch_sum:" + sum_branches.__str__() + " mean_bs:" + mean_bs.__str__() )
 
+def cleanup_zorro_analysis(con):
+    pass

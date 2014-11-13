@@ -28,9 +28,9 @@ else:
 con = build_db( dbpath = ap.getOptionalArg("--dbpath") )
 
 """ Setup """
-read_config_file( ap )
+read_config_file( con, ap )
 print_config(ap)
-verify_config(ap)
+verify_config(con, ap)
 setup_workspace(ap)
 
 if jump <= 0 and stop > 0:
@@ -75,6 +75,8 @@ if jump <= 2.4 and stop > 2.5:
     run_zorro_raxml(con)
 if jump <= 2.5 and stop > 2.6:
     analyze_zorro_raxml(con)
+if jump <= 2.6 and stop > 2.7:
+    cleanup_zorro_analysis(con)
 
 exit()
 

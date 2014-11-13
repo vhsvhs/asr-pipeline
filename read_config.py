@@ -2,7 +2,7 @@ import re,sys,os
 from tools import *
 from log import *
 
-def read_config_file(ap):
+def read_config_file(con, ap):
     """This method reads the user-written configuration file.
     The format of the file is generally KEYWORD = VALUE,
     where KEYWORD can be a limited set of parameters, such as GENEID or RAXML,
@@ -13,16 +13,18 @@ def read_config_file(ap):
     
     """
     cpath = ap.getArg("--configpath")
-    print "7:", cpath
     if False == os.path.exists("./" + cpath):
         print "ERROR: I can't find your configfile at", cpath
         write_error(ap, "I can't find your configfile at " + cpath)
         exit()
+
+    cur = con.cursor()
+    sql = "delete from Settings"
+    cur.execute(sql)
+    con.commit()
     
     fin = open(cpath, "r")
 
-    # Default values:
-    #
     ap.params["end_motif"] = None
     ap.params["start_motif"] = None
     ap.params["constraint_tree"] = None
@@ -90,6 +92,12 @@ def read_config_file(ap):
             ap.params["msa_algorithms"] = []
             for i in x:
                 ap.params["msa_algorithms"].append( i )
+
+        elif tokens[0].startswith("THRESHOLDS_ZORRO"):
+            x = tokens[1].split()
+            ap.params["zorro_thresholds"] = []
+            for i in x:
+                ap.params["zorro_thresholds"].append( float(i) )
         
         elif tokens[0].startswith("MODELS_RAXML"):
             x = tokens[1].split()
@@ -199,9 +207,11 @@ def read_config_file(ap):
     
     fin.close()
 
-def verify_config(ap):
+def verify_config(con, ap):
     """Will return nothing if the configuration is ok.  Will error and quit if the
     configuration is flawed."""
+    
+    cur = con.cursor()
     
     if "run_exe" not in ap.params:
         ap.params["run_exe"] = "source"
@@ -260,6 +270,14 @@ def verify_config(ap):
         ap.params["do_pdb_analysis"] = True
     else:
         ap.params["do_pdb_analysis"] = False
+        
+    if "zorro_thresholds" not in ap.params:
+        ap.params["zorro_thresholds"] = [0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.5, 0.6, 0.75, 1.0]
+    
+    for t in ap.params["zorro_thresholds"]:
+        sql = "insert into Settings (keyword, value) VALUES('zorro_threshold'," + t.__str__() + ")"
+        cur.execute(sql)
+    con.commit()
     
     return ap
 
