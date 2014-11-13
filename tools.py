@@ -87,7 +87,7 @@ def get_phylipstats(path):
     return (ntaxa, nsites)
 
 def get_raxml_infopath(DIR, model):
-    runid = get_runid(DIR,model)
+    runid = get_runid(DIR, model)
     return DIR + "/RAxML_info." + runid
 
 def get_raxml_logpath(DIR, model):
@@ -98,7 +98,11 @@ def get_raxml_logpath(DIR, model):
 # The path to the RAxML ML tree
 #
 def get_raxml_treepath(DIR, runid):
-    return DIR + "/RAxML_result." + runid
+    return DIR + "/RAxML_bestTree." + runid
+
+"""The RAxML ML tree with branch supports labeled."""
+def get_raxml_supportedtreepath(DIR, runid):
+    return DIR + "/RAxML_bipartitions." + runid
 
 #
 # The path to the ML tree with ALR branch support.  These ALR values are
@@ -251,19 +255,9 @@ def probForBin(b):
         return x
     return x + 0.025
     
-def get_boundary_sites(seq, start_motif, end_motif):
-    """Input: a sequence alignment, a seed taxa, and start/end motifs determined in the config. file.
-    This function then finds those motifs in the seed sequence (which includes gaps),
-    and then returns the translate start/end sites for this alignment."""
-    
-    #start_motif = ap.params["start_motif"] #"YQLI"
-    #end_motif = ap.params["end_motif"] #"MPFF"
-
-    #print "248:", start_motif
-    #print "249:", end_motif
-
-    #seq = get_sequence(msapath, taxa)
-    #print seq
+def get_boundary_sites(seq, start_motif, end_motif):    
+    """By default the start/end are the boundaries of the provided sequence.
+    But if motifs were provided, then we'll refine these boundaries."""
     startsite = 1
     endsite = seq.__len__()
                                                                   

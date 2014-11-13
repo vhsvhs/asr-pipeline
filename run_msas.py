@@ -11,6 +11,7 @@ from tools import *
 from asrpipelinedb import *
 from log import *
 from plots import *
+from phyloasr import *
 
 """"
 The original shelll script....
@@ -213,6 +214,7 @@ def trim_alignments(con, ap):
         seedseq = get_aligned_seq(con, seedid, alid)
         start_motif = ap.params["start_motif"]
         end_motif = ap.params["end_motif"]
+        
         [start, stop] = get_boundary_sites(seedseq, start_motif, end_motif)
         
         """Remember these start and end sites."""
@@ -280,6 +282,10 @@ def build_zorro_commands(con, ap):
 
 def import_zorro_scores(con):
     cur = con.cursor()    
+    
+    sql = "delete from AlignmentSiteScores"
+    cur.execute(sql)
+    con.commit()
 
     sql = "select id from AlignmentSiteScoringMethods where name='zorro'"
     cur.execute(sql)
@@ -293,7 +299,7 @@ def import_zorro_scores(con):
     for ii in x:
         alid = ii[0]
         almethod = ii[1]
-        zorropath = get_trimmed_phylippath(almethod) + ".zorro"
+        zorropath = get_trimmed_fastapath(almethod) + ".zorro"
         fin = open(zorropath, "r")
         site = 0
         for line in fin.xreadlines():
@@ -304,6 +310,11 @@ def import_zorro_scores(con):
             cur.execute(sql)
         con.commit()
         fin.close()
+        
+        sql = "select count(*) from AlignmentSiteScores where almethodid=" + alid.__str__() + " and scoringmethodid=" + zorroid.__str__()
+        cur.execute(sql)
+        count = cur.fetchone()[0]
+        write_log(con, "I found " + count.__str__() + " ZORRO site scores for the alignment " + almethod.__str__())
 
 def plot_zorro_stats(con):
     cur = con.cursor()
@@ -318,14 +329,114 @@ def plot_zorro_stats(con):
     for ii in x:
         alid = ii[0]
         alname = ii[1]
-        sql = "select score from AlignmentSiteScores where almethodid=" + alid.__str__() + " and scoringmethodid=" + zorroid.__str__()
-        cur.execute(sql)
-        y = cur.fetchall()
-        scores = []
-        for jj in y:
-            scores.append( jj[0] )
-        print "301:", scores
-        histogram(scores, alname + "/zorro_scores")
+        scores = get_alignmentsitescore(con, alid, zorroid)
+        #print "301:", scores
+        histogram(scores.values(), alname + "/zorro_scores", xlab="ZORRO score", ylab="proportion of sites")
+
+def run_zorro_raxml(con):
+    cur = con.cursor()
+    sql = "select id from AlignmentSiteScoringMethods where name='zorro'"
+    cur.execute(sql)
+    zorroid = cur.fetchone()[0]
+    
+    sql = "select id, name from AlignmentMethods"
+    cur.execute(sql)
+    x = cur.fetchall()
+    for ii in x:
+        alid = ii[0]
+        alname = ii[1]
+        launch_specieal_raxml(con, alid, zorroid)
+
+def launch_specieal_raxml(con, almethod, scoringmethodid):
+    """A helper method for get_best_zorro_set"""
+    cur = con.cursor()
+    sql = "select name from AlignmentMethods where id=" + almethod.__str__()
+    cur.execute(sql)
+    alname = cur.fetchone()[0]
+    
+    scores = get_alignmentsitescore(con, almethod, scoringmethodid)
+    
+    score_sites = {}
+    for site in scores:
+        if scores[site] not in score_sites:
+            score_sites[ scores[site] ] = []
+        score_sites[ scores[site] ].append( site )
+    
+    sorted_scores = score_sites.keys()
+    sorted_scores.sort( reverse=True )
+    
+    commands = []
+    thresholds = [0.05, 0.1, 0.15, 0.2] # i.e., top 5%, 10%, 15% of scores
+
+    for t in thresholds:
+        use_these_sites = []
+        for score in sorted_scores:
+            if use_these_sites.__len__() < t * scores.__len__():
+                use_these_sites += score_sites[score]
+        #print "\n. 370:", t, use_these_sites.__len__(), use_these_sites
+                
+        taxa_alseqs = get_sequences(con, almethod = almethod, sites = use_these_sites)
         
+        """Get the sequences containing only the threshold-ed sites."""
+        seqs = {}
+        for taxaid in taxa_alseqs:
+            tname = get_taxon_name(con, taxaid)
+            seqs[tname] = taxa_alseqs[taxaid]
+            ppath = alname + "/" + alname + ".tmp.zorro." + t.__str__() + ".phylip" 
+
+        """Run raxml on these sites."""
+        write_phylip(seqs, ppath)
+        c = make_raxml_quick_command(con, ap, alname, ppath, alname + ".tmp.zorro." + t.__str__() )
+        commands.append( c )
+        
+    scriptpath = "SCRIPTS/zorro_raxml_commands.sh"
+    fout = open(scriptpath, "w")
+    for c in commands:
+        fout.write( c + "\n" )
+    fout.close()
+    run_script(scriptpath)
+
+def analyze_zorro_raxml(con):
+    cur = con.cursor()
+    sql = "select id from AlignmentSiteScoringMethods where name='zorro'"
+    cur.execute(sql)
+    zorroid = cur.fetchone()[0]
     
+    sql = "select id, name from AlignmentMethods"
+    cur.execute(sql)
+    x = cur.fetchall()
+    for ii in x:
+        alid = ii[0]
+        analyze_special_raxml(con, alid)
+
+def analyze_special_raxml(con, almethod):
+    cur = con.cursor()
+    sql = "delete from ZorroThresholdStats where almethod=" + almethod.__str__()
+    cur.execute(sql)
+    con.commit()
     
+    sql = "select name from AlignmentMethods where id=" + almethod.__str__()
+    cur.execute(sql)
+    alname = cur.fetchone()[0]
+    thresholds = [0.05, 0.1, 0.15, 0.2]
+    thresh_treepath = {}
+    thresh_infopath = {}
+    for t in thresholds:
+        thresh_treepath[t] = get_raxml_supportedtreepath(alname, alname + ".tmp.zorro." + t.__str__() )
+        thresh_infopath[t] = get_raxml_infopath(alname, "tmp.zorro." + t.__str__() )
+        if False == os.path.exists( thresh_treepath[t] ):
+            write_error(con, "I can't find the RAxML tree for the ZORRO trial " + t.__str__() + " at path " + thresh_treepath[t] )
+            exit()
+        if False == os.path.exists( thresh_infopath[t] ):
+            write_error(con, "I can't find the RAxML log file for the ZORRO trial" + t.__str__() + "at path " + thresh_infopath[t] )    
+            exit()
+        
+        mean_bs = get_mean( get_branch_supports(thresh_treepath[t]) )
+        sum_branches = get_sum_of_branches(thresh_treepath[t])
+        sql = "insert or replace into ZorroThresholdStats(almethod, thresh, mean_bootstrap, sum_of_branches) "
+        sql += "VALUES(" + almethod.__str__() + "," + t.__str__() + "," + mean_bs.__str__() + "," + sum_branches.__str__() + ")"
+        cur.execute(sql)
+        con.commit()
+
+        write_log(con, "Zorro threshold stat: " + alname + " thresh:" + t.__str__() + " branch_sum:" + sum_branches.__str__() + " mean_bs:" + mean_bs.__str__() )
+

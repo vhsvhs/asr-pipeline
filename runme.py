@@ -63,6 +63,7 @@ if jump <= 2 and stop > 2.1:
     """Trim the alignments to match the seed sequence(s)."""
     trim_alignments(con, ap)
 
+"""Use ZORRO to the find the phylogenetically informative sites."""
 if jump <= 2.1 and stop > 2.2:
     p = build_zorro_commands(con, ap)
     run_script(p)
@@ -70,6 +71,10 @@ if jump <= 2.2 and stop > 2.3:
     import_zorro_scores(con)
 if jump <= 2.3 and stop > 2.4:
     plot_zorro_stats(con)
+if jump <= 2.4 and stop > 2.5:
+    run_zorro_raxml(con)
+if jump <= 2.5 and stop > 2.6:
+    analyze_zorro_raxml(con)
 
 exit()
 

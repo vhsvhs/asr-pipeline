@@ -28,6 +28,7 @@
 from log import *
 from tools import *
 from alrt2alr import *
+from dendropy import Tree
 
 
 #
@@ -63,6 +64,27 @@ def write_raxml_commands(ap):
         fout.write(c + "\n")
     fout.close()
     return p
+
+def make_raxml_quick_command(con, ap, outdir, phylippath, runid):
+    """This is intended primarily for the quick RAxML runs called within the ZORRO analysis."""
+    here = os.popen('pwd').read().strip()
+    if os.path.exists(here + "/" + outdir + "/RAxML_info." + runid): # Remove dirty RAxML data.
+        rmcmd = "rm " + here + "/" + outdir + "/RAxML_*"
+        print rmcmd
+        os.system(rmcmd)
+    command = ap.params["raxml_exe"]
+    command += " -s " + phylippath
+    command += " -n " + runid
+    command += " -w " + here + "/" + outdir
+    command += " -e 0.01"
+    command += " -m PROTGAMMALG"
+    command += " -p 12345"
+    command += " -x 12345 -N 100 -f a"
+    if ap.params["constraint_tree"] != None:
+        command += " -g " + ap.params["constraint_tree"]
+    command += " > " + here + "/" + outdir + "/catch." + runid + ".txt" 
+    return command
+    
 
 def check_raxml_output(ap):
     here = os.popen('pwd').read().strip()
@@ -463,3 +485,23 @@ def get_compareanc_commands(ap):
     fout.close()
     return "SCRIPTS/compareanc_commands.sh"
 
+def get_branch_supports( treepath ):
+    supports = []
+    fin = open(treepath, "r")
+    for line in fin.readlines():
+        tokens = line.split(":")
+        for t in tokens:
+            if t.__contains__(")") and False == t.__contains__(";"):
+                ts = t.split(")")
+                support = float(ts[1])
+                supports.append( support )
+    fin.close()
+    return supports
+
+def get_sum_of_branches( treepath ):
+    fin = open(treepath, "r")
+    newick = fin.readline().strip()
+    t = Tree()
+    t.read_from_string(newick, "newick")
+    fin.close()
+    return t.length()

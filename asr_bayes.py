@@ -73,14 +73,31 @@ def run_test():
     print d
 
 
-def run_asr_bayes(ap):
+def run_asr_bayes(con, ap):
     #print "77: run_asr_bayes"
-    for d in ap.params["msa_algorithms"]:
-        for m in ap.params["raxml_models"]:
-            print "\n. Sampling Bayesian Ancestors. . .", d, m
-            runid = get_runid(d,m)
+    cur = con.cursor()
+    sql = "select id, name from AlignmentMethods"
+    cur.execute(sql)
+    x = cur.fetchall()
+    for ii in x:
+        """Get the seed sequence, and then find the start and end sites."""
+        alid = ii[0]
+        alname = ii[1]
+        
+        sql = "select modelid, name from PhyloModels"
+        cur.execute(sql)
+        y = cur.fetchall()
+        for jj in y:
+            modelid = jj[0]
+            modelname = jj[1]
+        
+            print "\n. Sampling Bayesian Ancestors. . .", alname, modelname
+            runid = get_runid(alname,modelname)
+                        
             for a in ap.params["ingroup"]:
-                [startsite,stopsite] = get_boundary_sites( get_phylippath(d), ap.params["seedtaxa"][a] )
+                seedid = get_taxonid(con, ap.params["seedtaxa"][a] )
+                seedseq = get_aligned_seq(con, seedid, alid)
+                [startsite, stopsite] = get_boundary_sites(seedseq, start_motif, end_motif)
                     
                 ancdir = d + "/asr." + m + "/tree1"
                 if False == os.path.exists( ancdir ):
