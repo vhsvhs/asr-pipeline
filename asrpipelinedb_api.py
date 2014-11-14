@@ -76,7 +76,7 @@ def get_aligned_seq(con, taxonid, almethodid):
         return None
     return x[0][0]    
 
-def get_sequences(con, almethod = None, sitesets = [], sites = [], taxagroups = [], relative_to_trimmed=False):
+def get_sequences(con, almethod = None, sitesets = [], sites = [], taxagroups = []):
     """
     Returns a hash of taxa:sequences.
     con = the sqlite3 db
@@ -114,7 +114,7 @@ def get_sequences(con, almethod = None, sitesets = [], sites = [], taxagroups = 
     cur.execute(sql)
     x = cur.fetchall()
     
-    taxa_alseqs = {}
+    taxa_alseqs = {} # Key = taxonid, value = aligned or original sequence, untrimmed.
     for ii in x:
         taxonid = ii[0]
         seq = ii[1]
@@ -123,7 +123,7 @@ def get_sequences(con, almethod = None, sitesets = [], sites = [], taxagroups = 
     if sitesets != []:
         siteranges = []
         for id in sitesets:
-            siteranges += get_sites_in_set (siteset)
+            siteranges += get_siteranges_in_set(con, id)
         
         for taxon in taxa_alseqs:
             seq = taxa_alseqs[taxon]
@@ -133,20 +133,6 @@ def get_sequences(con, almethod = None, sitesets = [], sites = [], taxagroups = 
             taxa_alseqs[taxon] = trimseq
     
     elif sites != [] and almethod != None:
-
-        startoffset = 0        
-        if relative_to_trimmed == True:
-            """We'll need to translate the site numbers in 'sites' to be relative
-            to the trimmed-to-seed sequence."""
-            
-            sql = "select id from SiteSets where setname='seed'"
-            cur.execute(sql)
-            sitesetid = cur.fetchone()[0]
-            sql = "select fromsite from SiteSetsAlignment where setid=" + sitesetid.__str__() + " and almethod=" + almethod.__str__()
-            cur.execute(sql)
-            x = cur.fetchall()
-            seedstart = x[0][0]
-            startoffset = seedstart
         
         for taxon in taxa_alseqs:
             seq = taxa_alseqs[taxon]
@@ -154,8 +140,8 @@ def get_sequences(con, almethod = None, sitesets = [], sites = [], taxagroups = 
             for s in sites:
                 """Note, the -1 in the following array references allow us to translate a site
                 number (which are 1-based) to a list index (which are 0-based)"""
-                #print "asrpipelinedb.py 137:", almethod, s+startoffset-1, seq.__len__()
-                trimseq += seq[s+startoffset-1]
+                print "asrpipelinedb.py 137:", almethod, s-1, seq.__len__()
+                trimseq += seq[s-1]
             taxa_alseqs[taxon] = trimseq        
     
     return taxa_alseqs
@@ -192,6 +178,20 @@ def get_siteranges_in_set(con, sitesetid):
         siteranges.append( (ii[0], ii[1]) )
     return siteranges
 
+def get_lower_bound_in_siteset(con, sitesetid):
+    cur = con.cursor()
+    sql = "select fromsite, tosite from SiteSetsAlignment where setid=" + sitesetid.__str__()
+    cur.execute(sql)
+    x = cur.fetchall()
+    minsite = None
+    for ii in x:
+        if minsite == None:
+            minsite = ii[0]
+        elif minsite > ii[0]:
+            minsite = ii[0]
+    print "192:", minsite
+    return minsite
+
 def write_fasta(seqs, fpath):
     fout = open(fpath, "w")
     for s in seqs:
@@ -215,15 +215,26 @@ def write_phylip(seqs, ppath):
         fout.write(s + "   " + seqs[s] + "\n")
     fout.close()
 
-def get_alignmentsitescore(con, almethod, scoringmethoid):
+def get_sitesetid(con, sitesetname):
+    cur = con.cursor()
+    sql = "select id from SiteSets where setname='" + sitesetname + "'"
+    cur.execute(sql)
+    x = cur.fetchall()
+    if x.__len__() == 0:
+        return None
+    else:
+        return x[0][0]
+
+def get_alignmentsitescores(con, almethod, scoringmethoid):
     cur = con.cursor()
     sql = "select site, score from AlignmentSiteScores where almethodid=" + almethod.__str__() + " and scoringmethodid=" + scoringmethoid.__str__()
     cur.execute(sql)
     y = cur.fetchall()
-    scores = {}
+    site_scores = {}
     for jj in y:
-        scores[ jj[0] ] = jj[1]
-    return scores
+        site_scores[ jj[0] ] = jj[1]
+    print "235: almethod", almethod, ", N sitescores=", site_scores.__len__().__str__() + ", from " + min( site_scores.keys()).__str__() + " to " + max( site_scores.keys()).__str__()
+    return site_scores
 
 def get_zorro_thresholds(con):
     cur = con.cursor()

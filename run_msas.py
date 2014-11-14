@@ -118,6 +118,10 @@ def check_aligned_sequences(con, ap):
             write_error(con, "I can't find the expected FASTA output from " + msa + " at " + expected_fasta, code=None)
         taxa_seq = read_fasta(expected_fasta)
     
+        if taxa_seq.__len__() == 0:
+            write_error(con, "I didn't find any sequences in the alignment from " + msa)
+            exit()
+    
         sql = "select id from AlignmentMethods where name='" + msa + "'"
         cur.execute(sql)
         x = cur.fetchall()
@@ -217,6 +221,9 @@ def trim_alignments(con, ap):
         
         [start, stop] = get_boundary_sites(seedseq, start_motif, end_motif)
         
+        print "220:", alname, start, stop
+        print "221:", seedseq[start-1:stop]
+        
         """Remember these start and end sites."""
         sql = "insert or replace into SiteSetsAlignment(setid, almethod, fromsite, tosite) VALUES("
         sql += sitesetid.__str__() + "," + alid.__str__() + "," + start.__str__() + "," + stop.__str__() + ")"
@@ -230,7 +237,7 @@ def trim_alignments(con, ap):
         sql = "select taxonid, alsequence from AlignedSequences where almethod=" + alid.__str__()
         cur.execute(sql)
         y = cur.fetchall()
-        pfout.write( y.__len__().__str__() + "   " + y[0][1].__len__().__str__() + "\n")
+        pfout.write( y.__len__().__str__() + "   " + (stop-start+1).__str__() + "\n")
         for jj in y: # for each sequence
             taxonid = jj[0]
             taxa = get_taxon_name(con, taxonid)
@@ -299,15 +306,23 @@ def import_zorro_scores(con):
     for ii in x:
         alid = ii[0]
         almethod = ii[1]
+        
+        seedsetid = get_sitesetid(con, 'seed')
+        minfromsite = get_lower_bound_in_siteset(con, seedsetid)
+        print "305:", minfromsite
+        
+        """Now offset all ZORRO sites by minfromsite, to account for the fact that the ZORRO
+        analysis was performed on aligned sequences trimmed to the seed."""
+        
         zorropath = get_trimmed_fastapath(almethod) + ".zorro"
         fin = open(zorropath, "r")
-        site = 0
+        site = minfromsite
         for line in fin.xreadlines():
-            site += 1
             score = float( line.strip() )
             sql = "insert or replace into AlignmentSiteScores(almethodid,scoringmethodid,site,score) "
             sql += " VALUES(" + alid.__str__() + "," + zorroid.__str__() + "," + site.__str__() + "," + score.__str__() + ")"
             cur.execute(sql)
+            site += 1
         con.commit()
         fin.close()
         
@@ -329,48 +344,79 @@ def plot_zorro_stats(con):
     for ii in x:
         alid = ii[0]
         alname = ii[1]
-        scores = get_alignmentsitescore(con, alid, zorroid)
-        #print "301:", scores
+        scores = get_alignmentsitescores(con, alid, zorroid)
         histogram(scores.values(), alname + "/zorro_scores", xlab="ZORRO score", ylab="proportion of sites")
 
-def run_zorro_raxml(con):
+def build_raxml4zorro_commands(con):
+    """Returns a scriptpath to raxml commands."""
     cur = con.cursor()
     sql = "select id from AlignmentSiteScoringMethods where name='zorro'"
     cur.execute(sql)
     zorroid = cur.fetchone()[0]
     
+    commands = []
     sql = "select id, name from AlignmentMethods"
     cur.execute(sql)
     x = cur.fetchall()
     for ii in x:
         alid = ii[0]
         alname = ii[1]
-        launch_specieal_raxml(con, alid, zorroid)
+        commands += get_raxml_zorro_commands_for_alignment(con, alid, zorroid)
+    
+    scriptpath = "SCRIPTS/zorro_raxml_commands.sh"
+    fout = open(scriptpath, "w")
+    for c in commands:
+        fout.write( c + "\n" )
+    fout.close()
+    return scriptpath
 
-def launch_specieal_raxml(con, almethod, scoringmethodid):
-    """A helper method for get_best_zorro_set"""
+def get_raxml_zorro_commands_for_alignment(con, almethod, scoringmethodid):
+    """A helper method for get_best_zorro_set.
+    Returns a list of commands for raxml"""
     cur = con.cursor()
     sql = "select name from AlignmentMethods where id=" + almethod.__str__()
     cur.execute(sql)
     alname = cur.fetchone()[0]
     
-    scores = get_alignmentsitescore(con, almethod, scoringmethodid)
-    nsites = scores.__len__()
+    """The sites in site_scores have been translated for the aligned sequence,
+    rather than the trimmed-to-seed sequences."""
+    site_scores = get_alignmentsitescores(con, almethod, scoringmethodid)
+    nsites = site_scores.__len__()
+    
+    print "379:", min( site_scores.keys() ), max( site_scores.keys() )
     
     score_sites = {}
-    for site in scores:
-        if scores[site] not in score_sites:
-            score_sites[ scores[site] ] = []
-        score_sites[ scores[site] ].append( site )
+    for site in site_scores:
+        this_score = site_scores[site]
+        if this_score not in score_sites:
+            score_sites[ this_score ] = []
+        score_sites[ this_score ].append( site )
         
     sorted_scores = score_sites.keys()
     sorted_scores.sort( reverse=True )
-    
+        
     commands = []
     thresholds = get_zorro_thresholds(con) # i.e., top 5%, 10%, 15% of scores
     thresholds.sort()
 
     for t in thresholds:
+        """For each threshold:
+            1. write a PHYLIP file containing an alignment of only those sites that satisfy the threshold.
+            2. build a raxml command to build a quick tree for this alignment.
+        """
+        
+        sitesetname = "zorro:" + t.__str__()
+        sitesetid = get_sitesetid(con, sitesetname)
+        if sitesetid != None:      
+            sql = "delete from SiteSetsAlignment where setid=" + sitesetid.__str__() + " and almethod=" + almethod.__str__()
+            cur.execute(sql)
+        elif sitesetid == None:
+            """If there isn't a siteset for this threshold, then add one."""
+            sql = "insert into SiteSets (setname) VALUES('" + sitesetname + "')"
+            cur.execute(sql)
+            sitesetid = get_sitesetid(con, sitesetname)
+        con.commit()
+                
         use_these_sites = []
         min_score = None
         for score in sorted_scores:
@@ -380,13 +426,16 @@ def launch_specieal_raxml(con, almethod, scoringmethodid):
                     min_score = score
                 elif min_score > score:
                     min_score = score
-                #print "385:", t, score, use_these_sites.__len__()
-        write_log(con, "For " + alname + " ZORRO threshold " + t.__str__() + ", min score=" + min_score.__str__() + ", with " + use_these_sites.__len__().__str__() + " sites." )
-        #print "\n. 370:", t, use_these_sites.__len__(), use_these_sites
-                
-        taxa_alseqs = get_sequences(con, almethod = almethod, sites = use_these_sites)
         
-        """Get the sequences containing only the threshold-ed sites."""
+        for site in use_these_sites:
+            sql = "insert or replace into SiteSetsAlignment(setid, almethod, fromsite, tosite) "
+            sql += " VALUES(" + sitesetid.__str__() + "," + almethod.__str__() + "," + site.__str__() + "," + site.__str__() + ")"
+            cur.execute(sql)
+        con.commit()
+        write_log(con, "ZORRO details for " + alname + " -- threshold: " + t.__str__() + ", min score:" + min_score.__str__() + ", Nsites: " + use_these_sites.__len__().__str__() )
+
+        """Write a PHYLIP with the aligned sequences containing only the threshold-ed sites."""        
+        taxa_alseqs = get_sequences(con, almethod = almethod, sitesets=[sitesetid])# sites = use_these_sites)
         seqs = {}
         for taxaid in taxa_alseqs:
             tname = get_taxon_name(con, taxaid)
@@ -394,16 +443,11 @@ def launch_specieal_raxml(con, almethod, scoringmethodid):
             ppath = alname + "/" + alname + ".tmp.zorro." + t.__str__() + ".phylip" 
         write_phylip(seqs, ppath)
 
-        """Run raxml on these sites."""
+        """Write a raxml command to analyze these sites."""
         c = make_raxml_quick_command(con, ap, alname, ppath, alname + ".tmp.zorro." + t.__str__() )
         commands.append( c )
         
-    scriptpath = "SCRIPTS/zorro_raxml_commands.sh"
-    fout = open(scriptpath, "w")
-    for c in commands:
-        fout.write( c + "\n" )
-    fout.close()
-    run_script(scriptpath)
+    return commands
 
 def analyze_zorro_raxml(con):
     cur = con.cursor()

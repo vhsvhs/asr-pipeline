@@ -72,7 +72,8 @@ if jump <= 2.2 and stop > 2.3:
 if jump <= 2.3 and stop > 2.4:
     plot_zorro_stats(con)
 if jump <= 2.4 and stop > 2.5:
-    run_zorro_raxml(con)
+    p = build_raxml4zorro_commands(con)
+    run_script(p)
 if jump <= 2.5 and stop > 2.6:
     analyze_zorro_raxml(con)
 if jump <= 2.6 and stop > 2.7:
