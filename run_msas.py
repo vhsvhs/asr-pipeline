@@ -296,7 +296,11 @@ def import_zorro_scores(con):
 
     sql = "select id from AlignmentSiteScoringMethods where name='zorro'"
     cur.execute(sql)
-    zorroid = cur.fetchone()[0]
+    x = cur.fetchall()
+    if x.__len__() == 0:
+        write_error(con, "301: There is something wrong with the database.")
+        exit()
+    zorroid = x[0][0]
     
     sql = "select id, name from AlignmentMethods"
     cur.execute(sql)
@@ -378,12 +382,17 @@ def get_raxml_zorro_commands_for_alignment(con, almethod, scoringmethodid):
     cur.execute(sql)
     alname = cur.fetchone()[0]
     
+    sql = "delete from ZorroThreshStats where almethod=" + almethod.__str__()
+    cur.execute(sql)
+    con.commit()
+    
+    
     """The sites in site_scores have been translated for the aligned sequence,
     rather than the trimmed-to-seed sequences."""
     site_scores = get_alignmentsitescores(con, almethod, scoringmethodid)
     nsites = site_scores.__len__()
     
-    print "379:", min( site_scores.keys() ), max( site_scores.keys() )
+    #print "379:", min( site_scores.keys() ), max( site_scores.keys() )
     
     score_sites = {}
     for site in site_scores:
@@ -434,6 +443,11 @@ def get_raxml_zorro_commands_for_alignment(con, almethod, scoringmethodid):
         con.commit()
         write_log(con, "ZORRO details for " + alname + " -- threshold: " + t.__str__() + ", min score:" + min_score.__str__() + ", Nsites: " + use_these_sites.__len__().__str__() )
 
+        sql = "insert into ZorroThreshStats(almethod, thresh, min_score, nsites)"
+        sql += " VALUES(" + almethod.__str__() + "," + t.__str__() + "," + min_score.__str__() + "," + use_these_sites.__len__().__str__() + ")"
+        cur.execute(sql)
+        con.commit()
+
         """Write a PHYLIP with the aligned sequences containing only the threshold-ed sites."""        
         taxa_alseqs = get_sequences(con, almethod = almethod, sitesets=[sitesetid])# sites = use_these_sites)
         seqs = {}
@@ -464,7 +478,7 @@ def analyze_zorro_raxml(con):
 
 def analyze_special_raxml(con, almethod):
     cur = con.cursor()
-    sql = "delete from ZorroThresholdStats where almethod=" + almethod.__str__()
+    sql = "delete from ZorroThreshRaxmlStats where almethod=" + almethod.__str__()
     cur.execute(sql)
     con.commit()
     
@@ -486,7 +500,7 @@ def analyze_special_raxml(con, almethod):
         
         mean_bs = get_mean( get_branch_supports(thresh_treepath[t]) )
         sum_branches = get_sum_of_branches(thresh_treepath[t])
-        sql = "insert or replace into ZorroThresholdStats(almethod, thresh, mean_bootstrap, sum_of_branches) "
+        sql = "insert or replace into ZorroThreshRaxmlStats(almethod, thresh, mean_bootstrap, sum_of_branches) "
         sql += "VALUES(" + almethod.__str__() + "," + t.__str__() + "," + mean_bs.__str__() + "," + sum_branches.__str__() + ")"
         cur.execute(sql)
         con.commit()
