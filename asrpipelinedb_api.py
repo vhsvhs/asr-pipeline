@@ -233,7 +233,7 @@ def get_alignmentsitescores(con, almethod, scoringmethoid):
     site_scores = {}
     for jj in y:
         site_scores[ jj[0] ] = jj[1]
-    print "235: almethod", almethod, ", N sitescores=", site_scores.__len__().__str__() + ", from " + min( site_scores.keys()).__str__() + " to " + max( site_scores.keys()).__str__()
+    #print "235: almethod", almethod, ", N sitescores=", site_scores.__len__().__str__() + ", from " + min( site_scores.keys()).__str__() + " to " + max( site_scores.keys()).__str__()
     return site_scores
 
 def get_zorro_thresholds(con):

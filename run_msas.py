@@ -221,8 +221,8 @@ def trim_alignments(con, ap):
         
         [start, stop] = get_boundary_sites(seedseq, start_motif, end_motif)
         
-        print "220:", alname, start, stop
-        print "221:", seedseq[start-1:stop]
+        #print "220:", alname, start, stop
+        #print "221:", seedseq[start-1:stop]
         
         """Remember these start and end sites."""
         sql = "insert or replace into SiteSetsAlignment(setid, almethod, fromsite, tosite) VALUES("
@@ -313,7 +313,7 @@ def import_zorro_scores(con):
         
         seedsetid = get_sitesetid(con, 'seed')
         minfromsite = get_lower_bound_in_siteset(con, seedsetid, alid)
-        print "305:", minfromsite
+        #print "305:", minfromsite
         
         """Now offset all ZORRO sites by minfromsite, to account for the fact that the ZORRO
         analysis was performed on aligned sequences trimmed to the seed."""
@@ -323,7 +323,7 @@ def import_zorro_scores(con):
         site = minfromsite
         for line in fin.xreadlines():
             score = float( line.strip() )
-            print "326:", alid, site, score
+            #print "326:", alid, site, score
             sql = "insert or replace into AlignmentSiteScores(almethodid,scoringmethodid,site,score) "
             sql += " VALUES(" + alid.__str__() + "," + zorroid.__str__() + "," + site.__str__() + "," + score.__str__() + ")"
             
@@ -396,7 +396,7 @@ def get_raxml_zorro_commands_for_alignment(con, almethod, scoringmethodid):
     
         
     # debug moment
-    print "379:", almethod, min( site_scores.keys() ), max( site_scores.keys() )
+    #print "379:", almethod, min( site_scores.keys() ), max( site_scores.keys() )
      
     score_sites = {}
     for site in site_scores:
@@ -408,7 +408,7 @@ def get_raxml_zorro_commands_for_alignment(con, almethod, scoringmethodid):
     sorted_scores = score_sites.keys()
     sorted_scores.sort( reverse=True )
     
-    print "409:", almethod, sorted_scores
+    #print "409:", almethod, sorted_scores
     
     commands = []
     thresholds = get_zorro_thresholds(con) # i.e., top 5%, 10%, 15% of scores
@@ -463,9 +463,9 @@ def get_raxml_zorro_commands_for_alignment(con, almethod, scoringmethodid):
             ppath = alname + "/" + alname + ".tmp.zorro." + t.__str__() + ".phylip" 
             
             # debug moment:
-            print "461:", almethod, t, taxa_alseqs[taxonid]
-            aseq = get_aligned_seq(con, taxonid, almethod)
-            print "468:", aseq[  max( site_scores.keys() )-1  ]
+            #print "461:", almethod, t, taxa_alseqs[taxonid]
+            #aseq = get_aligned_seq(con, taxonid, almethod)
+            #print "468:", aseq[  max( site_scores.keys() )-1  ]
             
             
         write_phylip(seqs, ppath)
