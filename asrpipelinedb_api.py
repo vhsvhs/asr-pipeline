@@ -178,9 +178,9 @@ def get_siteranges_in_set(con, sitesetid):
         siteranges.append( (ii[0], ii[1]) )
     return siteranges
 
-def get_lower_bound_in_siteset(con, sitesetid):
+def get_lower_bound_in_siteset(con, sitesetid, almethodid):
     cur = con.cursor()
-    sql = "select fromsite, tosite from SiteSetsAlignment where setid=" + sitesetid.__str__()
+    sql = "select fromsite, tosite from SiteSetsAlignment where setid=" + sitesetid.__str__() + " and almethod=" + almethodid.__str__()
     cur.execute(sql)
     x = cur.fetchall()
     minsite = None

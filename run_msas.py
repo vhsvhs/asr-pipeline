@@ -312,7 +312,7 @@ def import_zorro_scores(con):
         almethod = ii[1]
         
         seedsetid = get_sitesetid(con, 'seed')
-        minfromsite = get_lower_bound_in_siteset(con, seedsetid)
+        minfromsite = get_lower_bound_in_siteset(con, seedsetid, almethod)
         print "305:", minfromsite
         
         """Now offset all ZORRO sites by minfromsite, to account for the fact that the ZORRO
@@ -325,6 +325,7 @@ def import_zorro_scores(con):
             score = float( line.strip() )
             sql = "insert or replace into AlignmentSiteScores(almethodid,scoringmethodid,site,score) "
             sql += " VALUES(" + alid.__str__() + "," + zorroid.__str__() + "," + site.__str__() + "," + score.__str__() + ")"
+            
             cur.execute(sql)
             site += 1
         con.commit()
