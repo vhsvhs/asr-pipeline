@@ -123,13 +123,14 @@ def get_sequences(con, almethod = None, sitesets = [], sites = [], taxagroups = 
     if sitesets != []:
         siteranges = []
         for id in sitesets:
-            siteranges += get_siteranges_in_set(con, id)
+            siteranges += get_siteranges_in_set(con, id, almethod)
         
         for taxon in taxa_alseqs:
             seq = taxa_alseqs[taxon]
             trimseq = ""
             for r in siteranges:
-                trimseq += seq[ r[0]:(r[1]+1) ]
+                """Notice the -1 here; its to translate sites (1-based) to list indices (0-based)"""
+                trimseq += seq[ r[0]-1 : r[1] ]
             taxa_alseqs[taxon] = trimseq
     
     elif sites != [] and almethod != None:
@@ -167,10 +168,10 @@ def get_taxaid_in_group(con, groupid):
         taxaids.append( ii[0] )
     return taxaids
 
-def get_siteranges_in_set(con, sitesetid):
+def get_siteranges_in_set(con, sitesetid, almethodid):
     """Returns a list of tuples [ (from,to), (from,to), etc. ]"""
     cur = con.cursor()
-    sql = "select fromsite, tosite from SiteSetsAlignment where setid=" + sitesetid.__str__()
+    sql = "select fromsite, tosite from SiteSetsAlignment where setid=" + sitesetid.__str__() + " and almethod=" + almethodid.__str__()
     cur.execute(sql)
     x = cur.fetchall()
     siteranges = []
@@ -189,7 +190,6 @@ def get_lower_bound_in_siteset(con, sitesetid, almethodid):
             minsite = ii[0]
         elif minsite > ii[0]:
             minsite = ii[0]
-    print "192:", minsite
     return minsite
 
 def write_fasta(seqs, fpath):

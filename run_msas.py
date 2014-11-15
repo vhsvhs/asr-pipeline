@@ -312,7 +312,7 @@ def import_zorro_scores(con):
         almethod = ii[1]
         
         seedsetid = get_sitesetid(con, 'seed')
-        minfromsite = get_lower_bound_in_siteset(con, seedsetid, almethod)
+        minfromsite = get_lower_bound_in_siteset(con, seedsetid, alid)
         print "305:", minfromsite
         
         """Now offset all ZORRO sites by minfromsite, to account for the fact that the ZORRO
@@ -323,6 +323,7 @@ def import_zorro_scores(con):
         site = minfromsite
         for line in fin.xreadlines():
             score = float( line.strip() )
+            print "326:", alid, site, score
             sql = "insert or replace into AlignmentSiteScores(almethodid,scoringmethodid,site,score) "
             sql += " VALUES(" + alid.__str__() + "," + zorroid.__str__() + "," + site.__str__() + "," + score.__str__() + ")"
             
@@ -393,8 +394,10 @@ def get_raxml_zorro_commands_for_alignment(con, almethod, scoringmethodid):
     site_scores = get_alignmentsitescores(con, almethod, scoringmethodid)
     nsites = site_scores.__len__()
     
-    #print "379:", min( site_scores.keys() ), max( site_scores.keys() )
-    
+        
+    # debug moment
+    print "379:", almethod, min( site_scores.keys() ), max( site_scores.keys() )
+     
     score_sites = {}
     for site in site_scores:
         this_score = site_scores[site]
@@ -404,7 +407,9 @@ def get_raxml_zorro_commands_for_alignment(con, almethod, scoringmethodid):
         
     sorted_scores = score_sites.keys()
     sorted_scores.sort( reverse=True )
-        
+    
+    print "409:", almethod, sorted_scores
+    
     commands = []
     thresholds = get_zorro_thresholds(con) # i.e., top 5%, 10%, 15% of scores
     thresholds.sort()
@@ -450,12 +455,19 @@ def get_raxml_zorro_commands_for_alignment(con, almethod, scoringmethodid):
         con.commit()
 
         """Write a PHYLIP with the aligned sequences containing only the threshold-ed sites."""        
-        taxa_alseqs = get_sequences(con, almethod = almethod, sitesets=[sitesetid])# sites = use_these_sites)
+        taxa_alseqs = get_sequences(con, almethod=almethod, sitesets=[sitesetid])# sites = use_these_sites)
         seqs = {}
-        for taxaid in taxa_alseqs:
-            tname = get_taxon_name(con, taxaid)
-            seqs[tname] = taxa_alseqs[taxaid]
+        for taxonid in taxa_alseqs:
+            tname = get_taxon_name(con, taxonid)
+            seqs[tname] = taxa_alseqs[taxonid]    
             ppath = alname + "/" + alname + ".tmp.zorro." + t.__str__() + ".phylip" 
+            
+            # debug moment:
+            print "461:", almethod, t, taxa_alseqs[taxonid]
+            aseq = get_aligned_seq(con, taxonid, almethod)
+            print "468:", aseq[  max( site_scores.keys() )-1  ]
+            
+            
         write_phylip(seqs, ppath)
 
         """Write a raxml command to analyze these sites."""
