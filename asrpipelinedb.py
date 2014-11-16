@@ -48,6 +48,7 @@ def build_db(dbpath = None):
     cur.execute("create table if not exists AlignmentSiteScores(almethodid INTEGER, scoringmethodid INTEGER, site INT, score FLOAT)")
     cur.execute("create table if not exists ZorroThreshStats(almethod INTEGER, thresh FLOAT, min_score FLOAT, nsites INT)")
     cur.execute("create table if not exists ZorroThreshRaxmlStats(almethod INTEGER, thresh FLOAT, mean_bootstrap FLOAT, sum_of_branches FLOAT)")
+    cur.execute("create table if not exists ZorroThreshFasttreeStats(almethod INTEGER, thresh FLOAT, mean_bootstrap FLOAT, sum_of_branches FLOAT)")
 
     
     # a list of phylo softwares, such as PhyML and RAxML

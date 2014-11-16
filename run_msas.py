@@ -353,7 +353,7 @@ def plot_zorro_stats(con):
         scores = get_alignmentsitescores(con, alid, zorroid)
         histogram(scores.values(), alname + "/zorro_scores", xlab="ZORRO score", ylab="proportion of sites")
 
-def build_raxml4zorro_commands(con):
+def build_fasttree4zorro_commands(con):
     """Returns a scriptpath to raxml commands."""
     cur = con.cursor()
     sql = "select id from AlignmentSiteScoringMethods where name='zorro'"
@@ -460,7 +460,7 @@ def get_raxml_zorro_commands_for_alignment(con, almethod, scoringmethodid):
         for taxonid in taxa_alseqs:
             tname = get_taxon_name(con, taxonid)
             seqs[tname] = taxa_alseqs[taxonid]    
-            ppath = alname + "/" + alname + ".tmp.zorro." + t.__str__() + ".phylip" 
+            ppath = get_zorro_phylippath(alname, t)
             
             # debug moment:
             #print "461:", almethod, t, taxa_alseqs[taxonid]
@@ -471,12 +471,13 @@ def get_raxml_zorro_commands_for_alignment(con, almethod, scoringmethodid):
         write_phylip(seqs, ppath)
 
         """Write a raxml command to analyze these sites."""
-        c = make_raxml_quick_command(con, ap, alname, ppath, alname + ".tmp.zorro." + t.__str__() )
+        c = make_fasttree_command(con, ap, alname, ppath )
+        #c = make_raxml_quick_command(con, ap, alname, ppath, alname + ".tmp.zorro." + t.__str__() )
         commands.append( c )
         
     return commands
 
-def analyze_zorro_raxml(con):
+def analyze_zorro_fasttree(con):
     cur = con.cursor()
     sql = "select id from AlignmentSiteScoringMethods where name='zorro'"
     cur.execute(sql)
@@ -491,7 +492,7 @@ def analyze_zorro_raxml(con):
 
 def analyze_special_raxml(con, almethod):
     cur = con.cursor()
-    sql = "delete from ZorroThreshRaxmlStats where almethod=" + almethod.__str__()
+    sql = "delete from ZorroThreshFasttreeStats where almethod=" + almethod.__str__()
     cur.execute(sql)
     con.commit()
     
@@ -502,18 +503,14 @@ def analyze_special_raxml(con, almethod):
     thresh_treepath = {}
     thresh_infopath = {}
     for t in thresholds:
-        thresh_treepath[t] = get_raxml_supportedtreepath(alname, alname + ".tmp.zorro." + t.__str__() )
-        thresh_infopath[t] = get_raxml_infopath(alname, "tmp.zorro." + t.__str__() )
+        thresh_treepath[t] = get_fasttree_path( get_zorro_phylippath(alname, t) )
         if False == os.path.exists( thresh_treepath[t] ):
-            write_error(con, "I can't find the RAxML tree for the ZORRO trial " + t.__str__() + " at path " + thresh_treepath[t] )
+            write_error(con, "I can't find the FastTree tree for the ZORRO trial " + t.__str__() + " at path " + thresh_treepath[t] )
             exit()
-        if False == os.path.exists( thresh_infopath[t] ):
-            write_error(con, "I can't find the RAxML log file for the ZORRO trial" + t.__str__() + "at path " + thresh_infopath[t] )    
-            exit()
-        
+
         mean_bs = get_mean( get_branch_supports(thresh_treepath[t]) )
         sum_branches = get_sum_of_branches(thresh_treepath[t])
-        sql = "insert or replace into ZorroThreshRaxmlStats(almethod, thresh, mean_bootstrap, sum_of_branches) "
+        sql = "insert or replace into ZorroThreshFasttreeStats(almethod, thresh, mean_bootstrap, sum_of_branches) "
         sql += "VALUES(" + almethod.__str__() + "," + t.__str__() + "," + mean_bs.__str__() + "," + sum_branches.__str__() + ")"
         cur.execute(sql)
         con.commit()

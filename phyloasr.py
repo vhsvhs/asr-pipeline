@@ -65,6 +65,7 @@ def write_raxml_commands(ap):
     fout.close()
     return p
 
+"""Depricated."""
 def make_raxml_quick_command(con, ap, outdir, phylippath, runid):
     """This is intended primarily for the quick RAxML runs called within the ZORRO analysis."""
     here = os.popen('pwd').read().strip()
@@ -76,16 +77,24 @@ def make_raxml_quick_command(con, ap, outdir, phylippath, runid):
     command += " -s " + phylippath
     command += " -n " + runid
     command += " -w " + here + "/" + outdir
-    command += " -e 0.01"
-    command += " -m PROTGAMMALG"
+    command += " -e 0.1"
+    command += " -m PROTGAMMALG -c 1"
     command += " -p 12345"
     command += " -x 12345 -N 100 -f a"
     if ap.params["constraint_tree"] != None:
         command += " -g " + ap.params["constraint_tree"]
     command += " > " + here + "/" + outdir + "/catch." + runid + ".txt" 
     return command
-    
 
+def make_fasttree_command(con, ap, outdir, phylippath):
+    newtree = get_fasttree_path(outdir, phylippath)
+    
+    c = ap.params["fasttree_exe"]
+    c += "-wag "
+    c += " < " + outdir + "/" + phylippath + " > " + newtree
+    return c
+    
+    
 def check_raxml_output(ap):
     here = os.popen('pwd').read().strip()
     commands = []
@@ -98,6 +107,7 @@ def check_raxml_output(ap):
                 print "I can't find the expected result from RAxML at " + here + "/" + msa + "/RAxML_bestTree." + runid
                 write_error(ap, "I can't find the expected result from RAxML at " + here + "/" + msa + "/RAxML_bestTree." + runid)
                 exit()
+
 
 def get_mlalpha_pp(ap):
     #

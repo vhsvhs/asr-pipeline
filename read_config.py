@@ -51,6 +51,9 @@ def read_config_file(con, ap):
         elif tokens[0].startswith("RAXML"):
             ap.params["raxml_exe"] = tokens[1].strip()
         
+        elif tokens[0].startswith("FASTTREE"):
+            ap.params["fasttree_exe"] = tokens[1].strip()
+        
         elif tokens[0].startswith("PHYML"):
             ap.params["phyml_exe"] = tokens[1].strip()
 
