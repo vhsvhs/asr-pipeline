@@ -354,7 +354,7 @@ def plot_zorro_stats(con):
         histogram(scores.values(), alname + "/zorro_scores", xlab="ZORRO score", ylab="proportion of sites")
 
 def build_fasttree4zorro_commands(con):
-    """Returns a scriptpath to raxml commands."""
+    """Returns a scriptpath to FastTree commands."""
     cur = con.cursor()
     sql = "select id from AlignmentSiteScoringMethods where name='zorro'"
     cur.execute(sql)
@@ -367,18 +367,18 @@ def build_fasttree4zorro_commands(con):
     for ii in x:
         alid = ii[0]
         alname = ii[1]
-        commands += get_raxml_zorro_commands_for_alignment(con, alid, zorroid)
+        commands += get_fasttree_zorro_commands_for_alignment(con, alid, zorroid)
     
-    scriptpath = "SCRIPTS/zorro_raxml_commands.sh"
+    scriptpath = "SCRIPTS/zorro_fasttree_commands.sh"
     fout = open(scriptpath, "w")
     for c in commands:
         fout.write( c + "\n" )
     fout.close()
     return scriptpath
 
-def get_raxml_zorro_commands_for_alignment(con, almethod, scoringmethodid):
+def get_fasttree_zorro_commands_for_alignment(con, almethod, scoringmethodid):
     """A helper method for get_best_zorro_set.
-    Returns a list of commands for raxml"""
+    Returns a list of commands for FastTree"""
     cur = con.cursor()
     sql = "select name from AlignmentMethods where id=" + almethod.__str__()
     cur.execute(sql)
@@ -417,7 +417,7 @@ def get_raxml_zorro_commands_for_alignment(con, almethod, scoringmethodid):
     for t in thresholds:
         """For each threshold:
             1. write a PHYLIP file containing an alignment of only those sites that satisfy the threshold.
-            2. build a raxml command to build a quick tree for this alignment.
+            2. build a FastTree command to build a quick tree for this alignment.
         """
         
         sitesetname = "zorro:" + t.__str__()
@@ -470,7 +470,7 @@ def get_raxml_zorro_commands_for_alignment(con, almethod, scoringmethodid):
             
         write_phylip(seqs, ppath)
 
-        """Write a raxml command to analyze these sites."""
+        """Write a FastTree command to analyze these sites."""
         c = make_fasttree_command(con, ap, alname, ppath )
         #c = make_raxml_quick_command(con, ap, alname, ppath, alname + ".tmp.zorro." + t.__str__() )
         commands.append( c )
@@ -488,9 +488,9 @@ def analyze_zorro_fasttree(con):
     x = cur.fetchall()
     for ii in x:
         alid = ii[0]
-        analyze_special_raxml(con, alid)
+        analyze_fasttrees(con, alid)
 
-def analyze_special_raxml(con, almethod):
+def analyze_fasttrees(con, almethod):
     cur = con.cursor()
     sql = "delete from ZorroThreshFasttreeStats where almethod=" + almethod.__str__()
     cur.execute(sql)
