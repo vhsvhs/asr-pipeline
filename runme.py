@@ -75,13 +75,17 @@ if jump <= 2.4 and stop > 2.5:
     p = build_fasttree4zorro_commands(con)
     run_script(p)
 if jump <= 2.5 and stop > 2.6:
-    analyze_zorro_fasttree(con)
+    analyze_zorro_fasttrees(con)
 if jump <= 2.6 and stop > 2.7:
+    measure_fasttree_distances(con)
+if jump <= 2.7 and stop > 2.8:
+    compare_fasttrees(con)
+if jump <= 2.9 and stop > 2.91:
     cleanup_zorro_analysis(con)
 
 exit()
 
-if jump <= 2.5 and stop > 2.6:
+if jump <= 2.99 and stop > 2.99:
     convert_all_fasta_to_phylip(ap)
 
 """ ML Trees """

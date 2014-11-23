@@ -313,7 +313,6 @@ def import_zorro_scores(con):
         
         seedsetid = get_sitesetid(con, 'seed')
         minfromsite = get_lower_bound_in_siteset(con, seedsetid, alid)
-        #print "305:", minfromsite
         
         """Now offset all ZORRO sites by minfromsite, to account for the fact that the ZORRO
         analysis was performed on aligned sequences trimmed to the seed."""
@@ -477,25 +476,78 @@ def get_fasttree_zorro_commands_for_alignment(con, almethod, scoringmethodid):
         
     return commands
 
-def analyze_zorro_fasttree(con):
+def analyze_zorro_fasttrees(con):
     cur = con.cursor()
     sql = "select id from AlignmentSiteScoringMethods where name='zorro'"
     cur.execute(sql)
     zorroid = cur.fetchone()[0]
+    
+    sql = "delete from FasttreeStats"
+    cur.execute(sql)
+    con.commit()
+    
+    sql = "delete from ZorroThreshFasttree"
+    cur.execute(sql)
+    con.commit()
     
     sql = "select id, name from AlignmentMethods"
     cur.execute(sql)
     x = cur.fetchall()
     for ii in x:
         alid = ii[0]
-        analyze_fasttrees(con, alid)
+        analyze_fasttrees_for_msa(con, alid)
 
-def analyze_fasttrees(con, almethod):
+
+def measure_fasttree_distances(con):
     cur = con.cursor()
-    sql = "delete from ZorroThreshFasttreeStats where almethod=" + almethod.__str__()
+    cur = con.cursor()
+    sql = "delete from FasttreeSymmetricDistances"
+    cur.execute(sql)
+    sql = "delete from FasttreeRFDistances"
     cur.execute(sql)
     con.commit()
     
+    sql = "select treeid, newick from ZorroThreshFasttree"
+    cur.execute(sql)
+    treeid_newick = {}
+    x = cur.fetchall()
+    for ii in x:
+        treeid_newick[ii[0]] = ii[1]
+
+    treeid_dendro = {}
+    for ii in treeid_newick:
+        print "515", ii
+        t = Tree()
+        t.read_from_string( treeid_newick[ii].__str__(), "newick")
+        treeid_dendro[ii] = t
+    
+    ids = treeid_newick.keys()
+    ids.sort()
+    
+    ii_jj_symd = {}
+    ii_jj_rfd = {}
+    for i in range(0, ids.__len__() ):
+        ii = ids[i]
+        ii_jj_symd[ii] = {}
+        ii_jj_rfd[ii] = {}
+
+        for j in range(i, ids.__len__()):
+            jj = ids[j]
+            """reciprocal symmetric difference"""
+            ii_jj_symd[ii][jj] = treeid_dendro[ii].symmetric_difference( treeid_dendro[jj] ) + treeid_dendro[jj].symmetric_difference( treeid_dendro[ii] )
+            sql = "insert into FasttreeSymmetricDistances(treeid1, treeid2, distance) VALUES("
+            sql += ii.__str__() + "," + jj.__str__() + "," + ii_jj_symd[ii][jj].__str__() + ")"
+            cur.execute(sql)
+            ii_jj_rfd[ii][jj] = treeid_dendro[ii].robinson_foulds_distance( treeid_dendro[jj] )
+            sql = "insert into FasttreeRFDistances(treeid1, treeid2, distance) VALUES("
+            sql += ii.__str__() + "," + jj.__str__() + "," + ii_jj_rfd[ii][jj].__str__() + ")"
+            cur.execute(sql)
+            print "547:", ii, jj, ii_jj_symd[ii][jj], ii_jj_rfd[ii][jj]
+    con.commit()
+        
+
+def analyze_fasttrees_for_msa(con, almethod):
+    cur = con.cursor()
     sql = "select name from AlignmentMethods where id=" + almethod.__str__()
     cur.execute(sql)
     alname = cur.fetchone()[0] 
@@ -508,14 +560,78 @@ def analyze_fasttrees(con, almethod):
             write_error(con, "I can't find the FastTree tree for the ZORRO trial " + t.__str__() + " at path " + thresh_treepath[t] )
             exit()
 
+        fin = open(thresh_treepath[t], "r")
+        newick = fin.readline()
+        fin.close()
+        newick = newick.strip()
+        sql = "insert into ZorroThreshFasttree(almethod, thresh, newick) VALUES(" + almethod.__str__()
+        sql += ", " + t.__str__() + ",'" + newick + "')"
+        cur.execute(sql)
+        con.commit()
+
+        """Get the randomly-generated new ID of the tree we just inserted."""
+        sql = "select treeid from ZorroThreshFasttree where almethod=" + almethod.__str__() + " and thresh=" + t.__str__()
+        cur.execute(sql)
+        treeid = cur.fetchone()[0]
+
         mean_bs = get_mean( get_branch_supports(thresh_treepath[t]) )
+        if mean_bs == None:
+            mean_bs = 0.0
         sum_branches = get_sum_of_branches(thresh_treepath[t])
-        sql = "insert or replace into ZorroThreshFasttreeStats(almethod, thresh, mean_bootstrap, sum_of_branches) "
-        sql += "VALUES(" + almethod.__str__() + "," + t.__str__() + "," + mean_bs.__str__() + "," + sum_branches.__str__() + ")"
+        sql = "insert or replace into FasttreeStats(treeid, mean_bootstrap, sum_of_branches) "
+        sql += "VALUES(" + treeid.__str__() + "," + mean_bs.__str__() + "," + sum_branches.__str__() + ")"
         cur.execute(sql)
         con.commit()
 
         write_log(con, "Zorro threshold stat: " + alname + " thresh:" + t.__str__() + " branch_sum:" + sum_branches.__str__() + " mean_bs:" + mean_bs.__str__() )
 
+def compare_fasttrees(con):
+    cur = con.cursor()
+    sql = "select id from AlignmentMethods"
+    cur.execute(sql)
+    x = cur.fetchall()
+    for ii in x:
+        msaid = ii[0]
+        compare_fasttrees_for_alignment(con, msaid)
+        
+def compare_fasttrees_for_alignment(con, msaid):
+    cur = con.cursor()
+    sql = "select treeid, thresh from ZorroThreshFasttree where almethod=" + msaid.__str__()
+    cur.execute(sql)
+    x = cur.fetchall()
+    thresh_treeid = {}
+    for jj in x:
+        treeid = jj[0]
+        thresh = jj[1]
+        thresh_treeid[ thresh ] = treeid
+    
+    threshes = thresh_treeid.keys()
+    threshes.sort()
+    for ii in range(0, threshes.__len__()):
+        line = ii.__str__() + "\t"
+        for jj in range(0, threshes.__len__()):
+            sql = "select distance from FasttreeRFDistances where treeid1=" + thresh_treeid[ threshes[ii] ].__str__() + " and treeid2=" + thresh_treeid[  threshes[jj] ].__str__()
+            cur.execute(sql)
+            d = cur.fetchone()
+            if d == None:
+                sql = "select distance from FasttreeRFDistances where treeid1=" + thresh_treeid[ threshes[jj] ].__str__() + " and treeid2=" + thresh_treeid[  threshes[ii] ].__str__()
+                cur.execute(sql)
+                d = cur.fetchone()                
+            line += "%.3f\t"%d
+        print line 
+
 def cleanup_zorro_analysis(con):
-    pass
+    """This method deletes the leftover files from the ZORRO analysis and the corresponding FastTree analysis."""
+    cur = con.cursor()
+    sql = "select id, name from AlignmentMethods"
+    cur.execute(sql)
+    x = cur.fetchall()
+
+    """For each alignment, read & import the zorro scores."""
+    for ii in x:
+        alid = ii[0]
+        almethod = ii[1]
+        os.system("rm -rf " + almethod + "/" + almethod + ".*zorro*")
+        
+        
+

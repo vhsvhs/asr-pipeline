@@ -87,11 +87,11 @@ def make_raxml_quick_command(con, ap, outdir, phylippath, runid):
     return command
 
 def make_fasttree_command(con, ap, outdir, phylippath):
-    newtree = get_fasttree_path(outdir, phylippath)
+    newtree = get_fasttree_path(phylippath)
     
     c = ap.params["fasttree_exe"]
-    c += "-wag "
-    c += " < " + outdir + "/" + phylippath + " > " + newtree
+    c += " -wag "
+    c += " < " + phylippath + " > " + newtree
     return c
     
     
@@ -503,8 +503,9 @@ def get_branch_supports( treepath ):
         for t in tokens:
             if t.__contains__(")") and False == t.__contains__(";"):
                 ts = t.split(")")
-                support = float(ts[1])
-                supports.append( support )
+                if ts[1] != '':
+                    support = float(ts[1])
+                    supports.append( support )
     fin.close()
     return supports
 

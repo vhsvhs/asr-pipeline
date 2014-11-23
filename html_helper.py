@@ -321,8 +321,12 @@ def get_ppdistro_summary(data):
         if data[site][0][0] != '-' and data[site][0][0] != "-":
             pps.append( data[site][0][1] )
     mean = get_mean(pps)
+    if mean == None:
+        mean = 0.0
     sd = get_sd(pps)
-    return "<p>&#x3BC; PP = %.3f"%get_mean(pps) + ", &#x3C3; = %.3f"%get_sd(pps) + "</p>\n"
+    if sd == None:
+        sd = 0.0
+    return "<p>&#x3BC; PP = %.3f"%mean + ", &#x3C3; = %.3f"%sd + "</p>\n"
 
 
 def write_ppdistro_plot(data):

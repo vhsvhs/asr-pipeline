@@ -36,6 +36,9 @@ def run_subprocess(command):
     return proc
 
 def get_mean(values):
+    """Returns the mean, or None if there are 0 values."""
+    if values.__len__() == 0:
+        return None
     sum = 0.0
     for v in values:
         sum += float(v)
@@ -43,6 +46,8 @@ def get_mean(values):
 
 def get_sd(values):
     mean = get_mean(values)
+    if mean == None:
+        return None
     sumofsquares = 0.0
     for v in values:
         sumofsquares += (v - mean)**2
@@ -105,7 +110,7 @@ def get_raxml_supportedtreepath(DIR, runid):
     return DIR + "/RAxML_bipartitions." + runid
 
 def get_zorro_phylippath(alname, thresh):
-    return alname + "/" + alname + ".tmp.zorro." + t.__str__() + ".phylip" 
+    return alname + "/" + alname + ".tmp.zorro." + thresh.__str__() + ".phylip" 
 
 def get_fasttree_path(ppath):
     return ppath + ".fasttree"
