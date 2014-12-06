@@ -101,6 +101,8 @@ def read_config_file(con, ap):
             ap.params["zorro_thresholds"] = []
             for i in x:
                 ap.params["zorro_thresholds"].append( float(i) )
+            if 1.0 not in ap.params["zorro_thresholds"]:
+                ap.params["zorro_thresholds"].append( 1.0 )
         
         elif tokens[0].startswith("MODELS_RAXML"):
             x = tokens[1].split()

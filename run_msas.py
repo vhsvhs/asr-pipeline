@@ -35,7 +35,7 @@ def read_fasta(fpath):
     okay = True
     for l in fin.xreadlines():
         l = l.strip()
-        if l.__len__() <= 1:
+        if l.__len__() <= 2:
             pass
         elif l.startswith(">"):
             okay = True
@@ -50,8 +50,11 @@ def read_fasta(fpath):
                 
         elif okay == True:
             last_seq += l
-    taxa_seq[last_taxa] = last_seq
+    if last_taxa != None:
+        taxa_seq[last_taxa] = last_seq
+    
     fin.close()
+    
     return taxa_seq
 
 def import_and_clean_erg_seqs(con, ap):  
@@ -59,7 +62,7 @@ def import_and_clean_erg_seqs(con, ap):
     in the SQL tables Taxa and OriginalSequences.
     Note: these tables are wiped clean before inserting new data."""  
     taxa_seq = read_fasta(ap.params["ergseqpath"])
-    
+
     cur = con.cursor()
     sql = "delete from OriginalSequences"
     cur.execute(sql)
@@ -69,6 +72,7 @@ def import_and_clean_erg_seqs(con, ap):
     
     for taxon in taxa_seq:
         import_original_seq(con, taxon, taxa_seq[taxon] )
+        print taxon, taxa_seq[taxon]
     
     cleanpath = ap.params["ergseqpath"]
     fout = open(cleanpath, "w")
@@ -112,34 +116,38 @@ def write_msa_commands(con, ap):
 
 def check_aligned_sequences(con, ap):
     cur = con.cursor()
-    for msa in ap.params["msa_algorithms"]:
+    sql = "select id, name from AlignmentMethods"
+    cur.execute(sql)
+    x = cur.fetchall()
+    for ii in x:
+        msaid = ii[0]
+        msa = ii[1]
         expected_fasta = get_fastapath(msa)
         if False == os.path.exists( expected_fasta ):
             write_error(con, "I can't find the expected FASTA output from " + msa + " at " + expected_fasta, code=None)
         taxa_seq = read_fasta(expected_fasta)
     
+        """Does this alignment contain sequences?"""
         if taxa_seq.__len__() == 0:
             write_error(con, "I didn't find any sequences in the alignment from " + msa)
-            exit()
-    
-        sql = "select id from AlignmentMethods where name='" + msa + "'"
-        cur.execute(sql)
-        x = cur.fetchall()
-        if x.__len__() == 0:
-            write_error(con, "The alignment method " + msa + " does not exist in the database.")
-            exit()
-        almethodid = x[0][0] 
-
-        sql = "delete from AlignedSequences where almethod=" + almethodid.__str__()
+            
+            sql = "delete from AlignmentMethods where id=" + msaid.__str__()
+            cur.execute(sql)
+            con.commit()
+        
+        """Clear any existing sequences, so that we can import fresh sequences."""
+        sql = "delete from AlignedSequences where almethod=" + msaid.__str__()
         cur.execute(sql)
         con.commit()
 
+        """Import each sequence in the alignment."""
         for taxa in taxa_seq:
             taxonid = get_taxonid(con, taxa)
-            import_aligned_seq(con, taxonid, almethodid, taxa_seq[taxa])
+            import_aligned_seq(con, taxonid, msaid, taxa_seq[taxa])
                  
+        """Verify the importation occurred."""
         cur = con.cursor()
-        sql = "select count(*) from AlignedSequences where almethod=" + almethodid.__str__()
+        sql = "select count(*) from AlignedSequences where almethod=" + msaid.__str__()
         cur.execute(sql)
         c = cur.fetchone()[0]
         write_log(con, "There are " + c.__str__() + " sequences in the " + msa + " alignment.")
@@ -175,7 +183,117 @@ def convert_all_fasta_to_phylip(ap):
         f = get_trimmed_fastapath(msa)
         p = get_trimmed_phylippath(msa)
         fasta_to_phylip(f, p)
+        f = get_raxml_fastapath(msa)
+        p = get_raxml_phylippath(msa)
+        fasta_to_phylip(f, p)
+        
+def bypass_zorro(con, ap):
+    """Creates the post-zorro alignments, without running ZORRO and the resulting analysis."""
+    for msa in ap.params["msa_algorithms"]:
+        f = get_trimmed_fastapath(msa)
+        p = get_trimmed_phylippath(msa)
+        
+        fpath = get_raxml_fastapath(msa)
+        ppath = get_raxml_phylippath(msa)
+        
+        os.system("cp " + f + " " + fpath)
+        os.system("cp " + p + " " + ppath)       
 
+def write_alignment_for_raxml(con):
+    """This method finds the best set of alignment sites."""
+    cur = con.cursor()
+    
+    sql = "select id, name from AlignmentMethods"
+    cur.execute(sql)
+    x = cur.fetchall()
+    for ii in x:
+        msaid = ii[0]
+        msaname = ii[1]
+        
+        #
+        # continue here --  to-do -- this section can be simplified by using SiteSetsAlignment
+        # rather than all these indirect table calls
+        #
+        
+        sql = "select treeid, max(mean_bootstrap) from FasttreeStats where treeid in "
+        sql += "(select treeid from ZorroThreshFasttree where almethod=" + msaid.__str__() + ")"
+        cur.execute(sql)
+        y = cur.fetchall()
+        best_treeid = y[0][0]
+        #print "200:", msaid, best_treeid
+        
+        sql = "select thresh from ZorroThreshFasttree where treeid=" + best_treeid.__str__()
+        cur.execute(sql)
+        y = cur.fetchall()
+        best_thresh = y[0][0]
+        #best_thresh = 0.1
+        #print "199:", msaid, best_thresh
+        
+        sql = "select min_score from ZorroThreshStats where thresh=" + best_thresh.__str__() + " and almethod=" + msaid.__str__()
+        cur.execute(sql)
+        min_score = cur.fetchone()[0]
+        #print "211:", min_score
+        
+        """Get the sites."""
+        sql = "select id from AlignmentSiteScoringMethods where name='zorro'"
+        cur.execute(sql)
+        zorromethod = cur.fetchone()[0]
+        
+        sql = "select site from AlignmentSiteScores where almethodid=" + msaid.__str__() + " and scoringmethodid=" +  zorromethod.__str__()
+        sql += " and score >= " + min_score.__str__() + " order by site ASC"
+        cur.execute(sql)
+        y = cur.fetchall()
+        sites = [] # a list of site indices into seed-trimmed sequences
+        for ii in y:
+            sites.append( ii[0] )
+        #print "234:", seedsites[0], seedsites.__len__()
+        
+        # depricated
+        #sql = "select setid from SiteSets where setname='seed'"
+#         seedid = get_taxonid(con, ap.params["seed_motif_seq"] )
+#         seedseq = get_aligned_seq(con, seedid, msaid)
+#         start_motif = ap.params["start_motif"]
+#         end_motif = ap.params["end_motif"]        
+#         [start, stop] = get_boundary_sites(seedseq, start_motif, end_motif)
+#         #print "243:", start, stop
+#         
+#         """Translate seed site numbers to original site numbers."""
+#         sites = [] # a list of site indices into original sequences
+#         for site in seedsites:
+#             sites.append( site + start-1)
+        
+        #print "249:", sites[0], sites.__len__()
+                
+        fpath = get_raxml_fastapath(msaname)
+        ppath = get_raxml_phylippath(msaname)
+        
+        """Write alignments"""
+        ffout = open( fpath, "w")
+        pfout = open( ppath, "w")
+
+        sql = "select taxonid, alsequence from AlignedSequences where almethod=" + msaid.__str__()
+        cur.execute(sql)
+        y = cur.fetchall()
+        pfout.write( y.__len__().__str__() + "   " + sites.__len__().__str__() + "\n")
+        for jj in y: # for each sequence
+            taxonid = jj[0]
+            taxa = get_taxon_name(con, taxonid)
+            seq = jj[1]
+            finalseq = ""
+            for site in sites:
+                finalseq += seq[site-1]
+            hasdata = False 
+            for c in finalseq:
+                if c != "-":
+                    hasdata = True
+            if hasdata == True: # Does this sequence contain at least one non-indel character?
+                ffout.write(">" + taxa + "\n" + finalseq + "\n")
+                pfout.write(taxa + "    " + finalseq + "\n")
+            else:
+                write_log(con, "After trimming the alignment " + msaid.__str__() + " to the ZORRO threshold, the taxa " + taxa + " contains no sequence content. This taxa will be obmitted from downstream analysis.")
+        ffout.close()
+        pfout.close()
+        
 
 def build_seed_sitesets(con, ap):
     cur = con.cursor()
@@ -191,6 +309,8 @@ def clear_sitesets(con, ap):
     sql = "delete from SiteSetsAlignment"
     cur.execute(sql)
     con.commit()
+
+
 
 def trim_alignments(con, ap):
     """Trims the alignment to match the start and stop motifs.
@@ -218,6 +338,8 @@ def trim_alignments(con, ap):
         seedseq = get_aligned_seq(con, seedid, alid)
         start_motif = ap.params["start_motif"]
         end_motif = ap.params["end_motif"]
+        
+        print "222:", ii, seedid, seedseq, start_motif, end_motif
         
         [start, stop] = get_boundary_sites(seedseq, start_motif, end_motif)
         
@@ -255,7 +377,8 @@ def trim_alignments(con, ap):
         ffout.close()
         pfout.close()
     
-    
+
+
 def build_zorro_commands(con, ap):
     # 1. run ZORRO
     # 2. parse the results
@@ -466,7 +589,6 @@ def get_fasttree_zorro_commands_for_alignment(con, almethod, scoringmethodid):
             #aseq = get_aligned_seq(con, taxonid, almethod)
             #print "468:", aseq[  max( site_scores.keys() )-1  ]
             
-            
         write_phylip(seqs, ppath)
 
         """Write a FastTree command to analyze these sites."""
@@ -593,7 +715,9 @@ def compare_fasttrees(con):
     for ii in x:
         msaid = ii[0]
         compare_fasttrees_for_alignment(con, msaid)
-        
+
+
+
 def compare_fasttrees_for_alignment(con, msaid):
     cur = con.cursor()
     sql = "select treeid, thresh from ZorroThreshFasttree where almethod=" + msaid.__str__()
@@ -607,8 +731,10 @@ def compare_fasttrees_for_alignment(con, msaid):
     
     threshes = thresh_treeid.keys()
     threshes.sort()
+
+    """Plot RF distances"""
     for ii in range(0, threshes.__len__()):
-        line = ii.__str__() + "\t"
+        line = threshes[ii].__str__() + "\t"
         for jj in range(0, threshes.__len__()):
             sql = "select distance from FasttreeRFDistances where treeid1=" + thresh_treeid[ threshes[ii] ].__str__() + " and treeid2=" + thresh_treeid[  threshes[jj] ].__str__()
             cur.execute(sql)
@@ -617,9 +743,24 @@ def compare_fasttrees_for_alignment(con, msaid):
                 sql = "select distance from FasttreeRFDistances where treeid1=" + thresh_treeid[ threshes[jj] ].__str__() + " and treeid2=" + thresh_treeid[  threshes[ii] ].__str__()
                 cur.execute(sql)
                 d = cur.fetchone()                
-            line += "%.3f\t"%d
+            line += "%.1f\t"%d
+        print line
+        
+    """Plot Symmetric Distances"""
+    for ii in range(0, threshes.__len__()):
+        line = threshes[ii].__str__() + "\t"
+        for jj in range(0, threshes.__len__()):
+            sql = "select distance from FasttreeSymmetricDistances where treeid1=" + thresh_treeid[ threshes[ii] ].__str__() + " and treeid2=" + thresh_treeid[  threshes[jj] ].__str__()
+            cur.execute(sql)
+            d = cur.fetchone()
+            if d == None:
+                sql = "select distance from FasttreeSymmetricDistances where treeid1=" + thresh_treeid[ threshes[jj] ].__str__() + " and treeid2=" + thresh_treeid[  threshes[ii] ].__str__()
+                cur.execute(sql)
+                d = cur.fetchone()                
+            line += "%.1f\t"%d
         print line 
 
+        
 def cleanup_zorro_analysis(con):
     """This method deletes the leftover files from the ZORRO analysis and the corresponding FastTree analysis."""
     cur = con.cursor()
@@ -632,6 +773,5 @@ def cleanup_zorro_analysis(con):
         alid = ii[0]
         almethod = ii[1]
         os.system("rm -rf " + almethod + "/" + almethod + ".*zorro*")
-        
-        
 
+        

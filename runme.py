@@ -63,27 +63,32 @@ if jump <= 2 and stop > 2.1:
     """Trim the alignments to match the seed sequence(s)."""
     trim_alignments(con, ap)
 
-"""Use ZORRO to the find the phylogenetically informative sites."""
-if jump <= 2.1 and stop > 2.2:
-    p = build_zorro_commands(con, ap)
-    run_script(p)
-if jump <= 2.2 and stop > 2.3:
-    import_zorro_scores(con)
-if jump <= 2.3 and stop > 2.4:
-    plot_zorro_stats(con)
-if jump <= 2.4 and stop > 2.5:
-    p = build_fasttree4zorro_commands(con)
-    run_script(p)
-if jump <= 2.5 and stop > 2.6:
-    analyze_zorro_fasttrees(con)
-if jump <= 2.6 and stop > 2.7:
-    measure_fasttree_distances(con)
-if jump <= 2.7 and stop > 2.8:
-    compare_fasttrees(con)
-if jump <= 2.9 and stop > 2.91:
-    cleanup_zorro_analysis(con)
+if ap.getOptionalToggle("--skip_zorro"):
+    bypass_zorro(con, ap)
 
-exit()
+if False == ap.getOptionalToggle("--skip_zorro"):
+    """Use ZORRO to the find the phylogenetically informative sites."""
+    if jump <= 2.1 and stop > 2.2:
+        p = build_zorro_commands(con, ap)
+        run_script(p)
+    if jump <= 2.2 and stop > 2.3:
+        import_zorro_scores(con)
+    if jump <= 2.3 and stop > 2.4:
+        plot_zorro_stats(con)
+    if jump <= 2.4 and stop > 2.5:
+        p = build_fasttree4zorro_commands(con)
+        run_script(p)
+    if jump <= 2.5 and stop > 2.6:
+        analyze_zorro_fasttrees(con)
+    if jump <= 2.6 and stop > 2.7:
+        measure_fasttree_distances(con)
+    if jump <= 2.7 and stop > 2.8:
+        compare_fasttrees(con)
+    if jump <= 2.9 and stop > 2.91:
+        cleanup_zorro_analysis(con)
+    
+    if jump <= 2.91 and stop > 2.92:
+        write_alignment_for_raxml(con)
 
 if jump <= 2.99 and stop > 2.99:
     convert_all_fasta_to_phylip(ap)
@@ -139,7 +144,7 @@ if jump <= 5.1 and stop > 5.1:
 if jump <= 5.2 and stop > 5.2:
     ap.params["checkpoint"] = 5.1
     ap.params["pending_checkpoint"] = 5.2
-    run_asr_bayes(ap)
+    run_asr_bayes(con, ap)
 
 """ Predict sites of functional evolution """
 if jump <= 6 and stop > 6:

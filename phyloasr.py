@@ -39,7 +39,7 @@ def write_raxml_commands(ap):
     here = os.popen('pwd').read().strip()
     commands = []
     for msa in ap.params["msa_algorithms"]:
-        phypath = get_trimmed_phylippath(msa)
+        phypath = get_raxml_phylippath(msa)
         for model in ap.params["raxml_models"]:
             runid = get_runid(msa, model) 
             if os.path.exists(here + "/" + msa + "/RAxML_info." + runid): # Remove dirty RAxML data.
@@ -99,7 +99,7 @@ def check_raxml_output(ap):
     here = os.popen('pwd').read().strip()
     commands = []
     for msa in ap.params["msa_algorithms"]:
-        phypath = get_trimmed_phylippath(msa)
+        phypath = get_raxml_phylippath(msa)
         for model in ap.params["raxml_models"]:
             runid = get_runid(msa, model) 
             raxml_treepath = get_raxml_treepath(msa, runid)
@@ -205,7 +205,7 @@ def calc_alrt(ap):
         for model in ap.params["raxml_models"]:
             runid = get_runid(msa, model)
             mltreepath = get_raxml_treepath(msa, runid)
-            phylippath = get_trimmed_phylippath(msa)
+            phylippath = get_raxml_phylippath(msa)
             
             if False == os.path.exists(mltreepath):
                 print "Something is wrong. I can't find the ML tree output from RAxML:", mltreepath
