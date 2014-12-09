@@ -94,6 +94,22 @@ def verify_erg_seqs(con):
     c = cur.fetchone()[0]
     write_log(con, "There are " + c.__str__() + " sequences in the database.")
     
+    """Is the seed sequence found?"""
+    sql = "select value from Settings where keyword='seedtaxa'"
+    cur.execute(sql)
+    x = cur.fetchall()
+    seeds = []
+    for ii in x:
+        seeds.append( ii[0] )
+    for s in seeds:
+        sql = "select count(*) from Taxa where shortname='" + s + "'"
+        cur.execute(sql)
+        x = cur.fetchone()[0]
+        if x == 0:
+            write_error(con, "I cannot find your seed taxa '" + s + "' in your original sequences.")
+            exit()
+        
+    
 def write_msa_commands(con, ap):
     p = "SCRIPTS/msas.commands.sh"
     fout = open(p, "w")

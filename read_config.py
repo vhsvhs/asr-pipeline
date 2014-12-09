@@ -49,52 +49,100 @@ def read_config_file(con, ap):
             ap.params["ergseqpath"] = re.sub(" ", "", tokens[1])
         
         elif tokens[0].startswith("RAXML"):
-            ap.params["raxml_exe"] = tokens[1].strip()
+            exe = tokens[1].strip() 
+            ap.params["raxml_exe"] = exe
+            sql = "insert into Settings (keyword, value) VALUES('raxml_exe'," + exe + ")"
+            cur.execute(sql)
+            con.commit()
         
         elif tokens[0].startswith("FASTTREE"):
-            ap.params["fasttree_exe"] = tokens[1].strip()
+            exe = tokens[1].strip() 
+            ap.params["fasttree_exe"] = exe
+            sql = "insert into Settings (keyword, value) VALUES('fasttree_exe'," + exe + ")"
+            cur.execute(sql)
+            con.commit()
         
         elif tokens[0].startswith("PHYML"):
-            ap.params["phyml_exe"] = tokens[1].strip()
+            exe = tokens[1].strip() 
+            ap.params["phyml_exe"] = exe
+            sql = "insert into Settings (keyword, value) VALUES('phyml_exe'," + exe + ")"
+            cur.execute(sql)
+            con.commit()
 
         elif tokens[0].startswith("LAZARUS"):
-            ap.params["lazarus_exe"] = tokens[1].strip()
+            exe = tokens[1].strip() 
+            ap.params["lazarus_exe"] = exe
+            sql = "insert into Settings (keyword, value) VALUES('lazarus_exe'," + exe + ")"
+            cur.execute(sql)
+            con.commit()
 
         elif tokens[0].startswith("MARKOV_MODEL_FOLDER"):
             ap.params["mmfolder"] = tokens[1].strip()
         
         elif tokens[0].startswith("MPIRUN"):
-            ap.params["mpirun_exe"] = tokens[1]
+            exe = tokens[1].strip() 
+            ap.params["mpirun_exe"] = exe
+            sql = "insert into Settings (keyword, value) VALUES('mpirun_exe'," + exe + ")"
+            cur.execute(sql)
+            con.commit()
         
         elif tokens[0].startswith("RUN"):
             ap.params["run_exe"] = tokens[1]
         
         elif tokens[0].startswith("MSAPROBS"):
-            ap.params["msaprobs_exe"] = tokens[1].strip()
+            exe = tokens[1].strip()
+            ap.params["msaprobs_exe"] = exe
+            sql = "insert into Settings (keyword, value) VALUES('msaprobs_exe'," + exe + ")"
+            cur.execute(sql)
+            con.commit()
 
         elif tokens[0].startswith("MUSCLE"):
-            ap.params["muscle_exe"] = tokens[1].strip()
+            exe = tokens[1].strip()
+            ap.params["muscle_exe"] = exe
+            sql = "insert into Settings (keyword, value) VALUES('muscle_exe'," + exe + ")"
+            cur.execute(sql)
+            con.commit()
 
         elif tokens[0].startswith("PRANK"):
-            ap.params["prank_exe"] = tokens[1].strip()
+            exe = tokens[1].strip()
+            ap.params["prank_exe"] = exe
+            sql = "insert into Settings (keyword, value) VALUES('prank_exe'," + exe + ")"
+            cur.execute(sql)
+            con.commit()
 
         elif tokens[0].startswith("MAFFT"):
-            ap.params["mafft_exe"] = tokens[1].strip()
+            exe = tokens[1].strip()
+            ap.params["mafft_exe"] = exe
+            sql = "insert into Settings (keyword, value) VALUES('mafft_exe'," + exe + ")"
+            cur.execute(sql)
+            con.commit()
         
         elif tokens[0].startswith("ANCCOMP"):
             ap.params["anccomp"] = tokens[1].strip()
         
         elif tokens[0].startswith("PYMOL"):
-            ap.params["pymol_exe"] = tokens[1].strip()
- 
+            exe = tokens[1].strip()
+            ap.params["pymol_exe"] = exe
+            sql = "insert into Settings (keyword, value) VALUES('pymol_exe'," + exe + ")"
+            cur.execute(sql)
+            con.commit()
+
         elif tokens[0].startswith("ZORRO"):
-            ap.params["zorro_exe"] = tokens[1].strip()
+            exe = tokens[1].strip()
+            ap.params["zorro_exe"] = exe
+            sql = "insert into Settings (keyword, value) VALUES('zorro_exe'," + exe + ")"
+            cur.execute(sql)
+            con.commit()
+
         
         elif tokens[0].startswith("ALIGNMENT_ALGORITHMS"):
             x = tokens[1].split()
             ap.params["msa_algorithms"] = []
             for i in x:
                 ap.params["msa_algorithms"].append( i )
+                sql = "insert into Settings (keyword, value) VALUES('msa_algorithms'," + i + ")"
+                cur.execute(sql)
+                con.commit()
 
         elif tokens[0].startswith("THRESHOLDS_ZORRO"):
             x = tokens[1].split()
@@ -132,7 +180,11 @@ def read_config_file(con, ap):
 # depricated: 
 # continue here... and look in the msa get_bondary_sites function      
         elif tokens[0].startswith("SEED"):
-            ap.params["seed_motif_seq"] = re.sub(" ", "", tokens[1])
+            cleaned_taxa_name = re.sub(" ", "", tokens[1])
+            ap.params["seed_motif_seq"] = cleaned_taxa_name
+            sql = "insert into Settings (keyword, value) VALUES('seedtaxa', '" + cleaned_taxa_name + "')"
+            cur.execute(sql)
+            con.commit()
         
         elif tokens[0].startswith("N_BAYES_SAMPLES"):
             ap.params["n_bayes_samples"] = int(tokens[1])
@@ -188,7 +240,11 @@ def read_config_file(con, ap):
             ap.params["pdbtoolsdir"].strip()
 
         elif tokens[0].startswith("PYMOL"):
-            ap.params["pymol_exe"] = tokens[1].strip()
+            exe = tokens[1].strip()
+            ap.params["pymol_exe"] = exe
+            sql = "insert into Settings (keyword, value) VALUES('pymol_exe'," + exe + ")"
+            cur.execute(sql)
+            con.commit()
 
         elif tokens[0].startswith("MAP2PDB"): # map Df scores for this ancestor onto the PDB path
             anc = tokens[0].split()[1]
