@@ -61,7 +61,9 @@ def import_and_clean_erg_seqs(con, ap):
     """This method imports original sequences (unaligned) and builds entries
     in the SQL tables Taxa and OriginalSequences.
     Note: these tables are wiped clean before inserting new data."""  
-    taxa_seq = read_fasta(ap.params["ergseqpath"])
+    ergseqpath = get_setting_values(con, "ergseqpath")[0]
+
+    taxa_seq = read_fasta(ergseqpath)
 
     cur = con.cursor()
     sql = "delete from OriginalSequences"
@@ -74,7 +76,7 @@ def import_and_clean_erg_seqs(con, ap):
         import_original_seq(con, taxon, taxa_seq[taxon] )
         print taxon, taxa_seq[taxon]
     
-    cleanpath = ap.params["ergseqpath"]
+    cleanpath = get_setting_values(con, "ergseqpath")[0]
     fout = open(cleanpath, "w")
     for taxon in taxa_seq:
         fout.write(">" + taxon + "\n")
@@ -95,12 +97,7 @@ def verify_erg_seqs(con):
     write_log(con, "There are " + c.__str__() + " sequences in the database.")
     
     """Is the seed sequence found?"""
-    sql = "select value from Settings where keyword='seedtaxa'"
-    cur.execute(sql)
-    x = cur.fetchall()
-    seeds = []
-    for ii in x:
-        seeds.append( ii[0] )
+    seeds = get_setting_values(con, "seedtaxa")
     for s in seeds:
         sql = "select count(*) from Taxa where shortname='" + s + "'"
         cur.execute(sql)
@@ -111,24 +108,31 @@ def verify_erg_seqs(con):
         
     
 def write_msa_commands(con, ap):
+    cur = con.cursor()
+    
     p = "SCRIPTS/msas.commands.sh"
     fout = open(p, "w")
-    for msa in ap.params["msa_algorithms"]:
-        if msa == "muscle":
-            fout.write(ap.params["muscle_exe"] + " -maxhours 5 -in " + ap.params["ergseqpath"] + " -out " + get_fastapath(msa) + "\n")
-            import_alignment_method(con, msa, ap.params["muscle_exe"])
+    
+    sql = "select id, name, exe_path from AlignmentMethods"
+    cur.execute(sql)
+    x = cur.fetchall()
+    for ii in x:
+        msaid = ii[0]
+        msa = ii[1]
+        exe = ii[2]
+            
+        if msa == "muscle":            
+            fout.write(exe + " -maxhours 5 -in " + get_setting_values(con, "ergseqpath")[0] + " -out " + get_fastapath(msa) + "\n")
         elif msa == "prank":
-            fout.write(ap.params["prank_exe"] + " -d=" + ap.params["ergseqpath"] + " -o=" + get_fastapath(msa) + "\n")
-            import_alignment_method(con, msa, ap.params["prank_exe"])
+            fout.write(exe + " -d=" + get_setting_values(con, "ergseqpath")[0] + " -o=" + get_fastapath(msa) + "\n")
         elif msa == "msaprobs": 
-            fout.write(ap.params["msaprobs_exe"] + " -num_threads 4 " + ap.params["ergseqpath"] + " > " + get_fastapath(msa) + "\n")
-            import_alignment_method(con, msa, ap.params["msaprobs_exe"])
+            fout.write(exe + " -num_threads 4 " + get_setting_values(con, "ergseqpath")[0] + " > " + get_fastapath(msa) + "\n")
         elif msa == "mafft": 
-            fout.write(ap.params["mafft_exe"] + " --thread 4 --auto " + ap.params["ergseqpath"] + " > " + get_fastapath(msa) + "\n")
-            import_alignment_method(con, msa, ap.params["mafft_exe"])
+            fout.write(exe + " --thread 4 --auto " + get_setting_values(con, "ergseqpath")[0] + " > " + get_fastapath(msa) + "\n")
     fout.close()
     return p
     #os.system("mpirun -np 4 --machinefile hosts.txt /common/bin/mpi_dispatch SCRIPTS/msas.commands.sh")
+
 
 def check_aligned_sequences(con, ap):
     cur = con.cursor()
@@ -191,8 +195,9 @@ def fasta_to_phylip(inpath, outpath):
         fout.write(taxa + "   " + taxa_seq[taxa] + "\n")
     fout.close()
 
-def convert_all_fasta_to_phylip(ap):
-    for msa in ap.params["msa_algorithms"]:
+def convert_all_fasta_to_phylip(con):
+    cur = con.cursor()
+    for msa in get_alignment_method_names(con):
         f = get_fastapath(msa)
         p = get_phylippath(msa)
         fasta_to_phylip(f, p)
@@ -205,7 +210,7 @@ def convert_all_fasta_to_phylip(ap):
         
 def bypass_zorro(con, ap):
     """Creates the post-zorro alignments, without running ZORRO and the resulting analysis."""
-    for msa in ap.params["msa_algorithms"]:
+    for msa in get_alignment_method_names(con):
         f = get_trimmed_fastapath(msa)
         p = get_trimmed_phylippath(msa)
         
@@ -354,14 +359,9 @@ def trim_alignments(con, ap):
         seedseq = get_aligned_seq(con, seedid, alid)
         start_motif = ap.params["start_motif"]
         end_motif = ap.params["end_motif"]
-        
-        print "222:", ii, seedid, seedseq, start_motif, end_motif
-        
+                
         [start, stop] = get_boundary_sites(seedseq, start_motif, end_motif)
-        
-        #print "220:", alname, start, stop
-        #print "221:", seedseq[start-1:stop]
-        
+                
         """Remember these start and end sites."""
         sql = "insert or replace into SiteSetsAlignment(setid, almethod, fromsite, tosite) VALUES("
         sql += sitesetid.__str__() + "," + alid.__str__() + "," + start.__str__() + "," + stop.__str__() + ")"
@@ -549,7 +549,7 @@ def get_fasttree_zorro_commands_for_alignment(con, almethod, scoringmethodid):
     #print "409:", almethod, sorted_scores
     
     commands = []
-    thresholds = get_zorro_thresholds(con) # i.e., top 5%, 10%, 15% of scores
+    thresholds = get_setting_values(con, "zorro_threshold") # i.e., top 5%, 10%, 15% of scores
     thresholds.sort()
 
     for t in thresholds:
@@ -689,7 +689,7 @@ def analyze_fasttrees_for_msa(con, almethod):
     sql = "select name from AlignmentMethods where id=" + almethod.__str__()
     cur.execute(sql)
     alname = cur.fetchone()[0] 
-    thresholds = get_zorro_thresholds(con)
+    thresholds = get_setting_values(con, "zorro_threshold")
     thresh_treepath = {}
     thresh_infopath = {}
     for t in thresholds:
@@ -731,7 +731,6 @@ def compare_fasttrees(con):
     for ii in x:
         msaid = ii[0]
         compare_fasttrees_for_alignment(con, msaid)
-
 
 
 def compare_fasttrees_for_alignment(con, msaid):

@@ -53,7 +53,7 @@ def get_footer():
     f += "</html>\n"
     return f
 
-def write_index():
+def write_index(con):
     fout = open(HTMLDIR + "/index.html", "w") 
     fout.write( get_header() )
     
@@ -89,7 +89,7 @@ def write_alignments():
     out += "<th align='center'>Download</th>"
     out += "</tr>\n"
     
-    for d in ap.params["msa_algorithms"]:
+    for d in get_alignment_method_names(con):
         out += "<tr>"
         out += "<td align='left'><p>" + d 
         if d == "msaprobs":
@@ -135,7 +135,7 @@ def write_treesancs():
     out = ""
     out += get_header()
 
-    for d in ap.params["msa_algorithms"]:
+    for d in get_alignment_method_names(con):
         out += "<table width=100%>\n"
         out += "<tr>"
         out += "<th align='left'>Alignment</th>"
@@ -155,7 +155,7 @@ def write_treesancs():
             if model_data[model][1] > max_pp:
                 max_pp = model_data[model][1]
                 max_model = model
-        for model in ap.params["raxml_models"]:
+        for model in get_phylo_modelnames(con):
             tpath = get_alrt_treepath(d, model)
             tlength = get_tree_length( tpath )
             if model == max_model:
@@ -423,8 +423,8 @@ def write_ppdistro_plot(data):
 
 def write_ancestors_indi():
     """Writes on HTML page for each ancestor."""
-    for d in ap.params["msa_algorithms"]:
-        for model in ap.params["raxml_models"]:
+    for d in get_alignment_method_names(con):
+        for model in get_phylo_modelnames(con):
             outdir = HTMLDIR + "/asr." + get_runid(d, model)
             os.system("mkdir " + outdir)
             ancdir = d + "/asr." + model + "/tree1"
@@ -609,8 +609,8 @@ def write_anccomp_indi(pair, ap):
     #
     # One row for each msa-model combo:
     # 
-    for msa in ap.params["msa_algorithms"]:
-        for model in ap.params["raxml_models"]:
+    for msa in get_alignment_method_names(con):
+        for model in get_phylo_modelnames(con):
             if False == os.path.exists(pair[0] + "to" + pair[1] + "/Df." + msa + "." + model + ".summary.html"):
                 continue
             

@@ -15,8 +15,8 @@ def write_ancseq_fasta(ap):
     
     fout = open(PDBDIR + "/ancseqs.fasta", "w")
             
-    for model in ap.params["raxml_models"]:
-        for msa in ap.params["msa_algorithms"]:
+    for model in get_phylo_modelnames(con):
+        for msa in get_alignment_method_names(con):
             for anc in ap.params["ingroup"]:
                 datpath = msa + "/asr." + model + "/" + anc + ".dat"
                 probs = getprobs(datpath)

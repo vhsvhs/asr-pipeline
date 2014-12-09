@@ -3,7 +3,7 @@ from tools import *
 
 fout = open("summary.ancestors.txt", "w")
 for d in DIRS:
-    for m in ap.params["raxml_models"]:
+    for m in get_phylo_modelnames(con):
         for i in ap.params["ingroup"]:
             [start,stop] = get_boundary_sites(  get_phylippath(d), ap.params["seedtaxa"][i]  )
             print d, start, stop

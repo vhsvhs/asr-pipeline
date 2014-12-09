@@ -1,6 +1,8 @@
 import re,sys,os
 from tools import *
 from log import *
+from asrpipelinedb import *
+from asrpipelinedb_api import *
 
 def read_config_file(con, ap):
     """This method reads the user-written configuration file.
@@ -20,6 +22,10 @@ def read_config_file(con, ap):
 
     cur = con.cursor()
     sql = "delete from Settings"
+    cur.execute(sql)
+    sql = "delete from PhyloSoftwares"
+    cur.execute(sql)
+    sql = "delete from AlignmentMethods"
     cur.execute(sql)
     con.commit()
     
@@ -46,33 +52,45 @@ def read_config_file(con, ap):
             ap.params["project_title"] = tokens[1]
 
         if tokens[0].startswith("SEQUENCES"):
-            ap.params["ergseqpath"] = re.sub(" ", "", tokens[1])
+            ergseqpath = re.sub(" ", "", tokens[1])
+            ap.params["ergseqpath"] = ergseqpath
+            sql = "insert into Settings (keyword, value) VALUES('ergseqpath','" + ergseqpath + "')"
+            cur.execute(sql)
+            con.commit()
         
         elif tokens[0].startswith("RAXML"):
             exe = tokens[1].strip() 
             ap.params["raxml_exe"] = exe
-            sql = "insert into Settings (keyword, value) VALUES('raxml_exe'," + exe + ")"
+            sql = "insert into Settings (keyword, value) VALUES('raxml_exe','" + exe + "')"
+            cur.execute(sql)
+            con.commit()
+            
+            sql = "insert into PhyloSoftwares (name, exe_path) VALUES('raxml','" + exe + "')"
             cur.execute(sql)
             con.commit()
         
         elif tokens[0].startswith("FASTTREE"):
             exe = tokens[1].strip() 
             ap.params["fasttree_exe"] = exe
-            sql = "insert into Settings (keyword, value) VALUES('fasttree_exe'," + exe + ")"
+            sql = "insert into Settings (keyword, value) VALUES('fasttree_exe','" + exe + "')"
             cur.execute(sql)
             con.commit()
         
         elif tokens[0].startswith("PHYML"):
             exe = tokens[1].strip() 
             ap.params["phyml_exe"] = exe
-            sql = "insert into Settings (keyword, value) VALUES('phyml_exe'," + exe + ")"
+            sql = "insert into Settings (keyword, value) VALUES('phyml_exe','" + exe + "')"
+            cur.execute(sql)
+            con.commit()
+            
+            sql = "insert into PhyloSoftwares (name, exe_path) VALUES('phyml','" + exe + "')"
             cur.execute(sql)
             con.commit()
 
         elif tokens[0].startswith("LAZARUS"):
             exe = tokens[1].strip() 
             ap.params["lazarus_exe"] = exe
-            sql = "insert into Settings (keyword, value) VALUES('lazarus_exe'," + exe + ")"
+            sql = "insert into Settings (keyword, value) VALUES('lazarus_exe','" + exe + "')"
             cur.execute(sql)
             con.commit()
 
@@ -82,7 +100,7 @@ def read_config_file(con, ap):
         elif tokens[0].startswith("MPIRUN"):
             exe = tokens[1].strip() 
             ap.params["mpirun_exe"] = exe
-            sql = "insert into Settings (keyword, value) VALUES('mpirun_exe'," + exe + ")"
+            sql = "insert into Settings (keyword, value) VALUES('mpirun_exe','" + exe + "')"
             cur.execute(sql)
             con.commit()
         
@@ -92,28 +110,28 @@ def read_config_file(con, ap):
         elif tokens[0].startswith("MSAPROBS"):
             exe = tokens[1].strip()
             ap.params["msaprobs_exe"] = exe
-            sql = "insert into Settings (keyword, value) VALUES('msaprobs_exe'," + exe + ")"
+            sql = "insert into Settings (keyword, value) VALUES('msaprobs_exe','" + exe + "')"
             cur.execute(sql)
             con.commit()
 
         elif tokens[0].startswith("MUSCLE"):
             exe = tokens[1].strip()
             ap.params["muscle_exe"] = exe
-            sql = "insert into Settings (keyword, value) VALUES('muscle_exe'," + exe + ")"
+            sql = "insert into Settings (keyword, value) VALUES('muscle_exe','" + exe + "')"
             cur.execute(sql)
             con.commit()
 
         elif tokens[0].startswith("PRANK"):
             exe = tokens[1].strip()
             ap.params["prank_exe"] = exe
-            sql = "insert into Settings (keyword, value) VALUES('prank_exe'," + exe + ")"
+            sql = "insert into Settings (keyword, value) VALUES('prank_exe','" + exe + "')"
             cur.execute(sql)
             con.commit()
 
         elif tokens[0].startswith("MAFFT"):
             exe = tokens[1].strip()
             ap.params["mafft_exe"] = exe
-            sql = "insert into Settings (keyword, value) VALUES('mafft_exe'," + exe + ")"
+            sql = "insert into Settings (keyword, value) VALUES('mafft_exe','" + exe + "')"
             cur.execute(sql)
             con.commit()
         
@@ -123,26 +141,22 @@ def read_config_file(con, ap):
         elif tokens[0].startswith("PYMOL"):
             exe = tokens[1].strip()
             ap.params["pymol_exe"] = exe
-            sql = "insert into Settings (keyword, value) VALUES('pymol_exe'," + exe + ")"
+            sql = "insert into Settings (keyword, value) VALUES('pymol_exe','" + exe + "')"
             cur.execute(sql)
             con.commit()
 
         elif tokens[0].startswith("ZORRO"):
             exe = tokens[1].strip()
             ap.params["zorro_exe"] = exe
-            sql = "insert into Settings (keyword, value) VALUES('zorro_exe'," + exe + ")"
+            sql = "insert into Settings (keyword, value) VALUES('zorro_exe','" + exe + "')"
             cur.execute(sql)
             con.commit()
 
-        
         elif tokens[0].startswith("ALIGNMENT_ALGORITHMS"):
             x = tokens[1].split()
             ap.params["msa_algorithms"] = []
             for i in x:
                 ap.params["msa_algorithms"].append( i )
-                sql = "insert into Settings (keyword, value) VALUES('msa_algorithms'," + i + ")"
-                cur.execute(sql)
-                con.commit()
 
         elif tokens[0].startswith("THRESHOLDS_ZORRO"):
             x = tokens[1].split()
@@ -154,9 +168,13 @@ def read_config_file(con, ap):
         
         elif tokens[0].startswith("MODELS_RAXML"):
             x = tokens[1].split()
-            ap.params["raxml_models"] = []
+            sql = "delete from PhyloModels"
+            cur.execute(sql)
+            con.commit()
             for i in x:
-                ap.params["raxml_models"].append( i )
+                sql = "insert into PhyloModels(name) VALUES('" + i + "')"
+                cur.execute(sql)
+                con.commit()
         
         elif tokens[0].startswith("START_MOTIF"):
             ap.params["start_motif"] = re.sub(" ", "", tokens[1])
@@ -242,7 +260,7 @@ def read_config_file(con, ap):
         elif tokens[0].startswith("PYMOL"):
             exe = tokens[1].strip()
             ap.params["pymol_exe"] = exe
-            sql = "insert into Settings (keyword, value) VALUES('pymol_exe'," + exe + ")"
+            sql = "insert into Settings (keyword, value) VALUES('pymol_exe','" + exe + "')"
             cur.execute(sql)
             con.commit()
 
@@ -274,6 +292,10 @@ def verify_config(con, ap):
     
     cur = con.cursor()
     
+    if get_setting_values(con, "ergseqpath").__len__() == 0:
+        write_error(con, "You did not specify SEQUENCES, a path to the original sequences, in your configuration file.")
+        exit()
+    
     if "run_exe" not in ap.params:
         ap.params["run_exe"] = "source"
     
@@ -296,9 +318,9 @@ def verify_config(con, ap):
                 write_error(ap, "you specified a comparison between ancestors " + a1, " and " + a2 + " but " + a2 + " was not defined in the ANCESTORS line.")
                 exit()
                 
-    if False == os.path.exists(ap.params["ergseqpath"]):
-        print "\n. I could not find your sequences at", ap.params["ergseqpath"]
-        write_error(ap, "I could not find your sequences at " + ap.params["ergseqpath"])
+    if False == os.path.exists(  get_setting_values(con, "ergseqpath")[0]  ):
+        print "\n. I could not find your sequences at", get_setting_values(con, "ergseqpath")[0]
+        write_error(ap, "I could not find your sequences at " + get_setting_values(con, "ergseqpath")[0]  )
         exit()
 
     if ap.params["start_motif"] == None:
@@ -307,22 +329,34 @@ def verify_config(con, ap):
         ap.params["end_motif"] = ""
         
     for msa in ap.params["msa_algorithms"]:
-        if msa == "MUSCLE" and "muscle_exe" not in ap.params:
+        if msa == "muscle" and "muscle_exe" not in ap.params:
             print "\n. Something is wrong. Your config file doesn't have an executable path for MUSCLE."
             write_error(ap, "Something is wrong. Your config file doesn't have an executable path for MUSCLE.")
             exit()
-        if msa == "MSAPROBS" and "msaprobs_exe" not in ap.params:
+        elif msa == "muscle" and "muscle_exe" in ap.params:
+            import_alignment_method(con, msa, ap.params["muscle_exe"])
+        
+        if msa == "msaprobs" and "msaprobs_exe" not in ap.params:
             print "\n. Something is wrong. Your config file doesn't have an executable path for MSAPROBS."
             write_error(ap, "Something is wrong. Your config file doesn't have an executable path for MSAPROBS.")
             exit()
-        if msa == "PRANK" and "prank_exe" not in ap.params:
+        elif msa == "msaprobs" and "msaprobs_exe" in ap.params:
+            import_alignment_method(con, msa, ap.params["msaprobs_exe"])
+        
+        if msa == "prank" and "prank_exe" not in ap.params:
             print "\n. Something is wrong. Your config file doesn't have an executable path for PRANK."
             write_error(ap, "Something is wrong. Your config file doesn't have an executable path for PRANK.")
             exit()
-        if msa == "MAFFT" and "mafft_exe" not in ap.params:
+        elif msa == "prank" and "prank_exe" in ap.params:
+            import_alignment_method(con, msa, ap.params["prank_exe"])
+        
+        if msa == "mafft" and "mafft_exe" not in ap.params:
             print "\n. Something is wrong. Your config file doesn't have an executable path for PRANK."
             write_error(ap, "Something is wrong. Your config file doesn't have an executable path for PRANK.")
             exit()
+        elif msa == "mafft" and "mafft_exe" in ap.params:
+            import_alignment_method(con, msa, ap.params["mafft_exe"])
+        
     
     if "map2pdb" not in ap.params:
         ap.params["map2pdb"] = {}
@@ -346,13 +380,13 @@ def print_config(ap):
     for p in ap.params:
         print p, ":", ap.params[p]
 
-def setup_workspace(ap):
-    for msa in ap.params["msa_algorithms"]:
+def setup_workspace(con):
+    for msa in get_alignment_method_names(con):
         if False == os.path.exists(msa):
             os.system("mkdir " + msa)
         if False == os.path.exists(msa):
             print "I can't make the directory for output of " + msa
-            write_error(ap, "I can't make the directory for output of " + msa)
+            write_error(con, "I can't make the directory for output of " + msa)
             exit()
     if False == os.path.exists("SCRIPTS"):
         os.system("mkdir SCRIPTS")

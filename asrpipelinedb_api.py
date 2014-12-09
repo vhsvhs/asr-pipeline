@@ -10,6 +10,19 @@ import sqlite3 as lite
 import os, re, sys
 from log import *
 
+from asrpipelinedb import *
+
+def get_setting_values(con, keyword):
+    """Returns a list of one, or more, values for the setting keyword"""
+    cur = con.cursor()
+    sql = "select value from Settings where keyword='" + keyword + "'"
+    cur.execute(sql)
+    x = cur.fetchall()
+    values = []
+    for ii in x:
+        values.append( ii[0] )
+    return values
+
 def import_original_seq(con, shortname, sequence):
     """Returns the taxonID of the newly imported sequence."""
     cur = con.cursor()
@@ -236,12 +249,43 @@ def get_alignmentsitescores(con, almethod, scoringmethoid):
     #print "235: almethod", almethod, ", N sitescores=", site_scores.__len__().__str__() + ", from " + min( site_scores.keys()).__str__() + " to " + max( site_scores.keys()).__str__()
     return site_scores
 
-def get_zorro_thresholds(con):
+
+def get_phylo_modelids(con):
     cur = con.cursor()
-    sql = "select value from Settings where keyword='zorro_threshold'"
+    sql = "select modelid from PhyloModels"
     cur.execute(sql)
-    ts = []
+    modelids = []
     x = cur.fetchall()
     for ii in x:
-        ts.append( ii[0] )
-    return ts
+        modelids.append( ii[0] )
+    return modelids
+
+def get_phylo_modelnames(con):
+    cur = con.cursor()
+    sql = "select name from PhyloModels"
+    cur.execute(sql)
+    modelnames = []
+    x = cur.fetchall()
+    for ii in x:
+        modelnames.append( ii[0] )
+    return modelnames
+
+def get_alignment_method_names(con):
+    cur = con.cursor()
+    sql = "select name from AlignmentMethods"
+    cur.execute(sql)
+    names = []
+    x = cur.fetchall()
+    for ii in x:
+        names.append( ii[0] )
+    return names
+
+def get_alignment_method_ids(con):
+    cur = con.cursor()
+    sql = "select id from AlignmentMethods"
+    cur.execute(sql)
+    ids = []
+    x = cur.fetchall()
+    for ii in x:
+        ids.append( ii[0] )
+    return ids

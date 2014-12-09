@@ -29,18 +29,19 @@ from log import *
 from tools import *
 from alrt2alr import *
 from dendropy import Tree
+from asrpipelinedb_api import *
 
 
 #
 # Create RAxML commands for each alignment and each model.
 #
-def write_raxml_commands(ap):
+def write_raxml_commands(con, ap):
     #here = os.path.abspath("./")
     here = os.popen('pwd').read().strip()
     commands = []
-    for msa in ap.params["msa_algorithms"]:
+    for msa in get_alignment_method_names(con):
         phypath = get_raxml_phylippath(msa)
-        for model in ap.params["raxml_models"]:
+        for model in get_phylo_modelnames(con):
             runid = get_runid(msa, model) 
             if os.path.exists(here + "/" + msa + "/RAxML_info." + runid): # Remove dirty RAxML data.
                 rmcmd = "rm " + here + "/" + msa + "/RAxML_*"
@@ -95,21 +96,48 @@ def make_fasttree_command(con, ap, outdir, phylippath):
     return c
     
     
-def check_raxml_output(ap):
+def check_raxml_output(con, ap):   
+    """Checks RAXmL's output, and imports trees into UnsupportedMlPhylogenies"""
+    cur = con.cursor()
+    
     here = os.popen('pwd').read().strip()
     commands = []
-    for msa in ap.params["msa_algorithms"]:
+    for msa in get_alignment_method_names(con):
+        sql = "select id from AlignmentMethods where name='" + msa + "'"
+        cur.execute(sql)
+        msaid = cur.fetchone()[0]
+        
         phypath = get_raxml_phylippath(msa)
-        for model in ap.params["raxml_models"]:
+        for model in get_phylo_modelnames(con):
             runid = get_runid(msa, model) 
             raxml_treepath = get_raxml_treepath(msa, runid)
             if False == os.path.exists(raxml_treepath):
                 print "I can't find the expected result from RAxML at " + here + "/" + msa + "/RAxML_bestTree." + runid
                 write_error(ap, "I can't find the expected result from RAxML at " + here + "/" + msa + "/RAxML_bestTree." + runid)
                 exit()
+            
+            # get the modelid
+            sql = "select modelid from PhyloModels where name='" + model + "'"
+            cur.execute(sql)
+            modelid = cur.fetchone()[0]
+            
+            # get the sequence set ID
+            sql = "select id from AlignedSequences where almethod=" + msaid.__str__()
+            cur.execute(sql)
+            alid = cur.fetchone()[0]
+            
+            # get the Newick string from the tree
+            fin = open(raxml_treepath, "r")
+            treestring = fin.readline()
+            fin.close()
+            
+            sql = "insert into UnsupportedMlPhylogenies (phylomodelid,seqsetid,newick) VALUES("
+            sql += modelid.__str__() + "," + alid.__str__() + ",'" + treestring + "')"
+            cur.execute(sql)
+            con.commit()
 
 
-def get_mlalpha_pp(ap):
+def get_mlalpha_pp(con, ap):
     #
     # Fetch ML resultse from RAxML
     # Calculate min, max likelihoods for each model, 
@@ -121,12 +149,12 @@ def get_mlalpha_pp(ap):
     #
     ap.params["runid_alpha"] = {}
     ap.params["runid_pp"] = {}
-    for msa in ap.params["msa_algorithms"]:
+    for msa in get_alignment_method_names(con):
         runid_lnl = {} 
         maxl = None
         minl = None
         suml = 0
-        for model in ap.params["raxml_models"]:
+        for model in get_phylo_modelnames(con):
             runid = get_runid(msa, model)
             lpath = get_raxml_logpath(msa, model)
             if False == os.path.exists(lpath):
@@ -185,7 +213,7 @@ def read_lnl_summary(ap):
     if "runid_pp" not in ap.params:
         ap.params["runid_pp"] = {}
     
-    for msa in ap.params["msa_algorithms"]:
+    for msa in get_alignment_method_names(con):
         lnlpath = msa + "/raxml.lnl.summary.txt"
         fin = open(lnlpath, "r")
         for l in fin.xreadlines():
@@ -199,10 +227,10 @@ def read_lnl_summary(ap):
                 ap.params["runid_pp"][runid] = pp 
         fin.close()
         
-def calc_alrt(ap):
+def calc_alrt(con, ap):
     alrt_commands = []
-    for msa in ap.params["msa_algorithms"]:
-        for model in ap.params["raxml_models"]:
+    for msa in get_alignment_method_names(con):
+        for model in get_phylo_modelnames(con):
             runid = get_runid(msa, model)
             mltreepath = get_raxml_treepath(msa, runid)
             phylippath = get_raxml_phylippath(msa)
@@ -249,11 +277,11 @@ def calc_alrt(ap):
     return "SCRIPTS/alrt_commands.sh"     
 
 
-def calc_alr(ap):
+def calc_alr(con, ap):
     """Convert aLRTs to aLRs"""
     alr_commands = []
-    for msa in ap.params["msa_algorithms"]:
-        for model in ap.params["raxml_models"]:
+    for msa in get_alignment_method_names(con):
+        for model in get_phylo_modelnames(con):
             alrt_treepath = get_alrt_treepath(msa, model)
             alr_treepath = get_alr_treepath(msa, model)
             
@@ -298,10 +326,10 @@ print ta_tb_distance
 #exit()
 """
 
-def get_asr_commands(ap):
+def get_asr_commands(con, ap):
     asr_commands = []
-    for msa in ap.params["msa_algorithms"]:
-        for model in ap.params["raxml_models"]:
+    for msa in get_alignment_method_names(con):
+        for model in get_phylo_modelnames(con):
             runid = get_runid(msa, model)
             
             fastapath = get_asr_fastapath(msa)
@@ -358,10 +386,10 @@ def get_asr_commands(ap):
 #
 # Get ancestors
 #ancseqs
-def get_getanc_commands(ap):
+def get_getanc_commands(con, ap):
     getanc_commands = []
-    for msa in ap.params["msa_algorithms"]:
-        for model in ap.params["raxml_models"]:
+    for msa in get_alignment_method_names(con):
+        for model in get_phylo_modelnames(con):
             runid = get_runid(msa, model)
             here = os.getcwd()
             asrmsa = get_asr_fastapath(msa)
@@ -387,13 +415,13 @@ def get_getanc_commands(ap):
 
 #exit()
 
-def check_getanc_output(ap):
+def check_getanc_output(con, ap):
     # Returns (bool, message)
     #
     # Read the Lazarus job status log file, look for errors.
     #
-    for msa in ap.params["msa_algorithms"]:
-        for model in ap.params["raxml_models"]:
+    for msa in get_alignment_method_names(con):
+        for model in get_phylo_modelnames(con):
             logpath = msa + "/asr." + model + "/lazarus_job_status.log"
             if os.path.exists(logpath):
                 fin = open(logpath, "r")
@@ -433,15 +461,15 @@ def setup_pdb_maps(ap):
     fin.close()
 
 #ap.params["compareanc"]
-def get_compareanc_commands(ap):
+def get_compareanc_commands(con, ap):
     compare_commands = []
     for pair in ap.params["compareanc"]:    
         #msapathlines = "msapaths "
         msanamelines = ""
         comparelines = ""
         weightlines = ""
-        for msa in ap.params["msa_algorithms"]:
-            for model in ap.params["raxml_models"]:
+        for msa in get_alignment_method_names(con):
+            for model in get_phylo_modelnames(con):
                 runid = get_runid(msa, model)
                 pp = ap.params["runid_pp"][runid]
                 if pp > 0.0:
@@ -463,15 +491,11 @@ def get_compareanc_commands(ap):
         fout.write(weightlines)
         fout.close()
     
-        modelstr = get_model_path(model, ap)
-        
         #
-        # At this point,the call to get_bound.. is unnecessary
-        # because we already trimmed the alignment to start/stop motif
-        # boundaries earlier, in the trim_alignment method
+        # to-do continue here -- fix this so we're not using just one model.
         #
-        #[startsite,endsite] = get_boundary_sites(  get_phylipfull_path("msaprobs",ap))
-            
+        modelstr = get_model_path(   get_phylo_modelnames(con)[0]   , ap)
+                    
         c = ap.params["anccomp"]
         c += " --specpath " + specpath
         c += " --modelpath " + modelstr

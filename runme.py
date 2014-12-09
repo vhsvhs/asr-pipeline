@@ -31,7 +31,7 @@ con = build_db( dbpath = ap.getOptionalArg("--dbpath") )
 read_config_file( con, ap )
 print_config(ap)
 verify_config(con, ap)
-setup_workspace(ap)
+setup_workspace(con)
 
 if jump <= 0 and stop > 0:
     ap.params["checkpoint"] = -1
@@ -91,7 +91,7 @@ if False == ap.getOptionalToggle("--skip_zorro"):
         write_alignment_for_raxml(con)
 
 if jump <= 2.99 and stop > 2.99:
-    convert_all_fasta_to_phylip(ap)
+    convert_all_fasta_to_phylip(con)
 
 """ ML Trees """
 if jump <= 3 and stop > 3:
@@ -99,9 +99,9 @@ if jump <= 3 and stop > 3:
     ap.params["pending_checkpoint"] = 3
     print "\n. Inferring ML phylogenies with RAxML..."
     write_log(con, "Inferring ML phylogenies with RAxML.")
-    p = write_raxml_commands(ap)
+    p = write_raxml_commands(con, ap)
     run_script(p)
-    check_raxml_output(ap)
+    check_raxml_output(con, ap)
 
 """ Branch Support """
 if jump <= 4 and stop > 4:
@@ -109,10 +109,10 @@ if jump <= 4 and stop > 4:
     ap.params["pending_checkpoint"] = 4
     print "\n. Calculating aLRT branch support with PhyML..."
     write_log(con, "Calculating aLRT branch support values with PhyML.")
-    get_mlalpha_pp(ap)
-    x = calc_alrt(ap)
+    get_mlalpha_pp(con, ap)
+    x = calc_alrt(con, ap)
     run_script(x)
-    calc_alr(ap)
+    calc_alr(con, ap)
 
 """ A.S.R. """
 if jump <= 5 and stop > 5:
@@ -120,7 +120,7 @@ if jump <= 5 and stop > 5:
     ap.params["pending_checkpoint"] = 5
     print "\n. Reconstructing ancestral sequences..."
     write_log(con, "Reconstructing ancestral sequences, using Lazarus.")
-    x = get_asr_commands(ap)
+    x = get_asr_commands(con, ap)
     run_script(x)
     #
     # to-do: insert check that ancestors were created
@@ -130,9 +130,9 @@ if jump <= 5.1 and stop > 5.1:
     ap.params["checkpoint"] = 5
     ap.params["pending_checkpoint"] = 5.1
     write_log(con, "Extracting relevant ancestors")
-    x = get_getanc_commands(ap)
+    x = get_getanc_commands(con, ap)
     run_script(x)
-    (flag, msg) = check_getanc_output(ap)
+    (flag, msg) = check_getanc_output(con, ap)
     if not flag:
         write_error(ap, msg)
         exit()
@@ -156,7 +156,7 @@ if jump <= 6 and stop > 6:
         write_log(con, "Setting up PDB maps")
         setup_pdb_maps(ap)
         write_log(con, "Screening for functional loci.")
-        x = get_compareanc_commands(ap)
+        x = get_compareanc_commands(con, ap)
         args = x.split()
         ap.params["run_exe"]
         #proc = subprocess.Popen( args, preexec_fn=os.setsid ) # see http://pymotw.com/2/subprocess/

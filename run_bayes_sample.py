@@ -6,8 +6,8 @@ from configuration import *
 from tools import *
 
 
-for d in ap.params["msa_algorithms"]:
-    for m in ap.params["raxml_models"]:
+for d in get_alignment_method_names(con):
+    for m in get_phylo_modelnames(con):
         print "\n. Sampling Bayesian Ancestors. . .", d, m
         runid = get_runid(d,m)
         for a in ap.params["ingroup"]:
