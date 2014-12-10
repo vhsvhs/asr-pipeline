@@ -23,6 +23,18 @@ def get_setting_values(con, keyword):
         values.append( ii[0] )
     return values
 
+def add_setting_value(con, keyword, value, unique=False):
+    """Adds a keyword/value pair to the Settings table.
+    If unique==True, then it will overwrite any existing entries for keyword."""
+    cur = con.cursor()
+    if unique == True:
+        sql = "delete from Settings where keyword='" + keyword + "'"
+        cur.execute(sql)
+        con.commit()
+    sql = "insert into Settings (keyword, value) VALUES('" + keyword + "','" + value + "')"
+    cur.execute(sql)
+    con.commit()
+
 def import_original_seq(con, shortname, sequence):
     """Returns the taxonID of the newly imported sequence."""
     cur = con.cursor()

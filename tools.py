@@ -195,28 +195,29 @@ def get_sequence(msapath, taxa):
             tokens = l.split()
             return tokens[1]
 
-def get_ml_sequence(site_states_probs, start=0, stop=-1):
-    mlseq = ""
-    sites = site_states_probs.keys()
-    sites.sort()
-    for site in sites:
-        if site < start:
-            continue
-        if site > stop and stop > 0:
-            continue
-        maxp = 0.0
-        maxc = ""
-        for tup in site_states_probs[site]:
-            #print site_states_probs[site][c]
-            state = tup[0]
-            p = tup[1]
-            if  p > maxp:
-                maxp = p
-                maxc = state
-        if maxc != "-" and maxc != '-':
-            mlseq += maxc.upper()
-        #print site_states_probs, site, maxc
-    return mlseq
+# def get_ml_sequence(site_states_probs, start=0, stop=-1):
+#     mlseq = ""
+#     sites = site_states_probs.keys()
+#     sites.sort()
+#     for site in sites:
+#         if site < start:
+#             continue
+#         if site > stop and stop > 0:
+#             continue
+#         maxp = 0.0
+#         maxc = ""
+#         for tup in site_states_probs[site]:
+#             #print site_states_probs[site][c]
+#             print "211:", tup
+#             state = tup[0]
+#             p = tup[1]
+#             if  p > maxp:
+#                 maxp = p
+#                 maxc = state
+#         if maxc != "-" and maxc != '-':
+#             mlseq += maxc.upper()
+#         #print site_states_probs, site, maxc
+#     return mlseq
 
 def get_ml_sequence_from_file(path, getindels=False):
     fin = open(path, "r")
@@ -277,7 +278,7 @@ def probForBin(b):
         return x
     return x + 0.025
     
-def get_boundary_sites(seq, start_motif, end_motif):    
+def get_boundary_sites(seq, start_motif=None, end_motif=None):    
     """By default the start/end are the boundaries of the provided sequence.
     But if motifs were provided, then we'll refine these boundaries."""
     startsite = 1

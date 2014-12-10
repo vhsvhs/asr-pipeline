@@ -207,7 +207,7 @@ def get_mlalpha_pp(con, ap):
             fout.write(line + "\n")
         fout.close()
 
-def read_lnl_summary(ap):
+def read_lnl_summary(con, ap):
     if "runid_alpha" not in ap.params:
         ap.params["runid_alpha"] = {}
     if "runid_pp" not in ap.params:
@@ -383,6 +383,17 @@ def get_asr_commands(con, ap):
     fout.close()
     return "SCRIPTS/asr_commands.sh"
 
+def check_asr_output(con):
+    """Verifies that ASR occurred correctly, and if it did, imports
+    the results into the database."""
+    for msa in get_alignment_method_names(con):
+        for model in get_phylo_modelnames(con):
+            runid = get_runid(msa, model)
+            
+            """Where does the ASR output live?"""
+            outputdir = msa + "/asr." + model 
+
+            
 #
 # Get ancestors
 #ancseqs

@@ -3,10 +3,11 @@ from configuration import *
 from tools import *
 from phyloxml_helper import *
 from asr_dat_to_seq import *
+from asrpipelinedb_api import *
 
 PDBDIR = "pdb"
 
-def write_ancseq_fasta(ap):
+def write_ancseq_fasta(con, ap):
     """Writes a FASTA file into the PDBDIR, containing
     the sequences for all the ancestors listed with an ingroup
     in the configuration file."""

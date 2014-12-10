@@ -73,6 +73,7 @@ def build_db(dbpath = None):
     cur.execute("create table if not exists Ingroups(id INTEGER primary key autoincrement, name TEXT unique)")
     cur.execute("create table if not exists Outgroups(id INTEGER primary key autoincrement, name TEXT unique)")
     cur.execute("create table if not exists GroupsTaxa(groupid INTEGER, taxonid INTEGER)") # groupid is the ID of either an ingroup or outgroup
+    cur.execute("create table if not exists GroupSeedTaxa(groupid, INTEGER, seed_taxonid INTEGER)") # each group can have one, or multiple, seed taxon
     
     cur.execute("create table if not exists Ancestors(id INTEGER primary key autoincrement, ingroupid INTEGER, outgroupid INTEGER, name TEXT unique)")
     cur.execute("create table if not exists AncestorsTreeNumbers(ancestorid INTEGER, unsupportedmltreeid INTEGER, number INT)")

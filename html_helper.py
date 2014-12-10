@@ -2,6 +2,7 @@ import os, sys, time
 from configuration import *
 from tools import *
 from phyloxml_helper import *
+from asrpipelinedb_api import *
 
 HTMLDIR = "HTML"
 
@@ -77,7 +78,7 @@ def write_index(con):
 
     fout.close()
 
-def write_alignments():
+def write_alignments(con):
     out = ""
     out += get_header()
 
@@ -131,7 +132,7 @@ def read_lnllog(dir):
             model_data[model] = (lnl,pp)
     return model_data
 
-def write_treesancs():
+def write_treesancs(con):
     out = ""
     out += get_header()
 
@@ -199,7 +200,6 @@ def write_anctree(d, model):
     js += "window.onload = function(){\n"
 
     npath = get_cladogram_path(d, model)
-    print "\n. html_helper.py 177: Reading cladogram from here:", npath
     (xmlpath, xmlstring) = newick_to_xml(d, model)
 
     #print "\n. html_helper.py 180:", xmlstring
@@ -421,7 +421,7 @@ def write_ppdistro_plot(data):
     return out
 
 
-def write_ancestors_indi():
+def write_ancestors_indi(con):
     """Writes on HTML page for each ancestor."""
     for d in get_alignment_method_names(con):
         for model in get_phylo_modelnames(con):
@@ -521,7 +521,7 @@ def write_anccomp_header(ap):
     frag += "<hr>"
     return frag
     
-def write_anccomp_indi(pair, ap):
+def write_anccomp_indi(pair, con, ap):
     """Writes on HTML page for each ancestral comparison"""
     outpath = HTMLDIR + "/" + pair[0] + "to" + pair[1] + ".anccomp.html"    
     fout = open( outpath, "w" )
@@ -949,7 +949,7 @@ def write_mutations_header(ap):
     frag += "<hr>"
     return frag
 
-def write_mutations_indi(pair, ap):
+def write_mutations_indi(pair, con, ap):
     acpath = pair[0] + "to" + pair[1] + "/ancestral_changes.txt"
     if False == os.path.exists(acpath):
         return
@@ -985,7 +985,6 @@ def write_mutations_indi(pair, ap):
     
     
     fin = open(acpath, "r")
-    print "\n. 942:", acpath
     #fin.readline() # read and forget the header line
     line_tokens = []
     for l in fin.xreadlines():

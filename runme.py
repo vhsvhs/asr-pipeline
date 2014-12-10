@@ -40,7 +40,7 @@ if jump <= 0 and stop > 0:
     write_log(con, "Reading sequences")
     import_and_clean_erg_seqs(con, ap)
 
-verify_erg_seqs(con)
+verify_erg_seqs(con, ap)
 
 """ MSAs """
 if jump <= 1 and stop > 1:
@@ -122,6 +122,8 @@ if jump <= 5 and stop > 5:
     write_log(con, "Reconstructing ancestral sequences, using Lazarus.")
     x = get_asr_commands(con, ap)
     run_script(x)
+    check_asr_output(con)
+    
     #
     # to-do: insert check that ancestors were created
     #
@@ -150,7 +152,7 @@ if jump <= 5.2 and stop > 5.2:
 if jump <= 6 and stop > 6:
     if "compareanc" in ap.params:
         if "runid_alpha" not in ap.params or "runid_pp" not in ap.params:
-            read_lnl_summary(ap)
+            read_lnl_summary(con, ap)
         ap.params["checkpoint"] = 5.2
         ap.params["pending_checkpoint"] = 6
         write_log(con, "Setting up PDB maps")
@@ -169,23 +171,23 @@ if jump <= 7 and stop > 7:
     ap.params["pending_checkpoint"] = 7
     write_log(con, "Writing an HTML report.")
     write_css()
-    write_index()
-    write_alignments()
-    write_treesancs()
-    write_ancestors_indi() # write individual ancestor pages
+    write_index(con)
+    write_alignments(con)
+    write_treesancs(con)
+    write_ancestors_indi(con) # write individual ancestor pages
 
 if jump <= 7.1 and stop > 7.1:
     ap.params["checkpoint"] = 7
     ap.params["pending_checkpoint"] = 7.1
     if "compareanc" in ap.params:
         for pair in ap.params["compareanc"]:
-            write_anccomp_indi(pair, ap)
-            write_mutations_indi(pair, ap)
+            write_anccomp_indi(pair, con, ap)
+            write_mutations_indi(pair, con, ap)
 
 if jump <= 7.2 and stop > 7.3:
     ap.params["checkpoint"] = 7.1
     ap.params["pending_checkpoint"] = 7.2
-    write_ancseq_fasta(ap)
+    write_ancseq_fasta(con, ap)
 
 if stop >= 8:
     ap.params["checkpoint"] = 100

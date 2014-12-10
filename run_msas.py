@@ -83,7 +83,10 @@ def import_and_clean_erg_seqs(con, ap):
         fout.write(taxa_seq[taxon] + "\n")
     fout.close()
     
-def verify_erg_seqs(con):
+def verify_erg_seqs(con, ap):
+    """Verify the original sequences.
+    If they're OK, then check the seed sequence and the ingroup/outgroup definitions."""
+    
     """Sanity Check:"""
     cur = con.cursor()
     sql = "select count(*) from Taxa"
@@ -105,8 +108,92 @@ def verify_erg_seqs(con):
         if x == 0:
             write_error(con, "I cannot find your seed taxa '" + s + "' in your original sequences.")
             exit()
-        
     
+    sql = "delete from GroupsTaxa"
+    cur.execute(sql)
+    sql = "delete from Ingroups"
+    cur.execute(sql)
+    sql = "delete from Outgroups"
+    cur.execute(sql)
+    sql = "delete from GroupSeedTaxa"
+    cur.execute(sql)
+    
+    """Are the ingroup/outgroup specifications valid, given these sequences?"""
+    
+    
+    for ingroup in ap.params["ingroup"]:
+        ogstring = ap.params["ingroup"][ingroup]
+        if ogstring.startswith("["):
+            ogstring = ogstring[1:]
+        if ogstring.endswith("]"):
+            ogstring = ogstring[0: ogstring.__len__()-1 ]
+        taxa = ogstring.split(",")
+        
+        """Get the seed taxon(s) for this group."""
+        groupseed = ap.params["seedtaxa"][ ingroup ]
+        seed_taxonid = get_taxonid(con, groupseed)
+        if seed_taxonid == None:
+            write_error("Your definition of ingroup " + ingroup + " uses the seed taxon " + groupseed + ", but I cannot find that taxon in your sequences.")
+            exit()
+
+        """Check that each member of the group definition exists in the original sequences."""
+        for t in taxa:
+            taxonid = get_taxonid(con, t)
+            if taxonid == None:
+                write_error("Your definition of ingroup " + ingroup + " includes the taxon " + t + ", but I cannot find this taxon in your sequences.")
+                exit()
+        
+        sql = "insert into Ingroups (name) VALUES('" + ingroup + "')"
+        cur.execute(sql)
+        con.commit()
+        
+        sql = "select id from Ingroups where name='" + ingroup + "'"
+        cur.execute(sql)
+        groupid = cur.fetchone()[0]
+        
+        sql = "insert or replace into GroupSeedTaxa (groupid, seed_taxonid) VALUES("
+        sql += groupid.__str__() + "," + seed_taxonid.__str__() + ")"
+        cur.execute(sql)
+        con.commit()
+        
+        for t in taxa:
+            taxonid = get_taxonid(con, t)
+            sql = "insert or replace into GroupsTaxa(groupid, taxonid) VALUES("
+            sql += groupid.__str__() + "," + taxonid.__str__() + ")"
+            cur.execute(sql)
+        con.commit()
+    
+    """Now process the outgroup."""
+    ogstring = ap.params["outgroup"]
+    if ogstring.startswith("["):
+        ogstring = ogstring[1:]
+    if ogstring.endswith("]"):
+        ogstring = ogstring[0: ogstring.__len__()-1 ]
+    taxa = ogstring.split(",")
+
+    """Check that each member of the group definition exists in the original sequences."""
+    for t in taxa:
+        taxonid = get_taxonid(con, t)
+        if taxonid == None:
+            write_error("Your definition of outgroup includes the taxon " + t + ", but I cannot find this taxon in your sequences.")
+            exit()
+    
+    sql = "insert into Outgroups (name) VALUES('outgroup')"
+    cur.execute(sql)
+    con.commit()
+    
+    sql = "select id from Outgroups where name='outgroup'"
+    cur.execute(sql)
+    groupid = cur.fetchone()[0]
+        
+    for t in taxa:
+        taxonid = get_taxonid(con, t)
+        sql = "insert or replace into GroupsTaxa(groupid, taxonid) VALUES("
+        sql += groupid.__str__() + "," + taxonid.__str__() + ")"
+        cur.execute(sql)
+    con.commit() 
+        
+
 def write_msa_commands(con, ap):
     cur = con.cursor()
     

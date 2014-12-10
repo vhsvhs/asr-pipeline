@@ -8,6 +8,7 @@ import random,sys,os
 from argParser import *
 from tools import *
 ap = ArgParser(sys.argv)
+from asrpipelinedb_api import *
 
 
 def cdf(state_prob):
@@ -94,12 +95,8 @@ def run_asr_bayes(con, ap):
             print "\n. Sampling Bayesian Ancestors. . .", alname, modelname
             runid = get_runid(alname,modelname)
                         
-            for a in ap.params["ingroup"]:
-                seedid = get_taxonid(con, ap.params["seedtaxa"][a] )
-                seedseq = get_aligned_seq(con, seedid, alid)
-                [startsite, stopsite] = get_boundary_sites(seedseq, start_motif, end_motif)
-                    
-                ancdir = d + "/asr." + m + "/tree1"
+            for a in ap.params["ingroup"]:                    
+                ancdir = alname + "/asr." + modelname + "/tree1"
                 if False == os.path.exists( ancdir ):
                     continue
                 if False == os.path.exists( ancdir + "/BAYES_SAMPLES" ):
@@ -107,18 +104,18 @@ def run_asr_bayes(con, ap):
                 for f in os.listdir(ancdir):
                     if f.__contains__(".dat"):
 
-                        print d + "/asr." + m + "/tree1/" + f            
-                        data = get_pp_distro(d + "/asr." + m + "/tree1/" + f)
+                        print alname + "/asr." + modelname + "/tree1/" + f            
+                        data = get_pp_distro(alname + "/asr." + modelname + "/tree1/" + f)
                         if data.keys().__len__() < 1:
                             print "I found no data in the ancestral file ", f
                         n = 100                        
-                        fout = open(d + "/asr." + m + "/tree1/BAYES_SAMPLES/bayes." + f, "w")
-                        mls = get_ml_sequence(data, start=startsite, stop=stopsite)
+                        fout = open(alname + "/asr." + modelname + "/tree1/BAYES_SAMPLES/bayes." + f, "w")
+                        mls = get_ml_sequence(data)
                         shortname = f.split(".")[0]
                         fout.write(">" + shortname + "ML_ancestral_sequence\n")
                         fout.write(mls + "\n")
                         for ii in range(0, n):
-                            fout.write(">" + shortname + ".posterior.sample." + ii.__str__() + "\n")
+                            fout.write(">" + shortname + ".posterior.sample." + alname.__str__() + "\n")
                             l = sample_data( data ) 
                             fout.write(l + "\n")
 

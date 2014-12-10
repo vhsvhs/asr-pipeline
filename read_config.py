@@ -54,16 +54,12 @@ def read_config_file(con, ap):
         if tokens[0].startswith("SEQUENCES"):
             ergseqpath = re.sub(" ", "", tokens[1])
             ap.params["ergseqpath"] = ergseqpath
-            sql = "insert into Settings (keyword, value) VALUES('ergseqpath','" + ergseqpath + "')"
-            cur.execute(sql)
-            con.commit()
+            add_setting_value(con, "ergseqpath", ergseqpath)
         
         elif tokens[0].startswith("RAXML"):
             exe = tokens[1].strip() 
             ap.params["raxml_exe"] = exe
-            sql = "insert into Settings (keyword, value) VALUES('raxml_exe','" + exe + "')"
-            cur.execute(sql)
-            con.commit()
+            add_setting_value(con, "raxml_exe", exe)
             
             sql = "insert into PhyloSoftwares (name, exe_path) VALUES('raxml','" + exe + "')"
             cur.execute(sql)
@@ -72,16 +68,12 @@ def read_config_file(con, ap):
         elif tokens[0].startswith("FASTTREE"):
             exe = tokens[1].strip() 
             ap.params["fasttree_exe"] = exe
-            sql = "insert into Settings (keyword, value) VALUES('fasttree_exe','" + exe + "')"
-            cur.execute(sql)
-            con.commit()
+            add_setting_value(con, "fasttree_exe", exe)
         
         elif tokens[0].startswith("PHYML"):
             exe = tokens[1].strip() 
             ap.params["phyml_exe"] = exe
-            sql = "insert into Settings (keyword, value) VALUES('phyml_exe','" + exe + "')"
-            cur.execute(sql)
-            con.commit()
+            add_setting_value(con, "phyml_exe", exe)
             
             sql = "insert into PhyloSoftwares (name, exe_path) VALUES('phyml','" + exe + "')"
             cur.execute(sql)
@@ -90,9 +82,7 @@ def read_config_file(con, ap):
         elif tokens[0].startswith("LAZARUS"):
             exe = tokens[1].strip() 
             ap.params["lazarus_exe"] = exe
-            sql = "insert into Settings (keyword, value) VALUES('lazarus_exe','" + exe + "')"
-            cur.execute(sql)
-            con.commit()
+            add_setting_value(con, "lazarus_exe", exe)
 
         elif tokens[0].startswith("MARKOV_MODEL_FOLDER"):
             ap.params["mmfolder"] = tokens[1].strip()
@@ -100,9 +90,7 @@ def read_config_file(con, ap):
         elif tokens[0].startswith("MPIRUN"):
             exe = tokens[1].strip() 
             ap.params["mpirun_exe"] = exe
-            sql = "insert into Settings (keyword, value) VALUES('mpirun_exe','" + exe + "')"
-            cur.execute(sql)
-            con.commit()
+            add_setting_value(con, "mpirun_exe", exe)
         
         elif tokens[0].startswith("RUN"):
             ap.params["run_exe"] = tokens[1]
@@ -110,30 +98,22 @@ def read_config_file(con, ap):
         elif tokens[0].startswith("MSAPROBS"):
             exe = tokens[1].strip()
             ap.params["msaprobs_exe"] = exe
-            sql = "insert into Settings (keyword, value) VALUES('msaprobs_exe','" + exe + "')"
-            cur.execute(sql)
-            con.commit()
+            add_setting_value(con, "msaprobs_exe", exe)
 
         elif tokens[0].startswith("MUSCLE"):
             exe = tokens[1].strip()
             ap.params["muscle_exe"] = exe
-            sql = "insert into Settings (keyword, value) VALUES('muscle_exe','" + exe + "')"
-            cur.execute(sql)
-            con.commit()
+            add_setting_value(con, "muscle_exe", exe)
 
         elif tokens[0].startswith("PRANK"):
             exe = tokens[1].strip()
             ap.params["prank_exe"] = exe
-            sql = "insert into Settings (keyword, value) VALUES('prank_exe','" + exe + "')"
-            cur.execute(sql)
-            con.commit()
+            add_setting_value(con, "prank_exe", exe)
 
         elif tokens[0].startswith("MAFFT"):
             exe = tokens[1].strip()
             ap.params["mafft_exe"] = exe
-            sql = "insert into Settings (keyword, value) VALUES('mafft_exe','" + exe + "')"
-            cur.execute(sql)
-            con.commit()
+            add_setting_value(con, "mafft_exe", exe)
         
         elif tokens[0].startswith("ANCCOMP"):
             ap.params["anccomp"] = tokens[1].strip()
@@ -141,16 +121,12 @@ def read_config_file(con, ap):
         elif tokens[0].startswith("PYMOL"):
             exe = tokens[1].strip()
             ap.params["pymol_exe"] = exe
-            sql = "insert into Settings (keyword, value) VALUES('pymol_exe','" + exe + "')"
-            cur.execute(sql)
-            con.commit()
+            add_setting_value(con, "pymol_exe", exe)
 
         elif tokens[0].startswith("ZORRO"):
             exe = tokens[1].strip()
             ap.params["zorro_exe"] = exe
-            sql = "insert into Settings (keyword, value) VALUES('zorro_exe','" + exe + "')"
-            cur.execute(sql)
-            con.commit()
+            add_setting_value(con, "zorro_exe", exe)
 
         elif tokens[0].startswith("ALIGNMENT_ALGORITHMS"):
             x = tokens[1].split()
@@ -200,24 +176,20 @@ def read_config_file(con, ap):
         elif tokens[0].startswith("SEED"):
             cleaned_taxa_name = re.sub(" ", "", tokens[1])
             ap.params["seed_motif_seq"] = cleaned_taxa_name
-            sql = "insert into Settings (keyword, value) VALUES('seedtaxa', '" + cleaned_taxa_name + "')"
-            cur.execute(sql)
-            con.commit()
+            add_setting_value(con, "seedtaxa", cleaned_taxa_name)
         
         elif tokens[0].startswith("N_BAYES_SAMPLES"):
             ap.params["n_bayes_samples"] = int(tokens[1])
         
         elif tokens[0].startswith("OUTGROUP"):
+            """Note: If you change code here, also check the method 'verify_erg_seqs'
+            in which this data gets written into the SQL DB."""
             ap.params["outgroup"] = re.sub(" ", "", tokens[1])
 
-# depricated:
-#        elif tokens[0].startswith("ANCESTORS"):
-#            x = tokens[1].split()
-#            ap.params["ancestors"] = []
-#            for i in x:
-#                ap.params["ancestors"].append( i )
         
         elif tokens[0].startswith("INGROUP"):
+            """Note: If you change code here, also check the method 'verify_erg_seqs'
+            in which this data gets written into the SQL DB."""
             if "ingroup" not in ap.params:
                 ap.params["ingroup"] = {}
             anc = tokens[0].split()[1]
@@ -225,7 +197,9 @@ def read_config_file(con, ap):
             ingroup = "".join(ingroup)
             ingroup = re.sub(" ", "", ingroup) # tolerate and remove whitespace.
             ap.params["ingroup"][ anc ] = ingroup
-        
+            
+            
+            
         elif tokens[0].startswith("ASRSEED"):
             if "seedtaxa" not in ap.params:
                 ap.params["seedtaxa"] = {}
@@ -256,13 +230,6 @@ def read_config_file(con, ap):
         elif tokens[0].startswith("PDBTOOLSDIR"):
             ap.params["pdbtoolsdir"] = re.sub("\ ", "", tokens[1])
             ap.params["pdbtoolsdir"].strip()
-
-        elif tokens[0].startswith("PYMOL"):
-            exe = tokens[1].strip()
-            ap.params["pymol_exe"] = exe
-            sql = "insert into Settings (keyword, value) VALUES('pymol_exe','" + exe + "')"
-            cur.execute(sql)
-            con.commit()
 
         elif tokens[0].startswith("MAP2PDB"): # map Df scores for this ancestor onto the PDB path
             anc = tokens[0].split()[1]
@@ -373,7 +340,7 @@ def verify_config(con, ap):
         sql = "insert into Settings (keyword, value) VALUES('zorro_threshold'," + t.__str__() + ")"
         cur.execute(sql)
     con.commit()
-    
+        
     return ap
 
 def print_config(ap):
