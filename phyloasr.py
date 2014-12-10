@@ -222,28 +222,9 @@ def get_mlalpha_pp(con, ap):
             line = runid + "\t" + lnl.__str__() + "\t" + "%.4f"%pp + "\t%.4f"%alpha + special
             fout.write(line + "\n")
         fout.close()
-
-# def read_lnl_summary(con, ap):
-#     if "runid_alpha" not in ap.params:
-#         runid_alpha = {}
-#     if "runid_pp" not in ap.params:
-#         runid_pp = {}
-#     
-#     for msa in get_alignment_method_names(con):
-#         lnlpath = msa + "/raxml.lnl.summary.txt"
-#         fin = open(lnlpath, "r")
-#         for l in fin.xreadlines():
-#             if l.__len__() > 2:
-#                 tokens = l.split()
-#                 runid = tokens[0]
-#                 lnl = float( tokens[1] )
-#                 pp = float( tokens[2] )
-#                 alpha = float( tokens[3] )
-#                 runid_alpha[runid] = alpha
-#                 runid_pp[runid] = pp 
-#         fin.close()
         
 def calc_alrt(con):
+    cur = con.cursor()
     alrt_commands = []
     for msa in get_alignment_method_names(con):
     
@@ -256,7 +237,7 @@ def calc_alrt(con):
             mltreepath = get_raxml_treepath(msa, runid)
             phylippath = get_raxml_phylippath(msa)
                         
-            sql = "select modelid from PhyloModels where name='" + msa + "'"
+            sql = "select modelid from PhyloModels where name='" + model + "'"
             cur.execute(sql)
             modelid = cur.fetchone()[0]
             
@@ -495,6 +476,10 @@ def check_asr_output(con):
             
             """Where does the ASR output live?"""
             outputdir = msa + "/asr." + model 
+
+            #
+            # continue here -- read the store and the ancestors.
+            #
 
             
 #
