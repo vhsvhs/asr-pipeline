@@ -61,7 +61,11 @@ def import_and_clean_erg_seqs(con, ap):
     """This method imports original sequences (unaligned) and builds entries
     in the SQL tables Taxa and OriginalSequences.
     Note: these tables are wiped clean before inserting new data."""  
-    ergseqpath = get_setting_values(con, "ergseqpath")[0]
+    x = get_setting_values(con, "ergseqpath")
+    if x == None:
+        write_error("I cannot find your original sequence path in the settings.")
+        exit()
+    ergseqpath = x[0]
 
     taxa_seq = read_fasta(ergseqpath)
 
@@ -76,7 +80,7 @@ def import_and_clean_erg_seqs(con, ap):
         import_original_seq(con, taxon, taxa_seq[taxon] )
         print taxon, taxa_seq[taxon]
     
-    cleanpath = get_setting_values(con, "ergseqpath")[0]
+    cleanpath = ergseqpath
     fout = open(cleanpath, "w")
     for taxon in taxa_seq:
         fout.write(">" + taxon + "\n")
@@ -109,19 +113,22 @@ def verify_erg_seqs(con, ap):
             write_error(con, "I cannot find your seed taxa '" + s + "' in your original sequences.")
             exit()
     
-    sql = "delete from GroupsTaxa"
-    cur.execute(sql)
-    sql = "delete from Ingroups"
-    cur.execute(sql)
-    sql = "delete from Outgroups"
-    cur.execute(sql)
-    sql = "delete from GroupSeedTaxa"
-    cur.execute(sql)
+    #sql = "delete from GroupsTaxa"
+    #cur.execute(sql)
+    #sql = "delete from Ingroups"
+    #cur.execute(sql)
+    #sql = "delete from Outgroups"
+    #cur.execute(sql)
+    #sql = "delete from GroupSeedTaxa"
+    #cur.execute(sql)
     
     """Are the ingroup/outgroup specifications valid, given these sequences?"""
     
-    
     for ingroup in ap.params["ingroup"]:
+        if ingroup not in ap.params["seedtaxa"]:
+            write_error(con, "You did not specify an ASRSEED for the ingroup " + ingroup)
+            exit()
+        
         ogstring = ap.params["ingroup"][ingroup]
         if ogstring.startswith("["):
             ogstring = ogstring[1:]
@@ -133,24 +140,29 @@ def verify_erg_seqs(con, ap):
         groupseed = ap.params["seedtaxa"][ ingroup ]
         seed_taxonid = get_taxonid(con, groupseed)
         if seed_taxonid == None:
-            write_error("Your definition of ingroup " + ingroup + " uses the seed taxon " + groupseed + ", but I cannot find that taxon in your sequences.")
+            write_error(con, "Your definition of ingroup " + ingroup + " uses the seed taxon " + groupseed + ", but I cannot find that taxon in your sequences.")
             exit()
 
         """Check that each member of the group definition exists in the original sequences."""
         for t in taxa:
             taxonid = get_taxonid(con, t)
             if taxonid == None:
-                write_error("Your definition of ingroup " + ingroup + " includes the taxon " + t + ", but I cannot find this taxon in your sequences.")
+                write_error(con, "Your definition of ingroup " + ingroup + " includes the taxon " + t + ", but I cannot find this taxon in your sequences.")
                 exit()
         
-        sql = "insert into Ingroups (name) VALUES('" + ingroup + "')"
+        sql = "select count(*) from Ingroups where name='" + ingroup + "'"
         cur.execute(sql)
-        con.commit()
+        count = cur.fetchone()[0]
+        if count == 0: 
+            sql = "insert into Ingroups (name) VALUES('" + ingroup + "')"
+            cur.execute(sql)
+            con.commit()
         
         sql = "select id from Ingroups where name='" + ingroup + "'"
         cur.execute(sql)
         groupid = cur.fetchone()[0]
         
+
         sql = "insert or replace into GroupSeedTaxa (groupid, seed_taxonid) VALUES("
         sql += groupid.__str__() + "," + seed_taxonid.__str__() + ")"
         cur.execute(sql)
@@ -175,12 +187,16 @@ def verify_erg_seqs(con, ap):
     for t in taxa:
         taxonid = get_taxonid(con, t)
         if taxonid == None:
-            write_error("Your definition of outgroup includes the taxon " + t + ", but I cannot find this taxon in your sequences.")
+            write_error(con, "Your definition of outgroup includes the taxon " + t + ", but I cannot find this taxon in your sequences.")
             exit()
     
-    sql = "insert into Outgroups (name) VALUES('outgroup')"
+    sql = "select count(*) from Outgroups where name='outgroup'"
     cur.execute(sql)
-    con.commit()
+    count = cur.fetchone()[0]
+    if count == 0: 
+        sql = "insert into Outgroups (name) VALUES('outgroup')"
+        cur.execute(sql)
+        con.commit()
     
     sql = "select id from Outgroups where name='outgroup'"
     cur.execute(sql)
@@ -208,14 +224,20 @@ def write_msa_commands(con, ap):
         msa = ii[1]
         exe = ii[2]
             
+        es = get_setting_values(con, "ergseqpath")
+        if es == None:
+            write_error("I cannot find your original sequence path in the settings. Error 229")
+            exit()
+        ergseqpath = es[0]
+            
         if msa == "muscle":            
-            fout.write(exe + " -maxhours 5 -in " + get_setting_values(con, "ergseqpath")[0] + " -out " + get_fastapath(msa) + "\n")
+            fout.write(exe + " -maxhours 5 -in " + ergseqpath + " -out " + get_fastapath(msa) + "\n")
         elif msa == "prank":
-            fout.write(exe + " -d=" + get_setting_values(con, "ergseqpath")[0] + " -o=" + get_fastapath(msa) + "\n")
+            fout.write(exe + " -d=" + ergseqpath + " -o=" + get_fastapath(msa) + "\n")
         elif msa == "msaprobs": 
-            fout.write(exe + " -num_threads 4 " + get_setting_values(con, "ergseqpath")[0] + " > " + get_fastapath(msa) + "\n")
+            fout.write(exe + " -num_threads 4 " + ergseqpath + " > " + get_fastapath(msa) + "\n")
         elif msa == "mafft": 
-            fout.write(exe + " --thread 4 --auto " + get_setting_values(con, "ergseqpath")[0] + " > " + get_fastapath(msa) + "\n")
+            fout.write(exe + " --thread 4 --auto " + ergseqpath + " > " + get_fastapath(msa) + "\n")
     fout.close()
     return p
     #os.system("mpirun -np 4 --machinefile hosts.txt /common/bin/mpi_dispatch SCRIPTS/msas.commands.sh")
@@ -237,10 +259,11 @@ def check_aligned_sequences(con, ap):
         """Does this alignment contain sequences?"""
         if taxa_seq.__len__() == 0:
             write_error(con, "I didn't find any sequences in the alignment from " + msa)
+            exit()
             
-            sql = "delete from AlignmentMethods where id=" + msaid.__str__()
-            cur.execute(sql)
-            con.commit()
+            #sql = "delete from AlignmentMethods where id=" + msaid.__str__()
+            #cur.execute(sql)
+            #con.commit()
         
         """Clear any existing sequences, so that we can import fresh sequences."""
         sql = "delete from AlignedSequences where almethod=" + msaid.__str__()
@@ -403,13 +426,6 @@ def write_alignment_for_raxml(con):
         pfout.close()
         
 
-def build_seed_sitesets(con, ap):
-    cur = con.cursor()
-    sql = "insert or replace into SiteSets(name) VALUES(\"seed\")"
-    cur.execute(sql)
-    con.commit()
-    
-
 def clear_sitesets(con, ap):
     cur = con.cursor()
     sql = "delete from SiteSets"
@@ -419,16 +435,19 @@ def clear_sitesets(con, ap):
     con.commit()
 
 
-
 def trim_alignments(con, ap):
     """Trims the alignment to match the start and stop motifs.
     The results are written as both PHYLIP and FASTA formats."""
     cur = con.cursor()
     
     """Create a SiteSet for the sites corresponding to the seed sequence(s)."""
-    sql = "insert or replace into SiteSets(setname) VALUES('seed')"
+    sql = "select count(*) from SiteSets where setname='seed'"
     cur.execute(sql)
-    con.commit()
+    count = cur.fetchone()[0]
+    if count == 0: 
+        sql = "insert into SiteSets(setname) VALUES('seed')"
+        cur.execute(sql)
+        con.commit()
     sql = "select id from SiteSets where setname='seed'"
     cur.execute(sql)
     sitesetid = cur.fetchone()[0]
@@ -490,9 +509,13 @@ def build_zorro_commands(con, ap):
         
     cur = con.cursor()
 
-    sql = "insert or replace into AlignmentSiteScoringMethods (name) VALUES('zorro')"
+    sql = "select count(*) from AlignmentSiteScoringMethods where name='zorro'"
     cur.execute(sql)
-    con.commit()
+    count = cur.fetchone()[0]
+    if count == 0: 
+        sql = "insert into AlignmentSiteScoringMethods (name) VALUES('zorro')"
+        cur.execute(sql)
+        con.commit()
     
     sql = "select id, name from AlignmentMethods"
     cur.execute(sql)
@@ -548,7 +571,6 @@ def import_zorro_scores(con):
         site = minfromsite
         for line in fin.xreadlines():
             score = float( line.strip() )
-            #print "326:", alid, site, score
             sql = "insert or replace into AlignmentSiteScores(almethodid,scoringmethodid,site,score) "
             sql += " VALUES(" + alid.__str__() + "," + zorroid.__str__() + "," + site.__str__() + "," + score.__str__() + ")"
             
@@ -741,7 +763,7 @@ def measure_fasttree_distances(con):
 
     treeid_dendro = {}
     for ii in treeid_newick:
-        print "515", ii
+        #print "515", ii
         t = Tree()
         t.read_from_string( treeid_newick[ii].__str__(), "newick")
         treeid_dendro[ii] = t
@@ -767,7 +789,7 @@ def measure_fasttree_distances(con):
             sql = "insert into FasttreeRFDistances(treeid1, treeid2, distance) VALUES("
             sql += ii.__str__() + "," + jj.__str__() + "," + ii_jj_rfd[ii][jj].__str__() + ")"
             cur.execute(sql)
-            print "547:", ii, jj, ii_jj_symd[ii][jj], ii_jj_rfd[ii][jj]
+            #print "547:", ii, jj, ii_jj_symd[ii][jj], ii_jj_rfd[ii][jj]
     con.commit()
         
 

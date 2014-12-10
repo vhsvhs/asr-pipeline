@@ -21,6 +21,8 @@ def get_setting_values(con, keyword):
     values = []
     for ii in x:
         values.append( ii[0] )
+    if values.__len__() == 0:
+        return None
     return values
 
 def add_setting_value(con, keyword, value, unique=False):
@@ -42,7 +44,7 @@ def import_original_seq(con, shortname, sequence):
     cur.execute(sql)
     count = cur.fetchone()[0]
     if count == 0:
-        sql = "insert or replace into Taxa (fullname, shortname) VALUES('" + shortname + "','" + shortname + "')"
+        sql = "insert into Taxa (fullname, shortname) VALUES('" + shortname + "','" + shortname + "')"
         cur.execute(sql)
         con.commit()
     
@@ -51,28 +53,40 @@ def import_original_seq(con, shortname, sequence):
     #
     # to-do: continue here: I hardcoded in amino acids (1). Fix this.
     #    
-    sql = "insert or replace into OriginalSequences (taxonid, sequence, datatype) VALUES(" + taxonid.__str__() + ",'" + sequence + "',1)"
+    sql = "select count(*) from OriginalSequences where taxonid=" + taxonid.__str__()
     cur.execute(sql)
-    con.commit()
+    count = cur.fetchone()[0]
+    if count == 0:
+        sql = "insert into OriginalSequences (taxonid, sequence, datatype) VALUES(" + taxonid.__str__() + ",'" + sequence + "',1)"
+        cur.execute(sql)
+        con.commit()
     
     return taxonid
 
 def import_aligned_seq(con, taxonid, almethodid, seq):
     cur = con.cursor()    
-    sql = "insert or replace into AlignedSequences (taxonid, alsequence, almethod) VALUES("
-    #
-    # to-do: continue here: I hardcoded the datatype as amino acid (1)
-    #
-    sql += taxonid.__str__() + ",'" + seq + "'," + almethodid.__str__() + ")"
+    sql = "select count(*) from AlignedSequences where taxonid=" + taxonid.__str__() + " and almethod=" + almethodid.__str__()
     cur.execute(sql)
-    con.commit()
+    count = cur.fetchone()[0]
+    if count == 0:      
+        sql = "insert or replace into AlignedSequences (taxonid, alsequence, almethod) VALUES("
+        #
+        # to-do: continue here: I hardcoded the datatype as amino acid (1)
+        #
+        sql += taxonid.__str__() + ",'" + seq + "'," + almethodid.__str__() + ")"
+        cur.execute(sql)
+        con.commit()
     
 def import_alignment_method(con, name, exe):
     cur = con.cursor()
-    sql = " insert or replace into AlignmentMethods(name, exe_path) VALUES("
-    sql += "'" + name + "','" + exe + "')"
+    sql = "select count(*) from AlignmentMethods where name='" + name + "'"
     cur.execute(sql)
-    con.commit()
+    count = cur.fetchone()[0]
+    if count == 0:  
+        sql = " insert into AlignmentMethods(name, exe_path) VALUES("
+        sql += "'" + name + "','" + exe + "')"
+        cur.execute(sql)
+        con.commit()
 
 def get_taxonid(con, shortname):
     cur = con.cursor()

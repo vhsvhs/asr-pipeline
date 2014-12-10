@@ -110,7 +110,7 @@ def run_asr_bayes(con, ap):
                             print "I found no data in the ancestral file ", f
                         n = 100                        
                         fout = open(alname + "/asr." + modelname + "/tree1/BAYES_SAMPLES/bayes." + f, "w")
-                        mls = get_ml_sequence(data)
+                        mls = get_ml_sequence_from_file(alname + "/asr." + modelname + "/tree1/" + f)
                         shortname = f.split(".")[0]
                         fout.write(">" + shortname + "ML_ancestral_sequence\n")
                         fout.write(mls + "\n")

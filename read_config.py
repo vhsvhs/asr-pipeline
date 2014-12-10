@@ -25,15 +25,12 @@ def read_config_file(con, ap):
     cur.execute(sql)
     sql = "delete from PhyloSoftwares"
     cur.execute(sql)
-    sql = "delete from AlignmentMethods"
-    cur.execute(sql)
     con.commit()
     
     fin = open(cpath, "r")
 
     ap.params["end_motif"] = None
     ap.params["start_motif"] = None
-    ap.params["constraint_tree"] = None
 
     for l in fin.xreadlines():
         l = l.strip()
@@ -61,9 +58,13 @@ def read_config_file(con, ap):
             ap.params["raxml_exe"] = exe
             add_setting_value(con, "raxml_exe", exe)
             
-            sql = "insert into PhyloSoftwares (name, exe_path) VALUES('raxml','" + exe + "')"
+            sql = "select count(*) from PhyloSoftwares where name='raxml'"
             cur.execute(sql)
-            con.commit()
+            count = cur.fetchone()[0]
+            if count == 0:
+                sql = "insert into PhyloSoftwares (name, exe_path) VALUES('raxml','" + exe + "')"
+                cur.execute(sql)
+                con.commit()
         
         elif tokens[0].startswith("FASTTREE"):
             exe = tokens[1].strip() 
@@ -75,9 +76,13 @@ def read_config_file(con, ap):
             ap.params["phyml_exe"] = exe
             add_setting_value(con, "phyml_exe", exe)
             
-            sql = "insert into PhyloSoftwares (name, exe_path) VALUES('phyml','" + exe + "')"
+            sql = "select count(*) from PhyloSoftwares where name='phyml_exe'"
             cur.execute(sql)
-            con.commit()
+            count = cur.fetchone()[0]
+            if count == 0:
+                sql = "insert into PhyloSoftwares (name, exe_path) VALUES('phyml','" + exe + "')"
+                cur.execute(sql)
+                con.commit()
 
         elif tokens[0].startswith("LAZARUS"):
             exe = tokens[1].strip() 
@@ -144,13 +149,14 @@ def read_config_file(con, ap):
         
         elif tokens[0].startswith("MODELS_RAXML"):
             x = tokens[1].split()
-            sql = "delete from PhyloModels"
-            cur.execute(sql)
-            con.commit()
             for i in x:
-                sql = "insert into PhyloModels(name) VALUES('" + i + "')"
+                sql = "select count(*) from PhyloModels where name='" + i + "'"
                 cur.execute(sql)
-                con.commit()
+                count = cur.fetchone()[0]
+                if count == 0:               
+                    sql = "insert into PhyloModels(name) VALUES('" + i + "')"
+                    cur.execute(sql)
+                    con.commit()
         
         elif tokens[0].startswith("START_MOTIF"):
             ap.params["start_motif"] = re.sub(" ", "", tokens[1])
@@ -163,10 +169,11 @@ def read_config_file(con, ap):
                 ap.params["end_motif"] = None 
  
         elif tokens[0].startswith("CONSTRAINT_TREE"):
-            ap.params["constraint_tree"] = re.sub(" ", "", tokens[1])
-            if False == os.path.exists(ap.params["constraint_tree"]):
-                print "\n. I can't find your constraint tree at", ap.params["constraint_tree"]
+            constraint_tree = re.sub(" ", "", tokens[1])
+            if False == os.path.exists(constraint_tree):
+                print "\n. I can't find your constraint tree at", constraint_tree
                 exit()
+            add_setting_value(con, "constraint_tree", constraint_tree, unique=True)
 
         elif tokens[0].startswith("FAMILY_DESCRIPTION"):
             ap.params["family_description"] = tokens[1] 
@@ -259,7 +266,8 @@ def verify_config(con, ap):
     
     cur = con.cursor()
     
-    if get_setting_values(con, "ergseqpath").__len__() == 0:
+    x = get_setting_values(con, "ergseqpath")
+    if x == None:
         write_error(con, "You did not specify SEQUENCES, a path to the original sequences, in your configuration file.")
         exit()
     
@@ -284,10 +292,11 @@ def verify_config(con, ap):
                 print "\n. ERROR: you specified a comparison between ancestors", a1, "and", a2, "but", a2,"was not defined in the ANCESTORS line."
                 write_error(ap, "you specified a comparison between ancestors " + a1, " and " + a2 + " but " + a2 + " was not defined in the ANCESTORS line.")
                 exit()
-                
-    if False == os.path.exists(  get_setting_values(con, "ergseqpath")[0]  ):
-        print "\n. I could not find your sequences at", get_setting_values(con, "ergseqpath")[0]
-        write_error(ap, "I could not find your sequences at " + get_setting_values(con, "ergseqpath")[0]  )
+    
+    ergseqpath = get_setting_values(con, "ergseqpath")[0]
+    if False == os.path.exists(  ergseqpath  ):
+        print "\n. I could not find your sequences at", ergseqpath
+        write_error(ap, "I could not find your sequences at " + ergseqpath  )
         exit()
 
     if ap.params["start_motif"] == None:

@@ -35,7 +35,7 @@ from asrpipelinedb_api import *
 #
 # Create RAxML commands for each alignment and each model.
 #
-def write_raxml_commands(con, ap):
+def write_raxml_commands(con):
     #here = os.path.abspath("./")
     here = os.popen('pwd').read().strip()
     commands = []
@@ -48,15 +48,20 @@ def write_raxml_commands(con, ap):
                 print rmcmd
                 #p = run_subprocess(rmcmd)
                 os.system(rmcmd)
-            command = ap.params["raxml_exe"]
+            cv = get_setting_values(con, "raxml_exe")
+            if cv == None:
+                write_error("I cannot find the executable path for raxml.")
+                exit()
+            command = cv[0] # i.e., raxml_exe
             command += " -s " + phypath
             command += " -n " + runid
             command += " -w " + here + "/" + msa
             command += " -e 0.001"
             command += " -m " + model
             command += " -p 12345"
-            if ap.params["constraint_tree"] != None:
-                command += " -g " + ap.params["constraint_tree"]
+            constraint_tree = get_setting_values(con, "constraint_tree")
+            if constraint_tree != None:
+                command += " -g " + constraint_tree[0]
             command += " > " + here + "/" + msa + "/catch." + runid + ".txt" 
             commands.append(command)
     p = "SCRIPTS/raxml.commands.sh"
@@ -66,26 +71,6 @@ def write_raxml_commands(con, ap):
     fout.close()
     return p
 
-"""Depricated."""
-def make_raxml_quick_command(con, ap, outdir, phylippath, runid):
-    """This is intended primarily for the quick RAxML runs called within the ZORRO analysis."""
-    here = os.popen('pwd').read().strip()
-    if os.path.exists(here + "/" + outdir + "/RAxML_info." + runid): # Remove dirty RAxML data.
-        rmcmd = "rm " + here + "/" + outdir + "/RAxML_*"
-        print rmcmd
-        os.system(rmcmd)
-    command = ap.params["raxml_exe"]
-    command += " -s " + phylippath
-    command += " -n " + runid
-    command += " -w " + here + "/" + outdir
-    command += " -e 0.1"
-    command += " -m PROTGAMMALG -c 1"
-    command += " -p 12345"
-    command += " -x 12345 -N 100 -f a"
-    if ap.params["constraint_tree"] != None:
-        command += " -g " + ap.params["constraint_tree"]
-    command += " > " + here + "/" + outdir + "/catch." + runid + ".txt" 
-    return command
 
 def make_fasttree_command(con, ap, outdir, phylippath):
     newtree = get_fasttree_path(phylippath)
@@ -96,9 +81,13 @@ def make_fasttree_command(con, ap, outdir, phylippath):
     return c
     
     
-def check_raxml_output(con, ap):   
+def check_raxml_output(con):   
     """Checks RAXmL's output, and imports trees into UnsupportedMlPhylogenies"""
     cur = con.cursor()
+    
+    sql = "delete from UnsupportedMlPhylogenies"
+    cur.execute(sql)
+    con.commit()
     
     here = os.popen('pwd').read().strip()
     commands = []
@@ -113,26 +102,21 @@ def check_raxml_output(con, ap):
             raxml_treepath = get_raxml_treepath(msa, runid)
             if False == os.path.exists(raxml_treepath):
                 print "I can't find the expected result from RAxML at " + here + "/" + msa + "/RAxML_bestTree." + runid
-                write_error(ap, "I can't find the expected result from RAxML at " + here + "/" + msa + "/RAxML_bestTree." + runid)
+                write_error(con, "I can't find the expected result from RAxML at " + here + "/" + msa + "/RAxML_bestTree." + runid)
                 exit()
             
             # get the modelid
             sql = "select modelid from PhyloModels where name='" + model + "'"
             cur.execute(sql)
             modelid = cur.fetchone()[0]
-            
-            # get the sequence set ID
-            sql = "select id from AlignedSequences where almethod=" + msaid.__str__()
-            cur.execute(sql)
-            alid = cur.fetchone()[0]
-            
+                        
             # get the Newick string from the tree
             fin = open(raxml_treepath, "r")
             treestring = fin.readline()
             fin.close()
             
-            sql = "insert into UnsupportedMlPhylogenies (phylomodelid,seqsetid,newick) VALUES("
-            sql += modelid.__str__() + "," + alid.__str__() + ",'" + treestring + "')"
+            sql = "insert into UnsupportedMlPhylogenies (almethod,phylomodelid,newick) VALUES("
+            sql += msaid.__str__() + "," + modelid.__str__() + ",'" + treestring + "')"
             cur.execute(sql)
             con.commit()
 
@@ -274,6 +258,7 @@ def calc_alrt(con, ap):
     for c in alrt_commands:
         fout.write(c + "\n")
     fout.close()
+    
     return "SCRIPTS/alrt_commands.sh"     
 
 
@@ -294,6 +279,69 @@ def calc_alr(con, ap):
             if False == os.path.exists(alr_treepath):
                 print "Something is wrong. I can't find converted ML tree with aLR values at", alr_treepath
                 exit()
+
+
+def import_supported_trees(con):
+    cur = con.cursor()
+    sql = "delete from BranchSupportMethods"
+    cur.execute(sql)
+    sql = "delete from SupportedMlPhylogenies"
+    cur.execute(sql)
+    con.commit()
+    
+    sql = "insert into BranchSupportMethods (name) values('aLRT')"
+    cur.execute(sql)
+    con.commit()
+    sql = "select id from BranchSupportMethods where name='aLRT'"
+    cur.execute(sql)
+    alrt_id = cur.fetchone()[0]
+
+    sql = "insert into BranchSupportMethods (name) values('aLR')"
+    cur.execute(sql)
+    con.commit()
+    sql = "select id from BranchSupportMethods where name='aLR'"
+    cur.execute(sql)
+    alr_id = cur.fetchone()[0]
+    
+    sql = "select id, almethod, phylomodelid from UnsupportedMlPhylogenies"
+    cur.execute(sql)
+    x = cur.fetchall()
+    for ii in x:
+        treeid = ii[0]
+        msaid = ii[1]
+        modelid = ii[2]
+    
+        sql = "select name from AlignmentMethods where id=" + msaid.__str__()
+        cur.execute(sql)
+        msaname = cur.fetchone()[0]
+        
+        sql = "select name from PhyloModels where modelid=" + modelid.__str__()
+        cur.execute(sql)
+        modelname = cur.fetchone()[0]
+        
+        alrt_treepath = get_alrt_treepath(msaname, modelname)
+        alr_treepath = get_alr_treepath(msaname, modelname)
+        if False == os.path.exists(alrt_treepath):
+            write_error("Oops, I cannot find the aLRT-supported tree at " + alrt_treepath)
+            exit()
+        if False == os.path.exists(alr_treepath):
+            write_error("Oops, I cannot find the aLR-supported tree at " + alr_treepath)
+            exit()       
+        alrt_string = open(alrt_treepath,"r").readline()
+        alr_string = open(alr_treepath,"r").readline()
+        
+        """Save the aLRT tree"""
+        sql = "insert into SupportedMlPhylogenies (unsupportedmltreeid,newick,supportmethodid)"
+        sql += " values(" + treeid.__str__() + ",'" + alrt_string + "'," + alrt_id.__str__() + ")"
+        cur.execute(sql)
+        con.commit()
+        
+        """Save the aLR tree"""
+        sql = "insert into SupportedMlPhylogenies (unsupportedmltreeid,newick,supportmethodid)"
+        sql += " values(" + treeid.__str__() + ",'" + alr_string + "'," + alr_id.__str__() + ")" 
+        cur.execute(sql)
+        con.commit()
+            
 
 """
 

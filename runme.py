@@ -97,11 +97,10 @@ if jump <= 2.99 and stop > 2.99:
 if jump <= 3 and stop > 3:
     ap.params["checkpoint"] = 2
     ap.params["pending_checkpoint"] = 3
-    print "\n. Inferring ML phylogenies with RAxML..."
     write_log(con, "Inferring ML phylogenies with RAxML.")
-    p = write_raxml_commands(con, ap)
+    p = write_raxml_commands(con)
     run_script(p)
-    check_raxml_output(con, ap)
+    check_raxml_output(con)
 
 """ Branch Support """
 if jump <= 4 and stop > 4:
@@ -113,6 +112,7 @@ if jump <= 4 and stop > 4:
     x = calc_alrt(con, ap)
     run_script(x)
     calc_alr(con, ap)
+    import_supported_trees(con)
 
 """ A.S.R. """
 if jump <= 5 and stop > 5:

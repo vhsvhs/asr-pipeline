@@ -60,12 +60,13 @@ def build_db(dbpath = None):
     # command-line strings used to invoke phylo models in different softwares
     cur.execute("create table if not exists PhyloModelsSoftware(modelid INTEGER, softwareid INTEGER, software_model_string TEXT)") 
     cur.execute("create table if not exists ParsimonyPhylogenies(id INTEGER primary key autoincrement, seqsetid INTEGER, newick TEXT)") # seqsetid is the site set used to make this tree
-    cur.execute("create table if not exists UnsupportedMlPhylogenies(id INTEGER primary key autoincrement, phylomodelid INTEGER, seqsetid INTEGER, newick TEXT)")
+    cur.execute("create table if not exists UnsupportedMlPhylogenies(id INTEGER primary key autoincrement, almethod INT, phylomodelid INTEGER, newick TEXT)")
 
     # Phyml and Mr. Bayes:
     
     # a list of branch support methods, such as aLRT and PP
     cur.execute("create table if not exists BranchSupportMethods(id INTEGER primary key autoincrement, name TEXT unique)")
+    
     # maps unsupported trees to a support method
     cur.execute("create table if not exists SupportedMlPhylogenies(id INTEGER primary key autoincrement, unsupportedmltreeid INTEGER, newick TEXT, supportmethodid INT)")
     
@@ -75,9 +76,10 @@ def build_db(dbpath = None):
     cur.execute("create table if not exists GroupsTaxa(groupid INTEGER, taxonid INTEGER)") # groupid is the ID of either an ingroup or outgroup
     cur.execute("create table if not exists GroupSeedTaxa(groupid, INTEGER, seed_taxonid INTEGER)") # each group can have one, or multiple, seed taxon
     
-    cur.execute("create table if not exists Ancestors(id INTEGER primary key autoincrement, ingroupid INTEGER, outgroupid INTEGER, name TEXT unique)")
-    cur.execute("create table if not exists AncestorsTreeNumbers(ancestorid INTEGER, unsupportedmltreeid INTEGER, number INT)")
+    cur.execute("create table if not exists Ancestors(id INTEGER primary key autoincrement, almethod INT, phylomodel INT, ingroupid INTEGER, outgroupid INTEGER, name TEXT unique)")
     cur.execute("create table if not exists AncestralCladogram(id INTEGER primary key autoincrement, unsupportedmltreeid INTEGER, newick TEXT)")
+    
+    cur.execute("create table if not exists AncestralStates(ancid INTEGER, site INT, state CHAR, pp FLOAT)") # site is specific to the almethod for this Ancestor
     
     """For HTML visualization"""
     cur.execute("create table if not exists HtmlPieces(id INTEGER primary key autoincrement, keyword TEXT unique, htmlstring TEXT)")
