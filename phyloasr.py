@@ -455,13 +455,11 @@ def get_asr_commands(con, ap):
     return "SCRIPTS/asr_commands.sh"
 
 def check_asr_output(con):
-    """Verifies that ASR occurred correctly, and if it did, imports
-    the results into the database."""
+    """Verifies that ASR occurred correctly, and if it did, imports the results into the database.
+        This method fills the tables Ancestors, AncestralStates, and AncestralCladogram"""
     cur = con.cursor()
     
     sql = "delete from Ancestors"
-    cur.execute(sql)
-    sql = "delete from AncestorsAlias"
     cur.execute(sql)
     sql = "delete from AncestralStates"
     cur.execute(sql)
@@ -479,9 +477,26 @@ def check_asr_output(con):
             sql = "select modelid from PhyloModels where name='" + model + "'"
             cur.execute(sql)
             modelid = cur.fetchone()[0]
-                     
+            
+            """What is the reference tree ID for this msa-model pair?"""
+            sql = "select id from UnsupportedMlPhylogenies where almethod=" + msaid.__str__() + " and phylomodelid=" + modelid.__str__()
+            cur.execute(sql)
+            treeid = cur.fetchone()[0]
+            
             """Where does the ASR output live?"""
             outputdir = msa + "/asr." + model
+            
+            """Get the post-ASR cladogram with ancestral node numbers."""
+            cladopath = outputdir + "/cladogram.tre"
+            if False == os.path.exists( cladopath ):
+                write_error(con, "I cannot find the expected cladogram at " + cladopath)
+                exit()
+            fin = open(cladopath, "r")
+            cladostring = fin.readline()
+            fin.close()
+            sql = "insert into AncestralCladogram (unsupportedmltreeid,newick) values(" + treeid.__str__() + ",'" + cladostring + "')"
+            cur.execute(sql)
+            con.commit()
             
             """Where do the ancestral DAT files live?"""
             datpath = outputdir + "/tree1"
@@ -489,7 +504,8 @@ def check_asr_output(con):
             if False == os.path.exists(datpath):
                 write_error(con, "I cannot find reconstructed ancestors in the folder " + datpath)
                 exit()
-                
+            
+            """Parse each ancestral DAT file."""
             for d in os.listdir(datpath):
                 if False == d.endswith(".dat"):
                     continue
@@ -548,7 +564,15 @@ def get_getanc_commands(con, ap):
 
 
 def check_getanc_output(con):
+    """This method fills the tables AncestorsAlias, AncestorsGroups"""
+    
     cur = con.cursor()
+    
+    sql = "delete from AncestorsAlias"
+    cur.execute(sql)
+    sql = "delete from AncestorsGroups"
+    cur.execute(sql)
+    con.commit()
     
     sql = "select id, name from Ingroups"
     cur.execute(sql)
