@@ -62,7 +62,8 @@ def build_db(dbpath = None):
     cur.execute("create table if not exists ParsimonyPhylogenies(id INTEGER primary key autoincrement, seqsetid INTEGER, newick TEXT)") # seqsetid is the site set used to make this tree
     cur.execute("create table if not exists UnsupportedMlPhylogenies(id INTEGER primary key autoincrement, almethod INT, phylomodelid INTEGER, newick TEXT)")
 
-    # Phyml and Mr. Bayes:
+    cur.execute("create table if not exists TreeMl(mltreeid INTEGER, likelihood FLOAT)") # mltreeid is an ID for an UnsupportedMlPhylogeny
+    cur.execute("create table if not exists TreeAlpha(mltreeid INTEGER, alpha FLOAT)")
     
     # a list of branch support methods, such as aLRT and PP
     cur.execute("create table if not exists BranchSupportMethods(id INTEGER primary key autoincrement, name TEXT unique)")

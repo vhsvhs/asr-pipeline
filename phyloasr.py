@@ -128,17 +128,33 @@ def get_mlalpha_pp(con, ap):
     # and find the best-fitting model.
     #
     # The ML alpha and the PP for each msa/model
-    # are written to ap.params["runid_alpha"]
-    # and ap.params["runid_pp"]
+    # are written to runid_alpha
+    # and runid_pp
     #
-    ap.params["runid_alpha"] = {}
-    ap.params["runid_pp"] = {}
+    cur = con.cursor()
+    sql = "delete from TreeMl"
+    cur.execute(sql)
+    con.commit()
+    sql = "delete from TreeAlpha"
+    cur.execute(sql)
+    con.commit()
+    
+    runid_alpha = {}
+    runid_pp = {}
     for msa in get_alignment_method_names(con):
+        sql = "select id from AlignmentMethods where name='" + msa + "'"
+        cur.execute(sql)
+        msaid = cur.fetchone()[0]
+        
         runid_lnl = {} 
         maxl = None
         minl = None
         suml = 0
         for model in get_phylo_modelnames(con):
+            sql = "select modelid from PhyloModels where name='" + model + "'"
+            cur.execute(sql)
+            modelid = cur.fetchone()[0]
+            
             runid = get_runid(msa, model)
             lpath = get_raxml_logpath(msa, model)
             if False == os.path.exists(lpath):
@@ -149,6 +165,16 @@ def get_mlalpha_pp(con, ap):
             fin.close()
             lastline = lines[ lines.__len__()-1 ]
             lnl = float(lastline.split()[1])
+            
+            sql = "select id from UnsupportedMlPhylogenies where almethod=" + msaid.__str__() + " and phylomodelid=" + modelid.__str__()
+            cur.execute(sql)
+            treeid = cur.fetchone()[0]
+            
+            sql = "insert into TreeMl(mltreeid, likelihood) values("
+            sql += treeid.__str__() + "," + lnl.__str__() + ")"
+            cur.execute(sql)
+            con.commit()
+                        
             runid_lnl[runid] = lnl
             if maxl == None:
                 maxl = lnl
@@ -169,12 +195,18 @@ def get_mlalpha_pp(con, ap):
                     l = l.strip()
                     tokens = l.split()
                     this_alpha = float(tokens[1])
-                    ap.params["runid_alpha"][runid] = this_alpha
+                    runid_alpha[runid] = this_alpha
             fin.close()
+            
+            sql = "insert into TreeAlpha(mltreeid, alpha) values("
+            sql += treeid.__str__() + "," + this_alpha.__str__() + ")"
+            cur.execute(sql)
+            con.commit()
     
         for runid in runid_lnl:
             suml += (runid_lnl[runid] - minl)
-            
+        
+        """Write the results to raxml.lnl.summary.txt"""
         fout = open(msa + "/raxml.lnl.summary.txt", "w")
         for runid in runid_lnl:
             lnl = runid_lnl[runid]
@@ -182,8 +214,8 @@ def get_mlalpha_pp(con, ap):
                 pp = 1.0
             else:
                 pp = (lnl-minl)/suml
-            ap.params["runid_pp"][runid] = pp
-            alpha = ap.params["runid_alpha"][runid]
+            runid_pp[runid] = pp
+            alpha = runid_alpha[runid]
             special = ""
             if lnl == maxl:
                 special = " (ML) "
@@ -191,33 +223,46 @@ def get_mlalpha_pp(con, ap):
             fout.write(line + "\n")
         fout.close()
 
-def read_lnl_summary(con, ap):
-    if "runid_alpha" not in ap.params:
-        ap.params["runid_alpha"] = {}
-    if "runid_pp" not in ap.params:
-        ap.params["runid_pp"] = {}
-    
-    for msa in get_alignment_method_names(con):
-        lnlpath = msa + "/raxml.lnl.summary.txt"
-        fin = open(lnlpath, "r")
-        for l in fin.xreadlines():
-            if l.__len__() > 2:
-                tokens = l.split()
-                runid = tokens[0]
-                lnl = float( tokens[1] )
-                pp = float( tokens[2] )
-                alpha = float( tokens[3] )
-                ap.params["runid_alpha"][runid] = alpha
-                ap.params["runid_pp"][runid] = pp 
-        fin.close()
+# def read_lnl_summary(con, ap):
+#     if "runid_alpha" not in ap.params:
+#         runid_alpha = {}
+#     if "runid_pp" not in ap.params:
+#         runid_pp = {}
+#     
+#     for msa in get_alignment_method_names(con):
+#         lnlpath = msa + "/raxml.lnl.summary.txt"
+#         fin = open(lnlpath, "r")
+#         for l in fin.xreadlines():
+#             if l.__len__() > 2:
+#                 tokens = l.split()
+#                 runid = tokens[0]
+#                 lnl = float( tokens[1] )
+#                 pp = float( tokens[2] )
+#                 alpha = float( tokens[3] )
+#                 runid_alpha[runid] = alpha
+#                 runid_pp[runid] = pp 
+#         fin.close()
         
-def calc_alrt(con, ap):
+def calc_alrt(con):
     alrt_commands = []
     for msa in get_alignment_method_names(con):
+    
+        sql = "select id from AlignmentMethods where name='" + msa + "'"
+        cur.execute(sql)
+        msaid = cur.fetchone()[0]
+        
         for model in get_phylo_modelnames(con):
             runid = get_runid(msa, model)
             mltreepath = get_raxml_treepath(msa, runid)
             phylippath = get_raxml_phylippath(msa)
+                        
+            sql = "select modelid from PhyloModels where name='" + msa + "'"
+            cur.execute(sql)
+            modelid = cur.fetchone()[0]
+            
+            sql = "select id from UnsupportedMlPhylogenies where almethod=" + msaid.__str__() + " and phylomodelid=" + modelid.__str__()
+            cur.execute(sql)
+            treeid = cur.fetchone()[0]
             
             if False == os.path.exists(mltreepath):
                 print "Something is wrong. I can't find the ML tree output from RAxML:", mltreepath
@@ -227,22 +272,32 @@ def calc_alrt(con, ap):
                 exit()
             
             modelstr = ""
-            if runid.__contains__("JTT"):
+            if model.__contains__("JTT"):
                 modelstr = "JTT"
-            elif runid.__contains__("WAG"):
+            elif model.__contains__("WAG"):
                 modelstr = "WAG"
-            elif runid.__contains__("LG"):
+            elif model.__contains__("LG"):
                 modelstr = "LG"
-            elif runid.__contains__("CPREV"):
+            elif model.__contains__("CPREV"):
                 modelstr = "CpREV"
-            elif runid.__contains__("RTREV"):
+            elif model.__contains__("RTREV"):
                 modelstr = "RtREV"
-            elif runid.__contains__("DAYHOFF"):
+            elif model.__contains__("DAYHOFF"):
                 modelstr = "Dayhoff"
             gammastr = ""
-            if runid.__contains__("GAMMA"):
-                gammastr = " --nclasses 8 --alpha " + ap.params["runid_alpha"][runid].__str__()
-            command = ap.params["phyml_exe"]
+            if model.__contains__("GAMMA"):
+                """Get the alpha value for the model."""
+                sql = "select alpha from TreeAlpha where mltreeid=" + treeid.__str__()
+                cur.execute(sql)
+                alpha = cur.fetchone()[0]
+                gammastr = " --nclasses 8 --alpha " + alpha.__str__()
+            
+            x = get_setting_values(con, "phyml_exe")
+            if x == None:
+                write_error("I cannot find the path to the PhyML in your settings. Error 298")
+                exit()
+            
+            command = x[0]
             command += " --input " + phylippath
             command += " -u " + mltreepath
             command += " --model " + modelstr
@@ -528,9 +583,23 @@ def get_compareanc_commands(con, ap):
         comparelines = ""
         weightlines = ""
         for msa in get_alignment_method_names(con):
+            
+#             sql = "select id from AlignmentMethods where name='" + msa + "'"
+#             cur.execute(sql)
+#             msaid = cur.fetchone()[0]
+            
             for model in get_phylo_modelnames(con):
                 runid = get_runid(msa, model)
-                pp = ap.params["runid_pp"][runid]
+                
+#                 sql = "select modelid from PhyloModels where name='" + model + "'"
+#                 cur.execute(sql)
+#                 modelid = cur.fetchone()[0]
+#                 
+#                 sql = "select id from UnsupportedMlPhylogenies where almethod=" + msaid.__str__() + " and phylomodelid=" + modelid.__str__()
+#                 cur.execute(sql)
+#                 treeid = cur.fetchone()[0]
+                
+                pp = runid_pp[runid]
                 if pp > 0.0:
                     msapath = msa + "/asr." + model + "/reformatted_alignment.phy"
                     

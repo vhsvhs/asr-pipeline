@@ -109,7 +109,7 @@ if jump <= 4 and stop > 4:
     print "\n. Calculating aLRT branch support with PhyML..."
     write_log(con, "Calculating aLRT branch support values with PhyML.")
     get_mlalpha_pp(con, ap)
-    x = calc_alrt(con, ap)
+    x = calc_alrt(con)
     run_script(x)
     calc_alr(con, ap)
     import_supported_trees(con)
@@ -151,8 +151,6 @@ if jump <= 5.2 and stop > 5.2:
 """ Predict sites of functional evolution """
 if jump <= 6 and stop > 6:
     if "compareanc" in ap.params:
-        if "runid_alpha" not in ap.params or "runid_pp" not in ap.params:
-            read_lnl_summary(con, ap)
         ap.params["checkpoint"] = 5.2
         ap.params["pending_checkpoint"] = 6
         write_log(con, "Setting up PDB maps")
