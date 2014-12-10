@@ -17,7 +17,7 @@ def read_config_file(con, ap):
     cpath = ap.getArg("--configpath")
     if False == os.path.exists("./" + cpath):
         print "ERROR: I can't find your configfile at", cpath
-        write_error(ap, "I can't find your configfile at " + cpath)
+        write_error(con, "I can't find your configfile at " + cpath)
         exit()
 
     cur = con.cursor()
@@ -279,24 +279,24 @@ def verify_config(con, ap):
             print a, ap.params["seedtaxa"]
             if a not in ap.params["seedtaxa"]:
                 print "\n. ERROR: You did not specify a SEED for the ancestor", a
-                write_error(ap, "You did not specify a SEED for the ancestor " + a)
+                write_error(con, "You did not specify a SEED for the ancestor " + a)
                 exit()
         for c in ap.params["compareanc"]:
             a1 = c[0]
             a2 = c[1]
             if a1 not in ap.params["ancestors"]:
                 print "\n. ERROR: you specified a comparison between ancestors", a1, "and", a2, "but", a1,"was not defined in the ANCESTORS line."
-                write_error(ap, "you specified a comparison between ancestors " + a1, " and " + a2 + " but " + a1 + " was not defined in the ANCESTORS line.") 
+                write_error(con, "you specified a comparison between ancestors " + a1, " and " + a2 + " but " + a1 + " was not defined in the ANCESTORS line.") 
                 exit() 
             if a1 not in ap.params["ancestors"]:
                 print "\n. ERROR: you specified a comparison between ancestors", a1, "and", a2, "but", a2,"was not defined in the ANCESTORS line."
-                write_error(ap, "you specified a comparison between ancestors " + a1, " and " + a2 + " but " + a2 + " was not defined in the ANCESTORS line.")
+                write_error(con, "you specified a comparison between ancestors " + a1, " and " + a2 + " but " + a2 + " was not defined in the ANCESTORS line.")
                 exit()
     
     ergseqpath = get_setting_values(con, "ergseqpath")[0]
     if False == os.path.exists(  ergseqpath  ):
         print "\n. I could not find your sequences at", ergseqpath
-        write_error(ap, "I could not find your sequences at " + ergseqpath  )
+        write_error(con, "I could not find your sequences at " + ergseqpath  )
         exit()
 
     if ap.params["start_motif"] == None:
@@ -307,28 +307,28 @@ def verify_config(con, ap):
     for msa in ap.params["msa_algorithms"]:
         if msa == "muscle" and "muscle_exe" not in ap.params:
             print "\n. Something is wrong. Your config file doesn't have an executable path for MUSCLE."
-            write_error(ap, "Something is wrong. Your config file doesn't have an executable path for MUSCLE.")
+            write_error(con, "Something is wrong. Your config file doesn't have an executable path for MUSCLE.")
             exit()
         elif msa == "muscle" and "muscle_exe" in ap.params:
             import_alignment_method(con, msa, ap.params["muscle_exe"])
         
         if msa == "msaprobs" and "msaprobs_exe" not in ap.params:
             print "\n. Something is wrong. Your config file doesn't have an executable path for MSAPROBS."
-            write_error(ap, "Something is wrong. Your config file doesn't have an executable path for MSAPROBS.")
+            write_error(con, "Something is wrong. Your config file doesn't have an executable path for MSAPROBS.")
             exit()
         elif msa == "msaprobs" and "msaprobs_exe" in ap.params:
             import_alignment_method(con, msa, ap.params["msaprobs_exe"])
         
         if msa == "prank" and "prank_exe" not in ap.params:
             print "\n. Something is wrong. Your config file doesn't have an executable path for PRANK."
-            write_error(ap, "Something is wrong. Your config file doesn't have an executable path for PRANK.")
+            write_error(con, "Something is wrong. Your config file doesn't have an executable path for PRANK.")
             exit()
         elif msa == "prank" and "prank_exe" in ap.params:
             import_alignment_method(con, msa, ap.params["prank_exe"])
         
         if msa == "mafft" and "mafft_exe" not in ap.params:
             print "\n. Something is wrong. Your config file doesn't have an executable path for PRANK."
-            write_error(ap, "Something is wrong. Your config file doesn't have an executable path for PRANK.")
+            write_error(con, "Something is wrong. Your config file doesn't have an executable path for PRANK.")
             exit()
         elif msa == "mafft" and "mafft_exe" in ap.params:
             import_alignment_method(con, msa, ap.params["mafft_exe"])

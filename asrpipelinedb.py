@@ -35,15 +35,17 @@ def build_db(dbpath = None):
     cur.execute("create table if not exists AlignmentMethods(id INTEGER primary key autoincrement, name TEXT unique, exe_path TEXT)")
     cur.execute("create table if not exists AlignedSequences(id INTEGER primary key autoincrement, taxonid INT, alsequence TEXT, almethod INT)") # these sequences contain indels
 
-    # When sequences get trimmed, rather than store a new sequence, define a SiteSet mapping from->to site
-    # regions.
+
+    """A SiteSet is a collection of sites in the alignment. For example, after trimming the sequences, instead of storing a new
+        instance of the sequences, a SiteSet can be used to define the trimmed boundaries.
+        SiteSets are declared in the table SiteSets, and then defined for each alignment in the table SiteSetsAlignment."""
     cur.execute("create table if not exists SiteSets(id INTEGER primary key autoincrement, setname TEXT unique)") # sets of sequence sites
     
-    # Defines a set of sites, 'from' site to the 'to' site, inclusive. A set/sequence pair can have
-    # multiple listings in this table, for example, if the desired sites are non-contiguous
+    """Defines a set of sites, 'from' site to the 'to' site, inclusive. A set/sequence pair can have
+        multiple from/to pairs in this table, for example if the SiteSet is not contiguous."""
     cur.execute("create table if not exists SiteSetsAlignment(setid INTEGER, almethod INT, fromsite INT, tosite INT)") # alseqid is the ID of an aligned sequence
     
-    # for ZORRO:
+    """These tables are for ZORRO and FastTree analysis."""
     cur.execute("create table if not exists AlignmentSiteScoringMethods(id INTEGER primary key autoincrement, name TEXT unique)")
     cur.execute("create table if not exists AlignmentSiteScores(almethodid INTEGER, scoringmethodid INTEGER, site INT, score FLOAT)")
     cur.execute("create table if not exists ZorroThreshStats(almethod INTEGER, thresh FLOAT, min_score FLOAT, nsites INT)")
@@ -64,6 +66,7 @@ def build_db(dbpath = None):
 
     cur.execute("create table if not exists TreeMl(mltreeid INTEGER, likelihood FLOAT)") # mltreeid is an ID for an UnsupportedMlPhylogeny
     cur.execute("create table if not exists TreeAlpha(mltreeid INTEGER, alpha FLOAT)")
+    cur.execute("create table if not exists TreePP(mltreeid INTEGER, pp FLOAT)")
     
     # a list of branch support methods, such as aLRT and PP
     cur.execute("create table if not exists BranchSupportMethods(id INTEGER primary key autoincrement, name TEXT unique)")
@@ -77,10 +80,16 @@ def build_db(dbpath = None):
     cur.execute("create table if not exists GroupsTaxa(groupid INTEGER, taxonid INTEGER)") # groupid is the ID of either an ingroup or outgroup
     cur.execute("create table if not exists GroupSeedTaxa(groupid, INTEGER, seed_taxonid INTEGER)") # each group can have one, or multiple, seed taxon
     
-    cur.execute("create table if not exists Ancestors(id INTEGER primary key autoincrement, almethod INT, phylomodel INT, ingroupid INTEGER, outgroupid INTEGER, name TEXT unique)")
+    cur.execute("create table if not exists Ancestors(id INTEGER primary key autoincrement, almethod INT, phylomodel INT, name TEXT)")
+    cur.execute("create table if not exists AncestralStates(ancid INTEGER, site INT, state CHAR, pp FLOAT)") # site is specific to the almethod for this Ancestor
     cur.execute("create table if not exists AncestralCladogram(id INTEGER primary key autoincrement, unsupportedmltreeid INTEGER, newick TEXT)")
     
-    cur.execute("create table if not exists AncestralStates(ancid INTEGER, site INT, state CHAR, pp FLOAT)") # site is specific to the almethod for this Ancestor
+    """Some ancestors have alias names, in addition to their default number-based name."""
+    cur.execute("create table if not exists AncestorsAlias(ancid INTEGER, alias TEXT)") # alias names for this ancestor
+    """Some ancestors are special, with pre-defined mappings to known ingroups and outgroups."""
+    cur.execute("create table if not exists AncestorsGroups(ancid INTEGER unique, ingroupid INTEGER, outgroupid INTEGER)") # some ancestors, but not all, will have a mapping to known taxa groups.
+    
+    
     
     """For HTML visualization"""
     cur.execute("create table if not exists HtmlPieces(id INTEGER primary key autoincrement, keyword TEXT unique, htmlstring TEXT)")

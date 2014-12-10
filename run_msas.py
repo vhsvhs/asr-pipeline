@@ -63,7 +63,7 @@ def import_and_clean_erg_seqs(con, ap):
     Note: these tables are wiped clean before inserting new data."""  
     x = get_setting_values(con, "ergseqpath")
     if x == None:
-        write_error("I cannot find your original sequence path in the settings.")
+        write_error(con, "I cannot find your original sequence path in the settings.")
         exit()
     ergseqpath = x[0]
 
@@ -78,7 +78,7 @@ def import_and_clean_erg_seqs(con, ap):
     
     for taxon in taxa_seq:
         import_original_seq(con, taxon, taxa_seq[taxon] )
-        print taxon, taxa_seq[taxon]
+        #write_log(con, taxon + " contains " + taxa_seq[taxon].__len__().__str__() + " sites.")
     
     cleanpath = ergseqpath
     fout = open(cleanpath, "w")
@@ -194,7 +194,7 @@ def verify_erg_seqs(con, ap):
     cur.execute(sql)
     count = cur.fetchone()[0]
     if count == 0: 
-        sql = "insert into Outgroups (name) VALUES('outgroup')"
+        sql = "insert into Outgroups (name) values('outgroup')"
         cur.execute(sql)
         con.commit()
     
@@ -226,7 +226,7 @@ def write_msa_commands(con, ap):
             
         es = get_setting_values(con, "ergseqpath")
         if es == None:
-            write_error("I cannot find your original sequence path in the settings. Error 229")
+            write_error(con, "I cannot find your original sequence path in the settings. Error 229")
             exit()
         ergseqpath = es[0]
             

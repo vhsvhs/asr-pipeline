@@ -50,7 +50,7 @@ def write_raxml_commands(con):
                 os.system(rmcmd)
             cv = get_setting_values(con, "raxml_exe")
             if cv == None:
-                write_error("I cannot find the executable path for raxml.")
+                write_error(con, "I cannot find the executable path for raxml.")
                 exit()
             command = cv[0] # i.e., raxml_exe
             command += " -s " + phypath
@@ -122,15 +122,14 @@ def check_raxml_output(con):
 
 
 def get_mlalpha_pp(con, ap):
-    #
-    # Fetch ML resultse from RAxML
-    # Calculate min, max likelihoods for each model, 
-    # and find the best-fitting model.
-    #
-    # The ML alpha and the PP for each msa/model
-    # are written to runid_alpha
-    # and runid_pp
-    #
+    """Fetch ML resultse from RAxML
+    Calculate min, max likelihoods for each model, 
+    and find the best-fitting model.
+    
+    The ML alpha and the PP for each msa/model
+    are written to runid_alpha
+    and runid_pp"""
+    
     cur = con.cursor()
     sql = "delete from TreeMl"
     cur.execute(sql)
@@ -138,22 +137,31 @@ def get_mlalpha_pp(con, ap):
     sql = "delete from TreeAlpha"
     cur.execute(sql)
     con.commit()
+    sql = "delete from TreePP"
+    cur.execute(sql)
+    con.commit()
     
-    runid_alpha = {}
-    runid_pp = {}
+
     for msa in get_alignment_method_names(con):
         sql = "select id from AlignmentMethods where name='" + msa + "'"
         cur.execute(sql)
         msaid = cur.fetchone()[0]
-        
-        runid_lnl = {} 
-        maxl = None
-        minl = None
-        suml = 0
+
+        runid_alpha = {}        
+        runid_lnl = {}
+        treeid_lnl = {}
+        treeid_pp = {} 
+        maxl = None # maximum log-L
+        minl = None # minimum log-L
+        suml = 0    # sum of log-L for all ML trees from this alignment
         for model in get_phylo_modelnames(con):
             sql = "select modelid from PhyloModels where name='" + model + "'"
             cur.execute(sql)
             modelid = cur.fetchone()[0]
+
+            sql = "select id from UnsupportedMlPhylogenies where almethod=" + msaid.__str__() + " and phylomodelid=" + modelid.__str__()
+            cur.execute(sql)
+            treeid = cur.fetchone()[0]
             
             runid = get_runid(msa, model)
             lpath = get_raxml_logpath(msa, model)
@@ -166,16 +174,13 @@ def get_mlalpha_pp(con, ap):
             lastline = lines[ lines.__len__()-1 ]
             lnl = float(lastline.split()[1])
             
-            sql = "select id from UnsupportedMlPhylogenies where almethod=" + msaid.__str__() + " and phylomodelid=" + modelid.__str__()
-            cur.execute(sql)
-            treeid = cur.fetchone()[0]
-            
             sql = "insert into TreeMl(mltreeid, likelihood) values("
             sql += treeid.__str__() + "," + lnl.__str__() + ")"
             cur.execute(sql)
             con.commit()
                         
             runid_lnl[runid] = lnl
+            treeid_lnl[treeid] = lnl
             if maxl == None:
                 maxl = lnl
             if minl == None:
@@ -206,6 +211,18 @@ def get_mlalpha_pp(con, ap):
         for runid in runid_lnl:
             suml += (runid_lnl[runid] - minl)
         
+        """Compute Posterior Probability of each Tree"""
+        for treeid in treeid_lnl:
+            lnl = treeid_lnl[treeid]
+            if treeid_lnl.keys().__len__() <= 1:
+                treeid_pp[treeid] = 1.0
+            else:
+                treeid_pp[treeid] = (lnl-minl)/suml
+                
+            sql = "insert into TreePP (mltreeid, pp) values(" + treeid.__str__() + "," + treeid_pp[treeid].__str__() + ")"
+            cur.execute(sql)
+            con.commit() 
+        
         """Write the results to raxml.lnl.summary.txt"""
         fout = open(msa + "/raxml.lnl.summary.txt", "w")
         for runid in runid_lnl:
@@ -214,7 +231,7 @@ def get_mlalpha_pp(con, ap):
                 pp = 1.0
             else:
                 pp = (lnl-minl)/suml
-            runid_pp[runid] = pp
+
             alpha = runid_alpha[runid]
             special = ""
             if lnl == maxl:
@@ -222,7 +239,8 @@ def get_mlalpha_pp(con, ap):
             line = runid + "\t" + lnl.__str__() + "\t" + "%.4f"%pp + "\t%.4f"%alpha + special
             fout.write(line + "\n")
         fout.close()
-        
+                
+  
 def calc_alrt(con):
     cur = con.cursor()
     alrt_commands = []
@@ -275,7 +293,7 @@ def calc_alrt(con):
             
             x = get_setting_values(con, "phyml_exe")
             if x == None:
-                write_error("I cannot find the path to the PhyML in your settings. Error 298")
+                write_error(con, "I cannot find the path to the PhyML in your settings. Error 298")
                 exit()
             
             command = x[0]
@@ -358,10 +376,10 @@ def import_supported_trees(con):
         alrt_treepath = get_alrt_treepath(msaname, modelname)
         alr_treepath = get_alr_treepath(msaname, modelname)
         if False == os.path.exists(alrt_treepath):
-            write_error("Oops, I cannot find the aLRT-supported tree at " + alrt_treepath)
+            write_error(con, "Oops, I cannot find the aLRT-supported tree at " + alrt_treepath)
             exit()
         if False == os.path.exists(alr_treepath):
-            write_error("Oops, I cannot find the aLR-supported tree at " + alr_treepath)
+            write_error(con, "Oops, I cannot find the aLR-supported tree at " + alr_treepath)
             exit()       
         alrt_string = open(alrt_treepath,"r").readline()
         alr_string = open(alr_treepath,"r").readline()
@@ -378,37 +396,6 @@ def import_supported_trees(con):
         cur.execute(sql)
         con.commit()
             
-
-"""
-
-#exit()
-
-##############################################
-#
-# How similar are the ML trees?
-#
-treepath_id = {} # key = treepath, value = integer ID for brevity.
-ta_tb_distance = {} # key = treepath, value = hash, key = treepath, value = symmetric distance between the trees
-ii = 1
-for DIR in DIR_runids:
-    for runid in DIR_runid_lnl[DIR]:
-        mltreepath = get_raxml_treepath(DIR, runid)
-        treepath_id[ mltreepath ] = ii
-        ii += 1
-from dendropy import Tree
-for ta in treepath_id:
-    ta_tb_distance[ta] = {}
-    treea = Tree()
-    treea.read_from_path( ta, "newick" )
-    for tb in treepath_id:
-        treeb = Tree()
-        treeb.read_from_path( tb, "newick" )
-        d = treea.symmetric_difference( treeb )
-        d = treeb.symmetric_difference( treea )
-        ta_tb_distance[ta][tb] = d
-print ta_tb_distance
-#exit()
-"""
 
 def get_asr_commands(con, ap):
     asr_commands = []
@@ -470,22 +457,69 @@ def get_asr_commands(con, ap):
 def check_asr_output(con):
     """Verifies that ASR occurred correctly, and if it did, imports
     the results into the database."""
+    cur = con.cursor()
+    
+    sql = "delete from Ancestors"
+    cur.execute(sql)
+    sql = "delete from AncestorsAlias"
+    cur.execute(sql)
+    sql = "delete from AncestralStates"
+    cur.execute(sql)
+    sql = "delete from AncestralCladogram"
+    cur.execute(sql)
+    con.commit()
+
+    
     for msa in get_alignment_method_names(con):
+        sql = "select id from AlignmentMethods where name='" + msa + "'"
+        cur.execute(sql)
+        msaid = cur.fetchone()[0]
+        
         for model in get_phylo_modelnames(con):
-            runid = get_runid(msa, model)
-            
+            sql = "select modelid from PhyloModels where name='" + model + "'"
+            cur.execute(sql)
+            modelid = cur.fetchone()[0]
+                     
             """Where does the ASR output live?"""
-            outputdir = msa + "/asr." + model 
-
-            #
-            # continue here -- read the store and the ancestors.
-            #
+            outputdir = msa + "/asr." + model
+            
+            """Where do the ancestral DAT files live?"""
+            datpath = outputdir + "/tree1"
+             
+            if False == os.path.exists(datpath):
+                write_error(con, "I cannot find reconstructed ancestors in the folder " + datpath)
+                exit()
+                
+            for d in os.listdir(datpath):
+                if False == d.endswith(".dat"):
+                    continue
+                nodenum = int( re.sub("node", "", d.split(".")[0]) )
+                ssp = get_site_state_pp( datpath + "/" + d)
+                
+                sql = "insert into Ancestors (almethod, phylomodel, name) values("
+                sql += msaid.__str__() + "," + modelid.__str__() + ",'Node" + nodenum.__str__() + "')"
+                cur.execute(sql) 
+                con.commit()
+                
+                sql = "select id from Ancestors where almethod=" + msaid.__str__() + " and phylomodel=" + modelid.__str__() + " and name='Node" + nodenum.__str__() + "'"
+                cur.execute(sql)
+                ancid = cur.fetchone()[0]
+                
+                for site in ssp:
+                    for state in ssp[site]:
+                        pp = ssp[site][state]
+                        sql = "insert into AncestralStates (ancid, site, state, pp) values("
+                        sql += ancid.__str__() + "," + site.__str__() + ",'" + state + "',"
+                        sql += pp.__str__() + ")"
+                        cur.execute(sql)
+                con.commit()
+                
+                
 
             
-#
-# Get ancestors
-#ancseqs
+
 def get_getanc_commands(con, ap):
+    """Returns the path to a script containing the commands for comparing ancestors."""
     getanc_commands = []
     for msa in get_alignment_method_names(con):
         for model in get_phylo_modelnames(con):
@@ -512,22 +546,74 @@ def get_getanc_commands(con, ap):
     fout.close()
     return "SCRIPTS/getanc_commands.txt"
 
-#exit()
 
-def check_getanc_output(con, ap):
-    # Returns (bool, message)
-    #
-    # Read the Lazarus job status log file, look for errors.
-    #
+def check_getanc_output(con):
+    cur = con.cursor()
+    
+    sql = "select id, name from Ingroups"
+    cur.execute(sql)
+    x = cur.fetchall()
+    ingroupid_name = {}
+    for ii in x:
+        ingroupid_name[ ii[0] ] = ii[1]
+    
+    sql = "select id from Outgroups where name='outgroup'"
+    cur.execute(sql)
+    outgroupid = cur.fetchone()[0]
+    
     for msa in get_alignment_method_names(con):
+        sql = "select id from AlignmentMethods where name='" + msa + "'"
+        cur.execute(sql)
+        msaid = cur.fetchone()[0]
+        
         for model in get_phylo_modelnames(con):
+            sql = "select modelid from PhyloModels where name='" + model + "'"
+            cur.execute(sql)
+            modelid = cur.fetchone()[0]
+            
+            """Check the Lazarus job status log file for errors."""
             logpath = msa + "/asr." + model + "/lazarus_job_status.log"
             if os.path.exists(logpath):
                 fin = open(logpath, "r")
                 line1 = fin.readline()
                 if line1.__contains__("error") or line1.__contains__("Error"):
-                    return (False, line1)
-    return (True, None)
+                    write_error(con, "There was an error extracting ancestors:")
+                    write_error(con, line1 )
+                    exit()
+            
+            """For each named ancestor, read its special text file
+                and determine its node number."""
+            for ingroupid in ingroupid_name:
+                ancpath = msa + "/asr." + model + "/" + ingroupid_name[ ingroupid ] + ".txt"
+                if False == os.path.exists( ancpath ):
+                    write_error(con, "I cannot find the expected ancestor " + ancpath)
+                    exit()
+                
+                this_node = None
+                fin = open(ancpath, "r")
+                for l in fin.readlines():
+                    if l.__contains__("On the ML tree"):
+                        this_node = int(  re.sub("#", "", l.split()[8])  )
+                fin.close()
+                
+                sql = "select id from Ancestors where name='Node" + this_node.__str__() + "' and almethod=" + msaid.__str__() + " and phylomodel=" + modelid.__str__()
+                print ancpath, sql
+                cur.execute(sql)
+                x = cur.fetchall()
+                if x.__len__() == 0:
+                    write_error(con, "Error 596 - I cannot find the entry in Ancestors for the ingroup ID " + ingroupid.__str__())
+                    exit()
+                ancid = x[0][0]
+                
+                sql = "insert into AncestorsAlias (ancid, alias) values(" + ancid.__str__() + ",'" + ingroupid_name[ ingroupid ] + "')"
+                cur.execute(sql)
+                con.commit()
+
+                sql = "insert into AncestorsGroups (ancid, ingroupid, outgroupid) values(" + ancid.__str__() + "," + ingroupid.__str__() + "," + outgroupid.__str__() + ")"
+                cur.execute(sql)
+                con.commit()
+                
+
 
 def setup_pdb_maps(ap):
     """The goal of this method is to build ap.params["map2pdb"][ anc ] from the PHYRE output folder."""
@@ -561,6 +647,7 @@ def setup_pdb_maps(ap):
 
 #ap.params["compareanc"]
 def get_compareanc_commands(con, ap):
+    cur = con.cursor()
     compare_commands = []
     for pair in ap.params["compareanc"]:    
         #msapathlines = "msapaths "
@@ -569,29 +656,31 @@ def get_compareanc_commands(con, ap):
         weightlines = ""
         for msa in get_alignment_method_names(con):
             
-#             sql = "select id from AlignmentMethods where name='" + msa + "'"
-#             cur.execute(sql)
-#             msaid = cur.fetchone()[0]
+            sql = "select id from AlignmentMethods where name='" + msa + "'"
+            cur.execute(sql)
+            msaid = cur.fetchone()[0]
             
             for model in get_phylo_modelnames(con):
                 runid = get_runid(msa, model)
                 
-#                 sql = "select modelid from PhyloModels where name='" + model + "'"
-#                 cur.execute(sql)
-#                 modelid = cur.fetchone()[0]
+                sql = "select modelid from PhyloModels where name='" + model + "'"
+                cur.execute(sql)
+                modelid = cur.fetchone()[0]
 #                 
-#                 sql = "select id from UnsupportedMlPhylogenies where almethod=" + msaid.__str__() + " and phylomodelid=" + modelid.__str__()
-#                 cur.execute(sql)
-#                 treeid = cur.fetchone()[0]
+                sql = "select id from UnsupportedMlPhylogenies where almethod=" + msaid.__str__() + " and phylomodelid=" + modelid.__str__()
+                cur.execute(sql)
+                treeid = cur.fetchone()[0]
+
+                sql = "select pp from TreePP where mltreeid in (select id from UnsupportedMlPhylogenies where almethod=" + msaid.__str__() + " and phylomodelid=" + modelid.__str__() + ")"
+                cur.execute(sql)
+                pp = cur.fetchone()[0]
+            
+                msapath = msa + "/asr." + model + "/reformatted_alignment.phy"
                 
-                pp = runid_pp[runid]
-                if pp > 0.0:
-                    msapath = msa + "/asr." + model + "/reformatted_alignment.phy"
-                    
-                    #msapathlines += msapath + " "
-                    msanamelines += "msaname " + msapath + " " + runid + "\n"
-                    comparelines += "compare " + msa + "/asr." + model + "/" + pair[0] + ".dat " + msa + "/asr." + model + "/" + pair[1] + ".dat " + runid + "\n"
-                    weightlines += "msaweight " + runid + " " + pp.__str__() + "\n"
+                #msapathlines += msapath + " "
+                msanamelines += "msaname " + msapath + " " + runid + "\n"
+                comparelines += "compare " + msa + "/asr." + model + "/" + pair[0] + ".dat " + msa + "/asr." + model + "/" + pair[1] + ".dat " + runid + "\n"
+                weightlines += "msaweight " + runid + " " + pp.__str__() + "\n"
             
         specpath = "compare_ancs." + pair[0] + "-" + pair[1] + ".config.txt"
         fout = open(specpath, "w")

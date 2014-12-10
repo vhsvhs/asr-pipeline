@@ -101,6 +101,7 @@ if jump <= 3 and stop > 3:
     p = write_raxml_commands(con)
     run_script(p)
     check_raxml_output(con)
+    get_mlalpha_pp(con, ap)
 
 """ Branch Support """
 if jump <= 4 and stop > 4:
@@ -108,7 +109,7 @@ if jump <= 4 and stop > 4:
     ap.params["pending_checkpoint"] = 4
     print "\n. Calculating aLRT branch support with PhyML..."
     write_log(con, "Calculating aLRT branch support values with PhyML.")
-    get_mlalpha_pp(con, ap)
+
     x = calc_alrt(con)
     run_script(x)
     calc_alr(con, ap)
@@ -122,28 +123,18 @@ if jump <= 5 and stop > 5:
     write_log(con, "Reconstructing ancestral sequences, using Lazarus.")
     x = get_asr_commands(con, ap)
     run_script(x)
+if jump <= 5.1 and stop > 5.1:
     check_asr_output(con)
     
-    #
-    # to-do: insert check that ancestors were created
-    #
-
-if jump <= 5.1 and stop > 5.1:
+if jump <= 5.2 and stop > 5.3:
     ap.params["checkpoint"] = 5
     ap.params["pending_checkpoint"] = 5.1
     write_log(con, "Extracting relevant ancestors")
     x = get_getanc_commands(con, ap)
     run_script(x)
-    (flag, msg) = check_getanc_output(con, ap)
-    if not flag:
-        write_error(ap, msg)
-        exit()
-    
-    #
-    # to-do: insert check that ancestors were gotten.
-    #
+    check_getanc_output(con)
 
-if jump <= 5.2 and stop > 5.2:
+if jump <= 5.9 and stop > 5.9:
     ap.params["checkpoint"] = 5.1
     ap.params["pending_checkpoint"] = 5.2
     run_asr_bayes(con, ap)
