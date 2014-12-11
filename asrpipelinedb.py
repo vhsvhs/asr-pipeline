@@ -74,9 +74,9 @@ def build_db(dbpath = None):
     # maps unsupported trees to a support method
     cur.execute("create table if not exists SupportedMlPhylogenies(id INTEGER primary key autoincrement, unsupportedmltreeid INTEGER, newick TEXT, supportmethodid INT)")
     
-    # define groups of taxa
-    cur.execute("create table if not exists Ingroups(id INTEGER primary key autoincrement, name TEXT unique)")
-    cur.execute("create table if not exists Outgroups(id INTEGER primary key autoincrement, name TEXT unique)")
+    # A TaxaGroup is an "ingroup" of related taxa.
+    # A special group named 'outgroup' is also created.
+    cur.execute("create table if not exists TaxaGroups(id INTEGER primary key autoincrement, name TEXT unique)") # the name of the TaxaGroup will be the name of the group's ancestor.
     cur.execute("create table if not exists GroupsTaxa(groupid INTEGER, taxonid INTEGER)") # groupid is the ID of either an ingroup or outgroup
     cur.execute("create table if not exists GroupSeedTaxa(groupid, INTEGER, seed_taxonid INTEGER)") # each group can have one, or multiple, seed taxon
     
@@ -89,6 +89,7 @@ def build_db(dbpath = None):
     """Some ancestors are special, with pre-defined mappings to known ingroups and outgroups."""
     cur.execute("create table if not exists AncestorsGroups(ancid INTEGER unique, ingroupid INTEGER, outgroupid INTEGER)") # some ancestors, but not all, will have a mapping to known taxa groups.
     
+    cur.execute("create table if not exists CompareAncestors(ancid1 INTEGER, ancid2 INTEGER)")
     
     
     """For HTML visualization"""

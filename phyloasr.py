@@ -450,7 +450,7 @@ def get_asr_commands(con):
             asrtreepath = get_raxml_treepath(msa, runid)
             lazaarus_exe = get_setting_values(con, "lazarus_exe")[0]
             
-            sql = "select id from Outgroups where name='outgroup'"
+            sql = "select id from TaxaGroups where name='outgroup'"
             cur.execute(sql)
             outgroup_id = cur.fetchone()[0]
             print "456:", outgroup_id
@@ -500,12 +500,13 @@ def check_asr_output(con):
             outputdir = msa + "/asr." + model
             
             """Get the post-ASR cladogram with ancestral node numbers."""
-            cladopath = outputdir + "/cladogram.tre"
+            #cladopath = outputdir + "/cladogram.tre"
+            cladopath = outputdir + "/tree1/tree1.txt" 
             if False == os.path.exists( cladopath ):
                 write_error(con, "I cannot find the expected cladogram at " + cladopath)
                 exit()
             fin = open(cladopath, "r")
-            cladostring = fin.readline()
+            cladostring = fin.readlines()[3]
             fin.close()
             sql = "insert into AncestralCladogram (unsupportedmltreeid,newick) values(" + treeid.__str__() + ",'" + cladostring + "')"
             cur.execute(sql)
@@ -544,11 +545,9 @@ def check_asr_output(con):
                 con.commit()
                 
                 
-
-            
-
-def get_getanc_commands(con, ap):
+def get_getanc_commands(con):
     """Returns the path to a script containing the commands for comparing ancestors."""
+    cur = con.cursor()
     getanc_commands = []
     for msa in get_alignment_method_names(con):
         for model in get_phylo_modelnames(con):
@@ -565,10 +564,19 @@ def get_getanc_commands(con, ap):
                 modelstr += "/wag.dat"
             elif runid.__contains__("LG"):
                 modelstr += "/lg.dat"
-            for ing in ap.params["ingroup"]:
-                getanc_commands.append(ap.params["lazarus_exe"] + " --alignment " + asrmsa + " --tree " + asrtree + " --model " + modelstr + " --outputdir " + here + "/" + msa + "/asr." + model + " --outgroup " + ap.params["outgroup"] + " --ingroup " + ap.params["ingroup"][ing] + " --getanc True")
-                getanc_commands.append("mv " + msa + "/asr." + model + "/ancestor-ml.dat " + msa + "/asr." + model + "/" + ing + ".dat")
-                getanc_commands.append("mv " + msa + "/asr." + model + "/ancestor.out.txt " + msa + "/asr." + model + "/" + ing + ".txt")
+                
+            ingroup_ids = get_ingroup_ids(con)    
+            for ing in ingroup_ids:
+                sql = "select name from TaxaGroups where id=" + ing.__str__()
+                cur.execute(sql)
+                ingroup_name = cur.fetchone()[0]
+                taxa = get_taxaid_in_group(con, ing)
+                taxa = [get_taxon_name(con,i) for i in taxa]
+                ingroup_string = "[" + ",".join(taxa) + "]"
+                
+                getanc_commands.append(ap.params["lazarus_exe"] + " --alignment " + asrmsa + " --tree " + asrtree + " --model " + modelstr + " --outputdir " + here + "/" + msa + "/asr." + model + " --outgroup " + ap.params["outgroup"] + " --ingroup " + ingroup_string + " --getanc True")
+                getanc_commands.append("mv " + msa + "/asr." + model + "/ancestor-ml.dat " + msa + "/asr." + model + "/" + ingroup_name + ".dat")
+                getanc_commands.append("mv " + msa + "/asr." + model + "/ancestor.out.txt " + msa + "/asr." + model + "/" + ingroup_name + ".txt")
     
     fout = open("SCRIPTS/getanc_commands.txt", "w")
     for a in getanc_commands:
@@ -589,14 +597,15 @@ def check_getanc_output(con):
     cur.execute(sql)
     con.commit()
     
-    sql = "select id, name from Ingroups"
+    sql = "select id, name from TaxaGroups"
     cur.execute(sql)
     x = cur.fetchall()
-    ingroupid_name = {}
+    groupid_name = {}
     for ii in x:
-        ingroupid_name[ ii[0] ] = ii[1]
+        if ii[1] != "outgroup":
+            groupid_name[ ii[0] ] = ii[1]
     
-    sql = "select id from Outgroups where name='outgroup'"
+    sql = "select id from TaxaGroups where name='outgroup'"
     cur.execute(sql)
     outgroupid = cur.fetchone()[0]
     
@@ -622,8 +631,8 @@ def check_getanc_output(con):
             
             """For each named ancestor, read its special text file
                 and determine its node number."""
-            for ingroupid in ingroupid_name:
-                ancpath = msa + "/asr." + model + "/" + ingroupid_name[ ingroupid ] + ".txt"
+            for ingroupid in groupid_name:
+                ancpath = msa + "/asr." + model + "/" + groupid_name[ ingroupid ] + ".txt"
                 if False == os.path.exists( ancpath ):
                     write_error(con, "I cannot find the expected ancestor " + ancpath)
                     exit()
@@ -644,7 +653,7 @@ def check_getanc_output(con):
                     exit()
                 ancid = x[0][0]
                 
-                sql = "insert into AncestorsAlias (ancid, alias) values(" + ancid.__str__() + ",'" + ingroupid_name[ ingroupid ] + "')"
+                sql = "insert into AncestorsAlias (ancid, alias) values(" + ancid.__str__() + ",'" + groupid_name[ ingroupid ] + "')"
                 cur.execute(sql)
                 con.commit()
 
@@ -655,6 +664,7 @@ def check_getanc_output(con):
 
 
 def setup_pdb_maps(ap):
+    """This method is experimental"""
     """The goal of this method is to build ap.params["map2pdb"][ anc ] from the PHYRE output folder."""
         
     if "phyre_out" not in ap.params:
@@ -720,11 +730,18 @@ def get_compareanc_commands(con, ap):
                 msanamelines += "msaname " + msapath + " " + runid + "\n"
                 comparelines += "compare " + msa + "/asr." + model + "/" + pair[0] + ".dat " + msa + "/asr." + model + "/" + pair[1] + ".dat " + runid + "\n"
                 weightlines += "msaweight " + runid + " " + pp.__str__() + "\n"
-            
+                
+                """Remember this pair in the the table CompareAncestors"""
+                ancid0 = get_ancestorid(con, pair[0], msaid, modelid)
+                ancid1 = get_ancestorid(con, pair[1], msaid, modelid)
+                sql = "insert into CompareAncestors (ancid1, ancid2) values(" + ancid0.__str__() + "," + ancid1.__str__() + ")"
+                cur.execute(sql)
+                con.commit()
+
         specpath = "compare_ancs." + pair[0] + "-" + pair[1] + ".config.txt"
         fout = open(specpath, "w")
 
-        sql = "select seed_taxonid from GroupSeedTaxa where groupid in (select id from Ingroups where name='" + pair[1] + "')"
+        sql = "select seed_taxonid from GroupSeedTaxa where groupid in (select id from TaxaGroups where name='" + pair[1] + "')"
         cur.execute(sql)
         seed_taxonid = cur.fetchone()[0]
         seed_taxonname = get_taxon_name(con, seed_taxonid)
@@ -743,7 +760,7 @@ def get_compareanc_commands(con, ap):
         #
         modelstr = get_model_path(   get_phylo_modelnames(con)[0] , con)
                     
-        c = ap.params["anccomp"]
+        c = get_setting_values(con, "anccomp_exe")
         c += " --specpath " + specpath
         c += " --modelpath " + modelstr
         c += " --window_sizes 1"

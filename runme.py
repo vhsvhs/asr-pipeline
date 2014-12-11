@@ -130,7 +130,7 @@ if jump <= 5.2 and stop > 5.3:
     ap.params["checkpoint"] = 5
     ap.params["pending_checkpoint"] = 5.1
     write_log(con, "Extracting relevant ancestors")
-    x = get_getanc_commands(con, ap)
+    x = get_getanc_commands(con)
     run_script(x)
     check_getanc_output(con)
 
@@ -150,6 +150,10 @@ if jump <= 6 and stop > 6:
         x = get_compareanc_commands(con, ap)
         args = x.split()
         run_script(x)
+
+"""December 2014: The new Django-version of this code should stop here.
+    Rather than building static HTML pages (code below), we'll use Django
+    to produce dynamic HTML content on the fly."""
 
 """ Build an HTML Report """
 if jump <= 7 and stop > 7:

@@ -106,6 +106,33 @@ def get_taxon_name(con, taxonid):
         return None
     return x[0][0]
 
+def get_ancestorid(con, alias, almethod, phylomodel):
+    cur = con.cursor()
+    sql = "select ancid from AncestorsAlias where alias='" + alias + "' and almethod=" + almethod.__str__() + " and phylomodel=" + phylomodel.__str__()
+    cur.execute(sql)
+    x = cur.fetchall()
+    if x.__len__() == 0:
+        return None
+    return x[0][0]
+
+def get_ancestorname(con, ancid):
+    cur = con.cursor()
+    sql = "select name from Ancestors where ancid=" + ancid.__str__()
+    cur.execute(sql)
+    x = cur.fetchall()
+    if x.__len__() == 0:
+        return None
+    return x[0][0]
+
+def get_ingroup_ids(con):
+    cur = con.cursor()
+    sql = "select id from TaxaGroups where name <> 'outgroup'"
+    cur.execute(sql)
+    ids = []
+    for ii in cur.fetchall():
+        ids.append(ii[0])
+    return ids
+
 def get_aligned_seq(con, taxonid, almethodid):
     cur = con.cursor()
     sql = "select alsequence from AlignedSequences where taxonid=" + taxonid.__str__() + " and almethod=" + almethodid.__str__()

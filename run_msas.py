@@ -113,14 +113,6 @@ def verify_erg_seqs(con, ap):
             write_error(con, "I cannot find your seed taxa '" + s + "' in your original sequences.")
             exit()
     
-    #sql = "delete from GroupsTaxa"
-    #cur.execute(sql)
-    #sql = "delete from Ingroups"
-    #cur.execute(sql)
-    #sql = "delete from Outgroups"
-    #cur.execute(sql)
-    #sql = "delete from GroupSeedTaxa"
-    #cur.execute(sql)
     
     """Are the ingroup/outgroup specifications valid, given these sequences?"""
     
@@ -150,15 +142,15 @@ def verify_erg_seqs(con, ap):
                 write_error(con, "Your definition of ingroup " + ingroup + " includes the taxon " + t + ", but I cannot find this taxon in your sequences.")
                 exit()
         
-        sql = "select count(*) from Ingroups where name='" + ingroup + "'"
+        sql = "select count(*) from TaxaGroups where name='" + ingroup + "'"
         cur.execute(sql)
         count = cur.fetchone()[0]
         if count == 0: 
-            sql = "insert into Ingroups (name) VALUES('" + ingroup + "')"
+            sql = "insert into TaxaGroups (name) VALUES('" + ingroup + "')"
             cur.execute(sql)
             con.commit()
         
-        sql = "select id from Ingroups where name='" + ingroup + "'"
+        sql = "select id from TaxaGroups where name='" + ingroup + "'"
         cur.execute(sql)
         groupid = cur.fetchone()[0]
         
@@ -183,7 +175,7 @@ def verify_erg_seqs(con, ap):
         con.commit()
     
     """Now process the outgroup."""
-    ogstring = ap.params["outgroup"]
+    ogstring = ap.params["outgroup"]    
     if ogstring.startswith("["):
         ogstring = ogstring[1:]
     if ogstring.endswith("]"):
@@ -197,23 +189,27 @@ def verify_erg_seqs(con, ap):
             write_error(con, "Your definition of outgroup includes the taxon " + t + ", but I cannot find this taxon in your sequences.")
             exit()
     
-    sql = "select count(*) from Outgroups where name='outgroup'"
+    sql = "select count(*) from TaxaGroups where name='outgroup'"
     cur.execute(sql)
     count = cur.fetchone()[0]
     if count == 0: 
-        sql = "insert into Outgroups (name) values('outgroup')"
+        sql = "insert into TaxaGroups (name) values('outgroup')"
         cur.execute(sql)
         con.commit()
     
-    sql = "select id from Outgroups where name='outgroup'"
+    sql = "select id from TaxaGroups where name='outgroup'"
     cur.execute(sql)
     groupid = cur.fetchone()[0]
         
     for t in taxa:
         taxonid = get_taxonid(con, t)
-        sql = "insert or replace into GroupsTaxa(groupid, taxonid) VALUES("
-        sql += groupid.__str__() + "," + taxonid.__str__() + ")"
+        sql = "select count(*) from GroupsTaxa where groupid=" + groupid.__str__() + " and taxonid=" + taxonid.__str__()
         cur.execute(sql)
+        count = cur.fetchone()[0]
+        if count == 0:
+            sql = "insert into GroupsTaxa(groupid, taxonid) VALUES("
+            sql += groupid.__str__() + "," + taxonid.__str__() + ")"
+            cur.execute(sql)
     con.commit() 
         
 
@@ -665,7 +661,7 @@ def get_fasttree_zorro_commands_for_alignment(con, almethod, scoringmethodid):
     #print "409:", almethod, sorted_scores
     
     commands = []
-    thresholds = get_setting_values(con, "zorro_threshold") # i.e., top 5%, 10%, 15% of scores
+    thresholds = get_setting_values(con, "zorro_thresholds") # i.e., top 5%, 10%, 15% of scores
     thresholds.sort()
 
     for t in thresholds:
@@ -805,7 +801,7 @@ def analyze_fasttrees_for_msa(con, almethod):
     sql = "select name from AlignmentMethods where id=" + almethod.__str__()
     cur.execute(sql)
     alname = cur.fetchone()[0] 
-    thresholds = get_setting_values(con, "zorro_threshold")
+    thresholds = get_setting_values(con, "zorro_thresholds")
     thresh_treepath = {}
     thresh_infopath = {}
     for t in thresholds:

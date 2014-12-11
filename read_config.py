@@ -43,10 +43,13 @@ def read_config_file(con, ap):
             continue
         
         if tokens[0].startswith("GENE_ID"):
-            ap.params["geneid"] = re.sub(" ", "", tokens[1])
+            geneid = re.sub(" ", "", tokens[1])
+            ap.params["geneid"] = geneid
+            add_setting_value(con, "geneid", geneid)
         
         if tokens[0].startswith("PROJECT_TITLE"):
             ap.params["project_title"] = tokens[1]
+            add_setting_value(con, "project_title", tokens[1])
 
         if tokens[0].startswith("SEQUENCES"):
             ergseqpath = re.sub(" ", "", tokens[1])
@@ -101,6 +104,7 @@ def read_config_file(con, ap):
         
         elif tokens[0].startswith("RUN"):
             ap.params["run_exe"] = tokens[1]
+            add_setting_value(con, "run_exe", tokens[1])
         
         elif tokens[0].startswith("MSAPROBS"):
             exe = tokens[1].strip()
@@ -123,7 +127,8 @@ def read_config_file(con, ap):
             add_setting_value(con, "mafft_exe", exe)
         
         elif tokens[0].startswith("ANCCOMP"):
-            ap.params["anccomp"] = tokens[1].strip()
+            exe = tokens[1].strip()
+            add_setting_value(con, "anccomp_exe", exe)
         
         elif tokens[0].startswith("PYMOL"):
             exe = tokens[1].strip()
@@ -142,6 +147,8 @@ def read_config_file(con, ap):
                 ap.params["msa_algorithms"].append( i )
 
         elif tokens[0].startswith("THRESHOLDS_ZORRO"):
+            """Note: these values are stored in the SQL DB later, during the
+                verify_config method"""
             x = tokens[1].split()
             ap.params["zorro_thresholds"] = []
             for i in x:
@@ -275,6 +282,7 @@ def verify_config(con, ap):
     
     if "run_exe" not in ap.params:
         ap.params["run_exe"] = "source"
+        add_setting_value(con, "run_exe", "source")
     
     if "ancestors" in ap.params:
         for a in ap.params["ancestors"]:
@@ -348,8 +356,7 @@ def verify_config(con, ap):
         ap.params["zorro_thresholds"] = [0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.5, 0.6, 0.75, 1.0]
     
     for t in ap.params["zorro_thresholds"]:
-        sql = "insert into Settings (keyword, value) VALUES('zorro_threshold'," + t.__str__() + ")"
-        cur.execute(sql)
+        add_setting_value(con, "zorro_thresholds", t)
     con.commit()
         
     return ap
