@@ -90,7 +90,9 @@ def read_config_file(con, ap):
             add_setting_value(con, "lazarus_exe", exe)
 
         elif tokens[0].startswith("MARKOV_MODEL_FOLDER"):
-            ap.params["mmfolder"] = tokens[1].strip()
+            mmfolder = tokens[1].strip()
+            ap.params["mmfolder"] = mmfolder
+            add_setting_value(con, "mmfolder", mmfolder)
         
         elif tokens[0].startswith("MPIRUN"):
             exe = tokens[1].strip() 

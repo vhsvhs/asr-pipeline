@@ -199,7 +199,7 @@ def is_valid_almethod(con, methodid):
 
 def get_taxaid_in_group(con, groupid):
     cur = con.cursor()
-    sql = "select taxonid from GroupsTaxa where groupid=" + groupid
+    sql = "select taxonid from GroupsTaxa where groupid=" + groupid.__str__()
     cur.execute(sql)
     x = cur.fetchall()
     taxaids = []

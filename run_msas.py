@@ -162,17 +162,24 @@ def verify_erg_seqs(con, ap):
         cur.execute(sql)
         groupid = cur.fetchone()[0]
         
-
-        sql = "insert or replace into GroupSeedTaxa (groupid, seed_taxonid) VALUES("
-        sql += groupid.__str__() + "," + seed_taxonid.__str__() + ")"
+        sql = "select count(*) from GroupSeedTaxa where groupid=" + groupid.__str__() + " and seed_taxonid=" + seed_taxonid.__str__()
         cur.execute(sql)
-        con.commit()
+        count = cur.fetchone()[0]
+        if count == 0:
+            sql = "insert into GroupSeedTaxa (groupid, seed_taxonid) VALUES("
+            sql += groupid.__str__() + "," + seed_taxonid.__str__() + ")"
+            cur.execute(sql)
+            con.commit()
         
         for t in taxa:
             taxonid = get_taxonid(con, t)
-            sql = "insert or replace into GroupsTaxa(groupid, taxonid) VALUES("
-            sql += groupid.__str__() + "," + taxonid.__str__() + ")"
+            sql = "select count(*) from GroupsTaxa where groupid=" + groupid.__str__() + " and taxonid=" + taxonid.__str__()
             cur.execute(sql)
+            count = cur.fetchone()[0]
+            if count == 0:         
+                sql = "insert into GroupsTaxa(groupid, taxonid) VALUES("
+                sql += groupid.__str__() + "," + taxonid.__str__() + ")"
+                cur.execute(sql)
         con.commit()
     
     """Now process the outgroup."""

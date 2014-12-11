@@ -3,6 +3,8 @@ from dendropy import Tree
 import math, re, subprocess, os
 from Bio import Phylo # Note, this must be version 1.63 or newer.
 
+from asrpipelinedb_api import *
+
 from argParser import *
 ap = ArgParser(sys.argv)
 
@@ -295,14 +297,16 @@ def get_site_state_pp(inpath):
                 i = tokens.__len__() # stop early
     return site_states_probs
 
-def get_model_path(model, ap):
+def get_model_path(model, con):
+    """Returns the path to a *.dat file -- a Markovian substitutions matrix."""
     modelstr = "~/Applications/paml44/dat/lg.dat"
+    mmfolder = get_setting_values(con, "mmfolder")[0]
     if model.__contains__("JTT"):
-        modelstr = ap.params["mmfolder"] + "/jones.dat"
+        modelstr = mmfolder + "/jones.dat"
     elif model.__contains__("WAG"):
-        modelstr = ap.params["mmfolder"] + "/wag.dat"
+        modelstr = mmfolder + "/wag.dat"
     elif model.__contains__("LG"):
-        modelstr = ap.params["mmfolder"] + "/lg.dat"
+        modelstr = mmfolder + "/lg.dat"
     return modelstr
 
 def get_pp_distro_stats(data):

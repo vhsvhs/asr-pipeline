@@ -121,7 +121,7 @@ if jump <= 5 and stop > 5:
     ap.params["pending_checkpoint"] = 5
     print "\n. Reconstructing ancestral sequences..."
     write_log(con, "Reconstructing ancestral sequences, using Lazarus.")
-    x = get_asr_commands(con, ap)
+    x = get_asr_commands(con)
     run_script(x)
 if jump <= 5.1 and stop > 5.1:
     check_asr_output(con)
@@ -149,9 +149,6 @@ if jump <= 6 and stop > 6:
         write_log(con, "Screening for functional loci.")
         x = get_compareanc_commands(con, ap)
         args = x.split()
-        ap.params["run_exe"]
-        #proc = subprocess.Popen( args, preexec_fn=os.setsid ) # see http://pymotw.com/2/subprocess/
-        #os.system( ap.params["run_exe"] + " " + x)
         run_script(x)
 
 """ Build an HTML Report """

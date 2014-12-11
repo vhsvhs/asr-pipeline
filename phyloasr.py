@@ -397,7 +397,9 @@ def import_supported_trees(con):
         con.commit()
             
 
-def get_asr_commands(con, ap):
+def get_asr_commands(con):
+    cur = con.cursor()
+    
     asr_commands = []
     for msa in get_alignment_method_names(con):
         for model in get_phylo_modelnames(con):
@@ -444,9 +446,20 @@ def get_asr_commands(con, ap):
         
             if False == os.path.exists(msa + "/asr." + model):
                 run_subprocess("mkdir " + msa + "/asr." + model)
-            modelstr = get_model_path(model, ap)
+            modelstr = get_model_path(model, con)
             asrtreepath = get_raxml_treepath(msa, runid)
-            asr_commands.append(ap.params["lazarus_exe"] + " --alignment " + fastapath + " --tree " + asrtreepath + " --model " + modelstr + " --outputdir " + msa + "/asr." + model + " --branch_lengths fixed --asrv 8 --codeml --gapcorrect True --outgroup " + ap.params["outgroup"])
+            lazaarus_exe = get_setting_values(con, "lazarus_exe")[0]
+            
+            sql = "select id from Outgroups where name='outgroup'"
+            cur.execute(sql)
+            outgroup_id = cur.fetchone()[0]
+            print "456:", outgroup_id
+            outgroup_list = get_taxaid_in_group(con, outgroup_id)
+            outgroup_list = [get_taxon_name(con, i) for i in outgroup_list]
+            print "458:", outgroup_list
+            outgroup_string = "[" + ",".join( outgroup_list ) + "]"
+            print "460:", outgroup_string
+            asr_commands.append(lazaarus_exe + " --alignment " + fastapath + " --tree " + asrtreepath + " --model " + modelstr + " --outputdir " + msa + "/asr." + model + " --branch_lengths fixed --asrv 8 --codeml --gapcorrect True --outgroup " + outgroup_string)
 
     fout = open("SCRIPTS/asr_commands.sh", "w")
     for a in asr_commands:
@@ -543,7 +556,9 @@ def get_getanc_commands(con, ap):
             here = os.getcwd()
             asrmsa = get_asr_fastapath(msa)
             asrtree = get_raxml_treepath(msa, runid)
-            modelstr = ap.params["mmfolder"]
+            #modelstr = ap.params["mmfolder"]
+            modelstr = get_setting_values(con, "mmfolder")[0]
+            
             if runid.__contains__("JTT"):
                 modelstr += "/jones.dat"
             elif runid.__contains__("WAG"):
@@ -709,7 +724,13 @@ def get_compareanc_commands(con, ap):
         specpath = "compare_ancs." + pair[0] + "-" + pair[1] + ".config.txt"
         fout = open(specpath, "w")
 
-        fout.write("seed " + ap.params["seedtaxa"][ pair[1] ] + "\n")
+        sql = "select seed_taxonid from GroupSeedTaxa where groupid in (select id from Ingroups where name='" + pair[1] + "')"
+        cur.execute(sql)
+        seed_taxonid = cur.fetchone()[0]
+        seed_taxonname = get_taxon_name(con, seed_taxonid)
+        
+        get_setting_values(con, "seedtaxa")[0]
+        fout.write("seed " + seed_taxonname + "\n")
         if pair[1] in ap.params["map2pdb"]: # there was a definition to map scores on this PDB:
             fout.write("pdb " + ap.params["map2pdb"][pair[1]] + "\n")
         fout.write(msanamelines)
@@ -720,7 +741,7 @@ def get_compareanc_commands(con, ap):
         #
         # to-do continue here -- fix this so we're not using just one model.
         #
-        modelstr = get_model_path(   get_phylo_modelnames(con)[0]   , ap)
+        modelstr = get_model_path(   get_phylo_modelnames(con)[0] , con)
                     
         c = ap.params["anccomp"]
         c += " --specpath " + specpath
