@@ -89,7 +89,7 @@ def build_db(dbpath = None):
     """Some ancestors are special, with pre-defined mappings to known ingroups and outgroups."""
     cur.execute("create table if not exists AncestorsGroups(ancid INTEGER unique, ingroupid INTEGER, outgroupid INTEGER)") # some ancestors, but not all, will have a mapping to known taxa groups.
     
-    cur.execute("create table if not exists CompareAncestors(ancid1 INTEGER, ancid2 INTEGER)")
+    cur.execute("create table if not exists CompareAncestors(alias1 INTEGER, alias2 INTEGER)")
     
     
     """For HTML visualization"""

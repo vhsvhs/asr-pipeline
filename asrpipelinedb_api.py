@@ -33,7 +33,7 @@ def add_setting_value(con, keyword, value, unique=False):
         sql = "delete from Settings where keyword='" + keyword + "'"
         cur.execute(sql)
         con.commit()
-    sql = "insert into Settings (keyword, value) VALUES('" + keyword + "','" + value + "')"
+    sql = "insert into Settings (keyword, value) VALUES('" + keyword + "','" + value.__str__() + "')"
     cur.execute(sql)
     con.commit()
 
@@ -108,7 +108,7 @@ def get_taxon_name(con, taxonid):
 
 def get_ancestorid(con, alias, almethod, phylomodel):
     cur = con.cursor()
-    sql = "select ancid from AncestorsAlias where alias='" + alias + "' and almethod=" + almethod.__str__() + " and phylomodel=" + phylomodel.__str__()
+    sql = "select ancid from AncestorsAlias where alias='" + alias + "' and ancid in (select id from Ancestors where almethod=" + almethod.__str__() + " and phylomodel=" + phylomodel.__str__() + ")"
     cur.execute(sql)
     x = cur.fetchall()
     if x.__len__() == 0:
@@ -124,6 +124,25 @@ def get_ancestorname(con, ancid):
         return None
     return x[0][0]
 
+def get_ancestral_alias(con, ancid):
+    cur = con.cursor()
+    sql = "select alias from AncestorsAlias where ancid=" + ancid.__str__()
+    cur.execute(sql)
+    x = cur.fetchall()
+    if x.__len__() == 0:
+        return None
+    return x[0][0]
+
+def get_ancestral_comparison_pairs(con):
+    cur = con.cursor()
+    sql = "select alias1, alias2 from CompareAncestors"
+    cur.execute(sql)
+    x = cur.fetchall()
+    pairs = []
+    for ii in x:
+        pairs.append(  (ii[0],ii[1])  )
+    return pairs
+
 def get_ingroup_ids(con):
     cur = con.cursor()
     sql = "select id from TaxaGroups where name <> 'outgroup'"
@@ -132,6 +151,15 @@ def get_ingroup_ids(con):
     for ii in cur.fetchall():
         ids.append(ii[0])
     return ids
+
+def get_original_seq(con, taxonid):
+    cur = con.cursor()
+    sql = "select sequence from OriginalSequences where taxonid=" + taxonid.__str__()
+    cur.execute(sql)
+    x = cur.fetchall()
+    if x.__len__() == 0:
+        return None
+    return x[0][0] 
 
 def get_aligned_seq(con, taxonid, almethodid):
     cur = con.cursor()
@@ -160,6 +188,8 @@ def get_sequences(con, almethod = None, sitesets = [], sites = [], taxagroups = 
     cur = con.cursor()
     
     sql = "select "
+    
+    """Different queries for original sequences, versus aligned sequences."""
     if almethod == None:
         sql += " taxonid, sequence from OriginalSequences"
     else:
@@ -180,38 +210,38 @@ def get_sequences(con, almethod = None, sitesets = [], sites = [], taxagroups = 
     cur.execute(sql)
     x = cur.fetchall()
     
-    taxa_alseqs = {} # Key = taxonid, value = aligned or original sequence, untrimmed.
+    taxa_seqs = {} # Key = taxonid, value = aligned or original sequence, untrimmed.
     for ii in x:
         taxonid = ii[0]
         seq = ii[1]
-        taxa_alseqs[ taxonid ] = seq
+        taxa_seqs[ taxonid ] = seq
     
     if sitesets != []:
         siteranges = []
         for id in sitesets:
             siteranges += get_siteranges_in_set(con, id, almethod)
         
-        for taxon in taxa_alseqs:
-            seq = taxa_alseqs[taxon]
+        for taxon in taxa_seqs:
+            seq = taxa_seqs[taxon]
             trimseq = ""
             for r in siteranges:
                 """Notice the -1 here; its to translate sites (1-based) to list indices (0-based)"""
                 trimseq += seq[ r[0]-1 : r[1] ]
-            taxa_alseqs[taxon] = trimseq
+            taxa_seqs[taxon] = trimseq
     
     elif sites != [] and almethod != None:
         
-        for taxon in taxa_alseqs:
-            seq = taxa_alseqs[taxon]
+        for taxon in taxa_seqs:
+            seq = taxa_seqs[taxon]
             trimseq = ""
             for s in sites:
                 """Note, the -1 in the following array references allow us to translate a site
                 number (which are 1-based) to a list index (which are 0-based)"""
                 print "asrpipelinedb.py 137:", almethod, s-1, seq.__len__()
                 trimseq += seq[s-1]
-            taxa_alseqs[taxon] = trimseq        
+            taxa_seqs[taxon] = trimseq        
     
-    return taxa_alseqs
+    return taxa_seqs
         
     
 def is_valid_almethod(con, methodid):

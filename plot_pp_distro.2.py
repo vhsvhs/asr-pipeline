@@ -15,72 +15,75 @@ path_mean = {}
 path_seq = {}
 path_sd = {}
 
-def parse_summary(path, keyword):
-    fin = open(path, "r")
-    lines = fin.readlines()
-    last_was_cran = False
-    for l in lines:
-        l = l.strip()
-        if l.startswith(">"):
-            last_was_cran = True
-        elif last_was_cran:
-            path_seq[ keyword ] = l
-            last_was_cran = False
-
-        if l.__contains__("mean PP ="):
-            path_mean[ keyword ] = l.split()[3]
-        if l.__contains__("standard deviation ="):
-            path_sd[ keyword ] = l.split()[3]
-    fin.close()
-
-
-for d in dirs:
-    msapath = get_fullphylippath(d)
-    [start,stop] = get_boundary_sites(msapath,"Saccharomyces.cerevisiae.IME2")
-
-    for f in os.listdir(d + "/tree1"):
-        if f.startswith("node") and f.endswith(".dat"):
-            short = re.sub(".dat", "", f)
-            print dir, f
-
-            #
-            # Analyze full length protein sequences
-            #
-            c = "python ~/Documents/SourceCode/Lazarus/plot_pp_distribution.py " + d + "/tree1/" + f + " > " + d + "/tree1/" + short + ".summary.txt"
-            print c
-            os.system(c)
-
-            parse_summary(d + "/tree1/" + short + ".summary.txt", d + "/" + f)
-            os.system("mv barplot.anc.pdf " + d + "/tree1/" + short + ".barplot.pdf")
-            os.system("mv barplot.anc.cran " + d + "/tree1/" + short + ".barplot.cran")
-            os.system("mv barplot.table.anc.txt " + d + "/tree1/" + short + ".pptable.txt")
-
-            #
-            # Kinase domain structural sites:
-            #
-#             os.system("rm -rf " + d + "/tree1/*.32-387.*")
+#
+# depricated
+#
+# def parse_summary(path, keyword):
+#     fin = open(path, "r")
+#     lines = fin.readlines()
+#     last_was_cran = False
+#     for l in lines:
+#         l = l.strip()
+#         if l.startswith(">"):
+#             last_was_cran = True
+#         elif last_was_cran:
+#             path_seq[ keyword ] = l
+#             last_was_cran = False
+# 
+#         if l.__contains__("mean PP ="):
+#             path_mean[ keyword ] = l.split()[3]
+#         if l.__contains__("standard deviation ="):
+#             path_sd[ keyword ] = l.split()[3]
+#     fin.close()
+# 
+# 
+# for d in dirs:
+#     msapath = get_fullphylippath(d)
+#     [start,stop] = get_boundary_sites(msapath,"Saccharomyces.cerevisiae.IME2")
+# 
+#     for f in os.listdir(d + "/tree1"):
+#         if f.startswith("node") and f.endswith(".dat"):
+#             short = re.sub(".dat", "", f)
+#             print dir, f
+# 
+#             #
+#             # Analyze full length protein sequences
+#             #
+#             c = "python ~/Documents/SourceCode/Lazarus/plot_pp_distribution.py " + d + "/tree1/" + f + " > " + d + "/tree1/" + short + ".summary.txt"
+#             print c
+#             os.system(c)
+# 
+#             parse_summary(d + "/tree1/" + short + ".summary.txt", d + "/" + f)
+#             os.system("mv barplot.anc.pdf " + d + "/tree1/" + short + ".barplot.pdf")
+#             os.system("mv barplot.anc.cran " + d + "/tree1/" + short + ".barplot.cran")
+#             os.system("mv barplot.table.anc.txt " + d + "/tree1/" + short + ".pptable.txt")
+# 
+#             #
+#             # Kinase domain structural sites:
+#             #
+# #             os.system("rm -rf " + d + "/tree1/*.32-387.*")
+# #             if d.__contains__("msaprobs"):
+# #                 os.system("python ~/Documents/SourceCode/Lazarus/plot_pp_distribution.py " + d + "/tree1/" + f + " " + msaprobs_struct_sites + " > " + d + "/tree1/" + short + ".struct_only.summary.txt")
+# #             else:
+# #                 os.system("python ~/Documents/SourceCode/Lazarus/plot_pp_distribution.py " + d + "/tree1/" + f + " " + muscle_struct_sites + " > " + d + "/tree1/" + short + ".struct_only.summary.txt")
+# #             parse_summary(d + "/tree1/" + short + ".struct_only.summary.txt", d + "/" + f + "-struct_only")
+# #             os.system("mv barplot.anc.pdf " + d + "/tree1/" + short + ".struct_only.barplot.pdf")
+# #             os.system("mv barplot.anc.cran " + d + "/tree1/" + short + ".struct_only.barplot.cran")
+# #             os.system("mv barplot.table.anc.txt " + d + "/tree1/" + short + ".struct_only.pptable.txt")
+# 
+#             """
+#             #
+#             # Only those sites in alpha helices and beta sheets. . .
+#             #
 #             if d.__contains__("msaprobs"):
-#                 os.system("python ~/Documents/SourceCode/Lazarus/plot_pp_distribution.py " + d + "/tree1/" + f + " " + msaprobs_struct_sites + " > " + d + "/tree1/" + short + ".struct_only.summary.txt")
+#                 os.system("python ~/Documents/SourceCode/Lazarus/plot_pp_distribution.py " + d + "/tree1/" + f + " " + msaprobs_ab_sites + " > " + d + "/tree1/" + short + ".ab-only.summary.txt")
 #             else:
-#                 os.system("python ~/Documents/SourceCode/Lazarus/plot_pp_distribution.py " + d + "/tree1/" + f + " " + muscle_struct_sites + " > " + d + "/tree1/" + short + ".struct_only.summary.txt")
-#             parse_summary(d + "/tree1/" + short + ".struct_only.summary.txt", d + "/" + f + "-struct_only")
-#             os.system("mv barplot.anc.pdf " + d + "/tree1/" + short + ".struct_only.barplot.pdf")
-#             os.system("mv barplot.anc.cran " + d + "/tree1/" + short + ".struct_only.barplot.cran")
-#             os.system("mv barplot.table.anc.txt " + d + "/tree1/" + short + ".struct_only.pptable.txt")
-
-            """
-            #
-            # Only those sites in alpha helices and beta sheets. . .
-            #
-            if d.__contains__("msaprobs"):
-                os.system("python ~/Documents/SourceCode/Lazarus/plot_pp_distribution.py " + d + "/tree1/" + f + " " + msaprobs_ab_sites + " > " + d + "/tree1/" + short + ".ab-only.summary.txt")
-            else:
-                os.system("python ~/Documents/SourceCode/Lazarus/plot_pp_distribution.py " + d + "/tree1/" + f + " " + muscle_ab_sites + " > " + d + "/tree1/" + short + ".ab-only.summary.txt")
-            parse_summary(d + "/tree1/" + short + ".ab-only.summary.txt", d + "/" + f + "-ab-only")
-            os.system("mv barplot.anc.pdf " + d + "/tree1/" + short + ".ab-only.barplot.pdf")
-            os.system("mv barplot.anc.cran " + d + "/tree1/" + short + ".ab-only.barplot.cran")
-            os.system("mv barplot.table.anc.txt " + d + "/tree1/" + short + ".ab-only.pptable.txt")
-            """
+#                 os.system("python ~/Documents/SourceCode/Lazarus/plot_pp_distribution.py " + d + "/tree1/" + f + " " + muscle_ab_sites + " > " + d + "/tree1/" + short + ".ab-only.summary.txt")
+#             parse_summary(d + "/tree1/" + short + ".ab-only.summary.txt", d + "/" + f + "-ab-only")
+#             os.system("mv barplot.anc.pdf " + d + "/tree1/" + short + ".ab-only.barplot.pdf")
+#             os.system("mv barplot.anc.cran " + d + "/tree1/" + short + ".ab-only.barplot.cran")
+#             os.system("mv barplot.table.anc.txt " + d + "/tree1/" + short + ".ab-only.pptable.txt")
+#             """
 
 # hash: key = dat file path, value = tuple
 node_full = {}

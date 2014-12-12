@@ -26,7 +26,8 @@ mpirun -np 4 SCRIPTS/run_msas.mpi.sh
 from asrpipelinedb_api import *
 
 def read_fasta(fpath):
-    """Ignores redundant taxa."""
+    """Returns a hash: key = taxon name, value = sequence from the fasta file.
+        Ignores redundant taxa."""
     fin = open(fpath, "r")    
     taxanames = []
     taxa_seq = {}
@@ -74,6 +75,10 @@ def import_and_clean_erg_seqs(con, ap):
     cur.execute(sql)
     sql = "delete from Taxa"
     cur.execute(sql)
+    sql = "delete from GroupsTaxa"
+    cur.execute(sql)
+    sql = "delete from GroupSeedTaxa"
+    cur.execute(sql)
     con.commit()
     
     for taxon in taxa_seq:
@@ -117,7 +122,7 @@ def verify_erg_seqs(con, ap):
     """Are the ingroup/outgroup specifications valid, given these sequences?"""
     
     for ingroup in ap.params["ingroup"]:
-        if ingroup not in ap.params["seedtaxa"]:
+        if ingroup not in ap.params["asrseedtaxa"]:
             write_error(con, "You did not specify an ASRSEED for the ingroup " + ingroup)
             exit()
         
@@ -129,7 +134,7 @@ def verify_erg_seqs(con, ap):
         taxa = ogstring.split(",")
         
         """Get the seed taxon(s) for this group."""
-        groupseed = ap.params["seedtaxa"][ ingroup ]
+        groupseed = ap.params["asrseedtaxa"][ ingroup ]
         seed_taxonid = get_taxonid(con, groupseed)
         if seed_taxonid == None:
             write_error(con, "Your definition of ingroup " + ingroup + " uses the seed taxon " + groupseed + ", but I cannot find that taxon in your sequences.")
@@ -211,9 +216,44 @@ def verify_erg_seqs(con, ap):
             sql += groupid.__str__() + "," + taxonid.__str__() + ")"
             cur.execute(sql)
     con.commit() 
+    
+    
+    """Are the start and stop motifs valid? Do they exist in the seed sequences?"""
+    if ap.params["start_motif"] != None:
+        m = ap.params["start_motif"]
+        foundit = False
+        seeds = get_setting_values(con, "seedtaxa")
+        for s in seeds:
+            taxonid = get_taxonid(con, s)
+            if taxonid == None:
+                write_error(con, "I cannot find the Taxon ID for seed " + s + ". Error 330.")
+                exit()
+            s = get_original_seq(con, taxonid)
+            if s.__contains__(m):
+                foundit = True
+        if foundit == False:
+            write_error(con, "I cannot find your desired starting motif ('" + m + "') in any of your seed taxa.")
+            exit()
+        add_setting_value(con, "start_motif", m, unique=True)
+    if ap.params["end_motif"] != None:
+        m = ap.params["end_motif"]
+        foundit = False
+        seeds = get_setting_values(con, "seedtaxa")
+        for s in seeds:
+            taxonid = get_taxonid(con, s)
+            if taxonid == None:
+                write_error(con, "I cannot find the Taxon ID for seed " + s + ". Error 330.")
+                exit()
+            s = get_original_seq(con, taxonid)
+            if s.__contains__(m):
+                foundit = True
+        if foundit == False:
+            write_error(con, "I cannot find your desired ending motif ('" + m + "') in any of your seed taxa.")
+            exit()
+        add_setting_value(con, "end_motif", m, unique=True)
         
 
-def write_msa_commands(con, ap):
+def write_msa_commands(con):
     cur = con.cursor()
     
     p = "SCRIPTS/msas.commands.sh"
@@ -246,7 +286,7 @@ def write_msa_commands(con, ap):
     #os.system("mpirun -np 4 --machinefile hosts.txt /common/bin/mpi_dispatch SCRIPTS/msas.commands.sh")
 
 
-def check_aligned_sequences(con, ap):
+def check_aligned_sequences(con):
     cur = con.cursor()
     sql = "select id, name from AlignmentMethods"
     cur.execute(sql)
@@ -321,7 +361,7 @@ def convert_all_fasta_to_phylip(con):
         p = get_raxml_phylippath(msa)
         fasta_to_phylip(f, p)
         
-def bypass_zorro(con, ap):
+def bypass_zorro(con):
     """Creates the post-zorro alignments, without running ZORRO and the resulting analysis."""
     for msa in get_alignment_method_names(con):
         f = get_trimmed_fastapath(msa)
@@ -380,23 +420,6 @@ def write_alignment_for_raxml(con):
         sites = [] # a list of site indices into seed-trimmed sequences
         for ii in y:
             sites.append( ii[0] )
-        #print "234:", seedsites[0], seedsites.__len__()
-        
-        # depricated
-        #sql = "select setid from SiteSets where setname='seed'"
-#         seedid = get_taxonid(con, ap.params["seed_motif_seq"] )
-#         seedseq = get_aligned_seq(con, seedid, msaid)
-#         start_motif = ap.params["start_motif"]
-#         end_motif = ap.params["end_motif"]        
-#         [start, stop] = get_boundary_sites(seedseq, start_motif, end_motif)
-#         #print "243:", start, stop
-#         
-#         """Translate seed site numbers to original site numbers."""
-#         sites = [] # a list of site indices into original sequences
-#         for site in seedsites:
-#             sites.append( site + start-1)
-        
-        #print "249:", sites[0], sites.__len__()
                 
         fpath = get_raxml_fastapath(msaname)
         ppath = get_raxml_phylippath(msaname)
@@ -428,8 +451,8 @@ def write_alignment_for_raxml(con):
         ffout.close()
         pfout.close()
         
-
-def clear_sitesets(con, ap):
+        
+def clear_sitesets(con):
     cur = con.cursor()
     sql = "delete from SiteSets"
     cur.execute(sql)
@@ -438,7 +461,7 @@ def clear_sitesets(con, ap):
     con.commit()
 
 
-def trim_alignments(con, ap):
+def trim_alignments(con):
     """Trims the alignment to match the start and stop motifs.
     The results are written as both PHYLIP and FASTA formats."""
     cur = con.cursor()
@@ -464,12 +487,31 @@ def trim_alignments(con, ap):
         """Get the seed sequence, and then find the start and end sites."""
         alid = ii[0]
         alname = ii[1]        
-        seedid = get_taxonid(con, ap.params["seed_motif_seq"] )
-        seedseq = get_aligned_seq(con, seedid, alid)
-        start_motif = ap.params["start_motif"]
-        end_motif = ap.params["end_motif"]
-                
-        [start, stop] = get_boundary_sites(seedseq, start_motif, end_motif)
+        seeds = get_setting_values(con, "seedtaxa")
+        minstart = None
+        maxstop = None
+        for seed in seeds:
+            seedid = get_taxonid( con, seed  )
+            seedseq = get_aligned_seq(con, seedid, alid)
+            start_motif = get_setting_values(con, "start_motif")
+            if start_motif != None:
+                start_motif = start_motif[0]
+            end_motif = get_setting_values(con, "end_motif")
+            if end_motif != None:
+                end_motif = end_motif[0]            
+                    
+            [start, stop] = get_boundary_sites(seedseq, start_motif, end_motif)
+            if minstart == None:
+                minstart = start
+            if maxstop == None:
+                maxstop == stop
+            
+            if minstart > start:
+                minstart = start
+            if maxstop < stop:
+                maxstop = stop
+        start = minstart
+        stop = maxstop
                 
         """Remember these start and end sites."""
         sql = "insert or replace into SiteSetsAlignment(setid, almethod, fromsite, tosite) VALUES("
@@ -502,9 +544,8 @@ def trim_alignments(con, ap):
         ffout.close()
         pfout.close()
     
-
-
-def build_zorro_commands(con, ap):
+    
+def build_zorro_commands(con):
     # 1. run ZORRO
     # 2. parse the results
     # 3. optimize the set of sites we draw from ZORRO, and the stability of the output tree
@@ -529,7 +570,8 @@ def build_zorro_commands(con, ap):
         alid = ii[0]
         almethod = ii[1]
         """Write a script for ZORRO for this alignment."""
-        c = ap.params["zorro_exe"] + " -sample " + get_trimmed_fastapath(almethod) + " > " + get_trimmed_fastapath(almethod) + ".zorro"
+        zorro_exe = get_setting_values(con, "zorro_exe")[0]
+        c = zorro_exe + " -sample " + get_trimmed_fastapath(almethod) + " > " + get_trimmed_fastapath(almethod) + ".zorro"
         z_commands.append( c )
     
     zorro_scriptpath = "SCRIPTS/zorro_commands.sh"

@@ -168,14 +168,20 @@ def read_config_file(con, ap):
                     con.commit()
         
         elif tokens[0].startswith("START_MOTIF"):
+            """Note: start motif and end motif are stored in the SQL DB
+                during the verify_config method."""
             ap.params["start_motif"] = re.sub(" ", "", tokens[1])
             if ap.params["start_motif"].__contains__("None"):
                 ap.params["start_motif"] = None 
+            elif ap.params["start_motif"].__len__() < 2:
+                write_log("Warning: your start motif ('" + ap.params["start_motif"] + "') is very short.")
         
         elif tokens[0].startswith("END_MOTIF"):
             ap.params["end_motif"] = re.sub(" ", "", tokens[1])
             if ap.params["end_motif"].__contains__("None"):
                 ap.params["end_motif"] = None 
+            elif ap.params["end_motif"].__len__() < 2:
+                write_log("Warning: your end motif ('" + ap.params["end_motif"] + "') is very short.")
  
         elif tokens[0].startswith("CONSTRAINT_TREE"):
             constraint_tree = re.sub(" ", "", tokens[1])
@@ -191,7 +197,6 @@ def read_config_file(con, ap):
 # continue here... and look in the msa get_bondary_sites function      
         elif tokens[0].startswith("SEED"):
             cleaned_taxa_name = re.sub(" ", "", tokens[1])
-            ap.params["seed_motif_seq"] = cleaned_taxa_name
             add_setting_value(con, "seedtaxa", cleaned_taxa_name)
         
         elif tokens[0].startswith("N_BAYES_SAMPLES"):
@@ -204,6 +209,7 @@ def read_config_file(con, ap):
 
         
         elif tokens[0].startswith("INGROUP"):
+            """Ingroups are written to the SQL DB later, after verification."""
             """Note: If you change code here, also check the method 'verify_erg_seqs'
             in which this data gets written into the SQL DB."""
             if "ingroup" not in ap.params:
@@ -214,15 +220,14 @@ def read_config_file(con, ap):
             ingroup = re.sub(" ", "", ingroup) # tolerate and remove whitespace.
             ap.params["ingroup"][ anc ] = ingroup
             
-            
-            
         elif tokens[0].startswith("ASRSEED"):
-            if "seedtaxa" not in ap.params:
-                ap.params["seedtaxa"] = {}
+            """ASR Seeds are written to the SQL database later, after verification."""
+            if "asrseedtaxa" not in ap.params:
+                ap.params["asrseedtaxa"] = {}
             ts = tokens[0].split()
             anc = ts[1]
             seed = ts[2]
-            ap.params["seedtaxa"][ anc ] = re.sub(" ", "", seed)
+            ap.params["asrseedtaxa"][ anc ] = re.sub(" ", "", seed)
 
         elif tokens[0].startswith("COMPARE"):
             anc1 = tokens[0].split()[1]
@@ -286,8 +291,8 @@ def verify_config(con, ap):
     
     if "ancestors" in ap.params:
         for a in ap.params["ancestors"]:
-            print a, ap.params["seedtaxa"]
-            if a not in ap.params["seedtaxa"]:
+            print a, ap.params["asrseedtaxa"]
+            if a not in ap.params["asrseedtaxa"]:
                 print "\n. ERROR: You did not specify a SEED for the ancestor", a
                 write_error(con, "You did not specify a SEED for the ancestor " + a)
                 exit()
@@ -302,17 +307,15 @@ def verify_config(con, ap):
                 print "\n. ERROR: you specified a comparison between ancestors", a1, "and", a2, "but", a2,"was not defined in the ANCESTORS line."
                 write_error(con, "you specified a comparison between ancestors " + a1, " and " + a2 + " but " + a2 + " was not defined in the ANCESTORS line.")
                 exit()
+            sql = "insert or replace into CompareAncestors (alias1, alias2) values('" + a1 + "','" + a2 + "')"
+            cur.execute(sql)
+            con.commit()
     
     ergseqpath = get_setting_values(con, "ergseqpath")[0]
     if False == os.path.exists(  ergseqpath  ):
         print "\n. I could not find your sequences at", ergseqpath
         write_error(con, "I could not find your sequences at " + ergseqpath  )
         exit()
-
-    if ap.params["start_motif"] == None:
-        ap.params["start_motif"] = ""
-    if ap.params["end_motif"] == None:
-        ap.params["end_motif"] = ""
         
     for msa in ap.params["msa_algorithms"]:
         if msa == "muscle" and "muscle_exe" not in ap.params:

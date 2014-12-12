@@ -42,34 +42,36 @@ if jump <= 0 and stop > 0:
 
 verify_erg_seqs(con, ap)
 
+"""Note: An imported SQL DB could be retrieved right here, avoiding all the prior steps."""
+
 """ MSAs """
 if jump <= 1 and stop > 1:
     ap.params["checkpoint"] = 0
     ap.params["pending_checkpoint"] = 1
     print "\n. Aligning sequences..."
     write_log(con, "Aligning sequences")
-    p = write_msa_commands(con, ap)
+    p = write_msa_commands(con)
     run_script(p)
 
 if jump <= 1.1 and stop > 1.1:
     ap.params["checkpoint"] = 1
     ap.params["pending_checkpoint"] = 1.1
-    check_aligned_sequences(con, ap)
+    check_aligned_sequences(con)
 
 if jump <= 1.9 and stop > 1.91:
-    clear_sitesets(con, ap)
+    clear_sitesets(con)
 
 if jump <= 2 and stop > 2.1:
     """Trim the alignments to match the seed sequence(s)."""
-    trim_alignments(con, ap)
+    trim_alignments(con)
 
 if ap.getOptionalToggle("--skip_zorro"):
-    bypass_zorro(con, ap)
+    bypass_zorro(con)
 
 if False == ap.getOptionalToggle("--skip_zorro"):
     """Use ZORRO to the find the phylogenetically informative sites."""
     if jump <= 2.1 and stop > 2.2:
-        p = build_zorro_commands(con, ap)
+        p = build_zorro_commands(con)
         run_script(p)
     if jump <= 2.2 and stop > 2.3:
         import_zorro_scores(con)
@@ -101,7 +103,7 @@ if jump <= 3 and stop > 3:
     p = write_raxml_commands(con)
     run_script(p)
     check_raxml_output(con)
-    get_mlalpha_pp(con, ap)
+    get_mlalpha_pp(con)
 
 """ Branch Support """
 if jump <= 4 and stop > 4:
@@ -112,7 +114,7 @@ if jump <= 4 and stop > 4:
 
     x = calc_alrt(con)
     run_script(x)
-    calc_alr(con, ap)
+    calc_alr(con)
     import_supported_trees(con)
 
 """ A.S.R. """
@@ -144,16 +146,27 @@ if jump <= 6 and stop > 6:
     if "compareanc" in ap.params:
         ap.params["checkpoint"] = 5.2
         ap.params["pending_checkpoint"] = 6
-        write_log(con, "Setting up PDB maps")
-        setup_pdb_maps(ap)
+        
+        #write_log(con, "Setting up PDB maps")
+        # continue here -- retool this method to use SQL:
+        #setup_pdb_maps(ap)
+        
         write_log(con, "Screening for functional loci.")
-        x = get_compareanc_commands(con, ap)
+        x = get_compareanc_commands(con)
         args = x.split()
         run_script(x)
+
 
 """December 2014: The new Django-version of this code should stop here.
     Rather than building static HTML pages (code below), we'll use Django
     to produce dynamic HTML content on the fly."""
+    
+"""Continue here:
+
+    write a method to delete all the residual files from the above analysis.
+"""
+
+
 
 """ Build an HTML Report """
 if jump <= 7 and stop > 7:
@@ -174,10 +187,10 @@ if jump <= 7.1 and stop > 7.1:
             write_anccomp_indi(pair, con, ap)
             write_mutations_indi(pair, con, ap)
 
-if jump <= 7.2 and stop > 7.3:
-    ap.params["checkpoint"] = 7.1
-    ap.params["pending_checkpoint"] = 7.2
-    write_ancseq_fasta(con, ap)
+# if jump <= 7.2 and stop > 7.3:
+#     ap.params["checkpoint"] = 7.1
+#     ap.params["pending_checkpoint"] = 7.2
+#     write_ancseq_fasta(con, ap)
 
 if stop >= 8:
     ap.params["checkpoint"] = 100

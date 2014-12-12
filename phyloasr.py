@@ -75,7 +75,7 @@ def write_raxml_commands(con):
 def make_fasttree_command(con, ap, outdir, phylippath):
     newtree = get_fasttree_path(phylippath)
     
-    c = ap.params["fasttree_exe"]
+    c = get_setting_values(con, "fasttree_exe")[0]
     c += " -wag "
     c += " < " + phylippath + " > " + newtree
     return c
@@ -121,7 +121,7 @@ def check_raxml_output(con):
             con.commit()
 
 
-def get_mlalpha_pp(con, ap):
+def get_mlalpha_pp(con):
     """Fetch ML resultse from RAxML
     Calculate min, max likelihoods for each model, 
     and find the best-fitting model.
@@ -316,7 +316,7 @@ def calc_alrt(con):
     return "SCRIPTS/alrt_commands.sh"     
 
 
-def calc_alr(con, ap):
+def calc_alr(con):
     """Convert aLRTs to aLRs"""
     alr_commands = []
     for msa in get_alignment_method_names(con):
@@ -455,6 +455,7 @@ def get_asr_commands(con):
             outgroup_id = cur.fetchone()[0]
             print "456:", outgroup_id
             outgroup_list = get_taxaid_in_group(con, outgroup_id)
+            print "457:", outgroup_list
             outgroup_list = [get_taxon_name(con, i) for i in outgroup_list]
             print "458:", outgroup_list
             outgroup_string = "[" + ",".join( outgroup_list ) + "]"
@@ -555,7 +556,6 @@ def get_getanc_commands(con):
             here = os.getcwd()
             asrmsa = get_asr_fastapath(msa)
             asrtree = get_raxml_treepath(msa, runid)
-            #modelstr = ap.params["mmfolder"]
             modelstr = get_setting_values(con, "mmfolder")[0]
             
             if runid.__contains__("JTT"):
@@ -573,8 +573,13 @@ def get_getanc_commands(con):
                 taxa = get_taxaid_in_group(con, ing)
                 taxa = [get_taxon_name(con,i) for i in taxa]
                 ingroup_string = "[" + ",".join(taxa) + "]"
+
+                taxa = get_taxaid_in_group(con, "outgroup")
+                taxa = [get_taxon_name(con,i) for i in taxa]
+                outgroup_string = "[" + ",".join(taxa) + "]"
                 
-                getanc_commands.append(ap.params["lazarus_exe"] + " --alignment " + asrmsa + " --tree " + asrtree + " --model " + modelstr + " --outputdir " + here + "/" + msa + "/asr." + model + " --outgroup " + ap.params["outgroup"] + " --ingroup " + ingroup_string + " --getanc True")
+                lazarus_exe = get_setting_values(con, "lazarus_exe")[0]
+                getanc_commands.append(lazarus_exe + " --alignment " + asrmsa + " --tree " + asrtree + " --model " + modelstr + " --outputdir " + here + "/" + msa + "/asr." + model + " --outgroup " + outgroup_string + " --ingroup " + ingroup_string + " --getanc True")
                 getanc_commands.append("mv " + msa + "/asr." + model + "/ancestor-ml.dat " + msa + "/asr." + model + "/" + ingroup_name + ".dat")
                 getanc_commands.append("mv " + msa + "/asr." + model + "/ancestor.out.txt " + msa + "/asr." + model + "/" + ingroup_name + ".txt")
     
@@ -694,11 +699,15 @@ def setup_pdb_maps(ap):
             ap.params["map2pdb"][ this_anc ] = pdbpath
     fin.close()
 
-#ap.params["compareanc"]
-def get_compareanc_commands(con, ap):
+
+def get_compareanc_commands(con):
     cur = con.cursor()
     compare_commands = []
-    for pair in ap.params["compareanc"]:    
+    
+    """pairs is a list of tuples, each containing alias names for ancestors."""    
+    pairs = get_ancestral_comparison_pairs(con)
+    
+    for pair in pairs:   
         #msapathlines = "msapaths "
         msanamelines = ""
         comparelines = ""
@@ -731,25 +740,13 @@ def get_compareanc_commands(con, ap):
                 comparelines += "compare " + msa + "/asr." + model + "/" + pair[0] + ".dat " + msa + "/asr." + model + "/" + pair[1] + ".dat " + runid + "\n"
                 weightlines += "msaweight " + runid + " " + pp.__str__() + "\n"
                 
-                """Remember this pair in the the table CompareAncestors"""
-                ancid0 = get_ancestorid(con, pair[0], msaid, modelid)
-                ancid1 = get_ancestorid(con, pair[1], msaid, modelid)
-                sql = "insert into CompareAncestors (ancid1, ancid2) values(" + ancid0.__str__() + "," + ancid1.__str__() + ")"
-                cur.execute(sql)
-                con.commit()
-
         specpath = "compare_ancs." + pair[0] + "-" + pair[1] + ".config.txt"
         fout = open(specpath, "w")
-
-        sql = "select seed_taxonid from GroupSeedTaxa where groupid in (select id from TaxaGroups where name='" + pair[1] + "')"
-        cur.execute(sql)
-        seed_taxonid = cur.fetchone()[0]
-        seed_taxonname = get_taxon_name(con, seed_taxonid)
         
-        get_setting_values(con, "seedtaxa")[0]
+        seed_taxonname = get_setting_values(con, "seedtaxa")[0]
         fout.write("seed " + seed_taxonname + "\n")
-        if pair[1] in ap.params["map2pdb"]: # there was a definition to map scores on this PDB:
-            fout.write("pdb " + ap.params["map2pdb"][pair[1]] + "\n")
+        #if pair[1] in ap.params["map2pdb"]: # there was a definition to map scores on this PDB:
+        #    fout.write("pdb " + ap.params["map2pdb"][pair[1]] + "\n")
         fout.write(msanamelines)
         fout.write(comparelines)
         fout.write(weightlines)
@@ -760,7 +757,7 @@ def get_compareanc_commands(con, ap):
         #
         modelstr = get_model_path(   get_phylo_modelnames(con)[0] , con)
                     
-        c = get_setting_values(con, "anccomp_exe")
+        c = get_setting_values(con, "anccomp_exe")[0]
         c += " --specpath " + specpath
         c += " --modelpath " + modelstr
         c += " --window_sizes 1"
@@ -768,9 +765,9 @@ def get_compareanc_commands(con, ap):
         c += " --runid " + pair[0] + "to" + pair[1]
         c += " --restrict_to_seed True"
         c += " --renumber_sites True"
-        if ap.params["do_pdb_analysis"]:
-            c += " --pdbtoolsdir " + ap.params["pdbtoolsdir"]
-            c += " --pymol_exe " + ap.params["pymol_exe"]
+        #if ap.params["do_pdb_analysis"]:
+        #    c += " --pdbtoolsdir " + ap.params["pdbtoolsdir"]
+        #    c += " --pymol_exe " + get_setting_values(con, "pymol_exe")
         #c += " --force_bin_width 0.25"
         #if startsite != None and endsite != None:
         #    c += " --highlight_sites " + startsite.__str__() + "-" + endsite.__str__()
@@ -778,6 +775,7 @@ def get_compareanc_commands(con, ap):
         compare_commands.append("source run_rscripts.sh")
     
     fout = open("SCRIPTS/compareanc_commands.sh", "w")
+    print compare_commands
     for c in compare_commands:
         fout.write(c + "\n")
     fout.close()
