@@ -55,6 +55,11 @@ def read_config_file(con, ap):
             ergseqpath = re.sub(" ", "", tokens[1])
             ap.params["ergseqpath"] = ergseqpath
             add_setting_value(con, "ergseqpath", ergseqpath)
+
+        if tokens[0].startswith("NTFASTA"):
+            ergntpath = re.sub(" ", "", tokens[1])
+            ap.params["ergntpath"] = ergntpath
+            add_setting_value(con, "ergntpath", ergntpath)
         
         elif tokens[0].startswith("RAXML"):
             exe = tokens[1].strip() 
@@ -261,6 +266,11 @@ def read_config_file(con, ap):
                 ap.params["map2pdb"][anc] = []
             if pdbpath not in ap.params["map2pdb"][anc]:
                 ap.params["map2pdb"][ anc ].append( pdbpath )
+                
+        elif tokens[0].startswith("FSCOREMETHODS"):
+            methods = tokens[1].split()
+            for m in methods:
+                add_setting_value(con, "fscoremethods", m)
         
         elif tokens[0].startswith("HTML_SPECIAL1"):
             thing = ""
@@ -280,33 +290,45 @@ def verify_config(con, ap):
     
     cur = con.cursor()
     
+    sql = "delete from CompareAncestors"
+    cur.execute(sql)
+    con.commit()
+    
     x = get_setting_values(con, "ergseqpath")
     if x == None:
         write_error(con, "You did not specify SEQUENCES, a path to the original sequences, in your configuration file.")
         exit()
+        
+    """ergntpath is optional, but if the user specifies it, then let's ensure it's real."""
+    x = get_setting_values(con, "ergntpath")
+    if x != None:
+        if False == os.path.exists( x[0]):
+            write_error(con, "I cannot find your nucleotide FASTA file at " + x[0] )
     
     if "run_exe" not in ap.params:
         ap.params["run_exe"] = "source"
         add_setting_value(con, "run_exe", "source")
     
-    if "ancestors" in ap.params:
-        for a in ap.params["ancestors"]:
+    if "ingroup" in ap.params:
+        for a in ap.params["ingroup"]:
             print a, ap.params["asrseedtaxa"]
             if a not in ap.params["asrseedtaxa"]:
                 print "\n. ERROR: You did not specify a SEED for the ancestor", a
                 write_error(con, "You did not specify a SEED for the ancestor " + a)
                 exit()
+        
         for c in ap.params["compareanc"]:
             a1 = c[0]
             a2 = c[1]
-            if a1 not in ap.params["ancestors"]:
+            if a1 not in ap.params["ingroup"]:
                 print "\n. ERROR: you specified a comparison between ancestors", a1, "and", a2, "but", a1,"was not defined in the ANCESTORS line."
                 write_error(con, "you specified a comparison between ancestors " + a1, " and " + a2 + " but " + a1 + " was not defined in the ANCESTORS line.") 
                 exit() 
-            if a1 not in ap.params["ancestors"]:
+            if a1 not in ap.params["ingroup"]:
                 print "\n. ERROR: you specified a comparison between ancestors", a1, "and", a2, "but", a2,"was not defined in the ANCESTORS line."
                 write_error(con, "you specified a comparison between ancestors " + a1, " and " + a2 + " but " + a2 + " was not defined in the ANCESTORS line.")
                 exit()
+            
             sql = "insert or replace into CompareAncestors (alias1, alias2) values('" + a1 + "','" + a2 + "')"
             cur.execute(sql)
             con.commit()

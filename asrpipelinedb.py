@@ -31,9 +31,9 @@ def build_db(dbpath = None):
     # Sequence Alignment
     """Note: each Taxa can have only one sequence; see the 'unique' modified on taxonid table fields."""
     cur.execute("create table if not exists Taxa(id INTEGER primary key autoincrement, fullname TEXT unique, shortname TEXT unique)")
-    cur.execute("create table if not exists OriginalSequences(id INTEGER primary key autoincrement, taxonid INT unique, sequence TEXT, datatype INT)") # taxonid is the ID of a row in Taxa; datatypes: 0=nucleotide, 1=amino acid
+    cur.execute("create table if not exists OriginalSequences(id INTEGER primary key autoincrement, taxonid INT, sequence TEXT, datatype INT)") # taxonid is the ID of a row in Taxa; datatypes: 0=nucleotide, 1=amino acid
     cur.execute("create table if not exists AlignmentMethods(id INTEGER primary key autoincrement, name TEXT unique, exe_path TEXT)")
-    cur.execute("create table if not exists AlignedSequences(id INTEGER primary key autoincrement, taxonid INT, alsequence TEXT, almethod INT)") # these sequences contain indels
+    cur.execute("create table if not exists AlignedSequences(id INTEGER primary key autoincrement, taxonid INT, alsequence TEXT, almethod INT, datatype INT)") # these sequences contain indels
 
 
     """A SiteSet is a collection of sites in the alignment. For example, after trimming the sequences, instead of storing a new
@@ -89,9 +89,18 @@ def build_db(dbpath = None):
     """Some ancestors are special, with pre-defined mappings to known ingroups and outgroups."""
     cur.execute("create table if not exists AncestorsGroups(ancid INTEGER unique, ingroupid INTEGER, outgroupid INTEGER)") # some ancestors, but not all, will have a mapping to known taxa groups.
     
-    cur.execute("create table if not exists CompareAncestors(alias1 INTEGER, alias2 INTEGER)")
     
+    """Tables to store comparisons of ancestral sites."""
+    cur.execute("create table if not exists CompareAncestors(alias1 TEXT, alias2 TEXT)")
+    # methods: Df, p, k, dn/ds
+    cur.execute("create table if not exists FScoreMethod(id INTEGER primary key autoincrement, name TEXT unique, short TEXT unique)") # names of methods to predict functional-loci
+    # map the method to a series of scores
+    cur.execute("create table if not exists FScoreSeries(id INTEGER primary key autoincrement, fscoremethod INT, almethod INT, phylomodel INT, ancid1 INT, ancid2 INT)")
+    cur.execute("create table if not exists FScores(id INTEGER primary key, fscoreseries INT, site INT, fscore FLOAT)")
     
+    cur.execute("create table if not exists LabeledDnDsPhylogenies(id INTEGER primary key, almethod INT, phylomodel INT, anc1 INTEGER, anc2 INTEGER, newick TEXT)")
+
+
     """For HTML visualization"""
     cur.execute("create table if not exists HtmlPieces(id INTEGER primary key autoincrement, keyword TEXT unique, htmlstring TEXT)")
     con.commit()

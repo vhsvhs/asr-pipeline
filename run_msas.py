@@ -36,20 +36,29 @@ def read_fasta(fpath):
     okay = True
     for l in fin.xreadlines():
         l = l.strip()
-        if l.__len__() <= 2:
+
+        """Skip empty lines."""
+        if l.__len__() <= 1:
             pass
         elif l.startswith(">"):
+            """Taxon name line:"""
             okay = True
             taxaname = re.sub(">", "", l.split()[0] )
             if taxaname in taxa_seq:
                 okay = False
             else:
+                """We found a new taxon, so let's save the sequence data we've found
+                    and refresh the last_seq buffer."""
                 if last_taxa != None:
                     taxa_seq[last_taxa] = last_seq
                 last_taxa = taxaname
                 last_seq = ""
                 
         elif okay == True:
+            """Deal with a line that potentially contains sequence data"""
+            
+            """Remove end-of-line chars."""
+            l = re.sub("\*", "", l )
             last_seq += l
     if last_taxa != None:
         taxa_seq[last_taxa] = last_seq
@@ -81,9 +90,9 @@ def import_and_clean_erg_seqs(con, ap):
     cur.execute(sql)
     con.commit()
     
+    """Import the amino acid sequence."""
     for taxon in taxa_seq:
-        import_original_seq(con, taxon, taxa_seq[taxon] )
-        #write_log(con, taxon + " contains " + taxa_seq[taxon].__len__().__str__() + " sites.")
+        import_original_seq(con, taxon, taxa_seq[taxon], datatype=1 )
     
     cleanpath = ergseqpath
     fout = open(cleanpath, "w")
@@ -91,6 +100,16 @@ def import_and_clean_erg_seqs(con, ap):
         fout.write(">" + taxon + "\n")
         fout.write(taxa_seq[taxon] + "\n")
     fout.close()
+    
+    """If the user included nucleotide sequences, then import them here."""
+    x = get_setting_values(con, "ergntpath")
+    if x != None:
+        ep = x[0]
+        taxa_seq = read_fasta(ep)
+        
+        for taxon in taxa_seq:
+            import_original_seq(con, taxon, taxa_seq[taxon], datatype=0)
+    
     
 def verify_erg_seqs(con, ap):
     """Verify the original sequences.
@@ -103,10 +122,15 @@ def verify_erg_seqs(con, ap):
     c = cur.fetchone()[0]
     write_log(con, "There are " + c.__str__() + " taxa in the database.")
 
-    sql = "select count(*) from OriginalSequences"
+    sql = "select count(*) from OriginalSequences where datatype=0"
     cur.execute(sql)
     c = cur.fetchone()[0]
-    write_log(con, "There are " + c.__str__() + " sequences in the database.")
+    write_log(con, "There are " + c.__str__() + " nucleotide sequences in the database.")
+    
+    sql = "select count(*) from OriginalSequences where datatype=1"
+    cur.execute(sql)
+    c = cur.fetchone()[0]
+    write_log(con, "There are " + c.__str__() + " amino acid sequences in the database.")
     
     """Is the seed sequence found?"""
     seeds = get_setting_values(con, "seedtaxa")
@@ -118,9 +142,7 @@ def verify_erg_seqs(con, ap):
             write_error(con, "I cannot find your seed taxa '" + s + "' in your original sequences.")
             exit()
     
-    
     """Are the ingroup/outgroup specifications valid, given these sequences?"""
-    
     for ingroup in ap.params["ingroup"]:
         if ingroup not in ap.params["asrseedtaxa"]:
             write_error(con, "You did not specify an ASRSEED for the ingroup " + ingroup)
@@ -287,6 +309,11 @@ def write_msa_commands(con):
 
 
 def check_aligned_sequences(con):
+    """This method verifies that the sequence alignment algorithms finished correctly, and produced
+        aligned sequences. If OK, and if the user supplied nucleotide sequences, then this method
+        will align the n.t. sequences to the a.a. sequences in order to create codon sequences.
+        Successfully aligned sequences will be imported into the database, using the method 'import_aligned_seq'"""
+
     cur = con.cursor()
     sql = "select id, name from AlignmentMethods"
     cur.execute(sql)
@@ -316,15 +343,32 @@ def check_aligned_sequences(con):
         """Import each sequence in the alignment."""
         for taxa in taxa_seq:
             taxonid = get_taxonid(con, taxa)
-            import_aligned_seq(con, taxonid, msaid, taxa_seq[taxa])
+            import_aligned_seq(con, taxonid, msaid, taxa_seq[taxa], datatype=1)
                  
         """Verify the importation occurred."""
         cur = con.cursor()
-        sql = "select count(*) from AlignedSequences where almethod=" + msaid.__str__()
+        sql = "select count(*) from AlignedSequences where almethod=" + msaid.__str__() + " and datatype=1"
         cur.execute(sql)
         c = cur.fetchone()[0]
         write_log(con, "There are " + c.__str__() + " sequences in the " + msa + " alignment.")
      
+        """If the user supplied nucleotide sequences, then map the codon sequences to these amino acid sequences."""
+        x = get_setting_values(con, "ergntpath")
+        if x != None:
+            for taxa in taxa_seq:
+                taxonid = get_taxonid(con, taxa)
+                org_codon_seq = get_original_seq(con, taxonid, datatype=0)
+                """Note: taxa_seq[taxa] is the aa sequence, and org_codon_seq is the nt seq."""
+                aligned_codon_seq = align_codon_to_aaseq(con, taxa_seq[taxa], org_codon_seq)
+                #print "\n. 361:", taxa
+                #print "nt:", aligned_codon_seq
+                #print "aa:", taxa_seq[taxa]
+                if aligned_codon_seq != None:
+                    import_aligned_seq(con, taxonid, msaid, aligned_codon_seq, datatype=0)
+                else:
+                    write_error(con, "I cannot match the codon sequence and amino acid sequence for " + taxa)
+                    exit()
+    
 
 def fasta_to_phylip(inpath, outpath):
     fin = open(inpath, "r")
@@ -428,7 +472,7 @@ def write_alignment_for_raxml(con):
         ffout = open( fpath, "w")
         pfout = open( ppath, "w")
 
-        sql = "select taxonid, alsequence from AlignedSequences where almethod=" + msaid.__str__()
+        sql = "select taxonid, alsequence from AlignedSequences where almethod=" + msaid.__str__() + " and datatype=1"
         cur.execute(sql)
         y = cur.fetchall()
         pfout.write( y.__len__().__str__() + "   " + sites.__len__().__str__() + "\n")
@@ -523,7 +567,7 @@ def trim_alignments(con):
         ffout = open( get_trimmed_fastapath(alname), "w")
         pfout = open( get_trimmed_phylippath(alname), "w")
 
-        sql = "select taxonid, alsequence from AlignedSequences where almethod=" + alid.__str__()
+        sql = "select taxonid, alsequence from AlignedSequences where almethod=" + alid.__str__() + " and datatype=1"
         cur.execute(sql)
         y = cur.fetchall()
         pfout.write( y.__len__().__str__() + "   " + (stop-start+1).__str__() + "\n")

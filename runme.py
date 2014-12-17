@@ -5,6 +5,7 @@ from phyloasr import *
 from splash import *
 from read_config import *
 from run_msas import *
+from fscores import *
 from asr_bayes import *
 from html_helper import *
 from struct_analysis import *
@@ -88,7 +89,7 @@ if False == ap.getOptionalToggle("--skip_zorro"):
         compare_fasttrees(con)
     if jump <= 2.9 and stop > 2.91:
         cleanup_zorro_analysis(con)
-    
+        
     if jump <= 2.91 and stop > 2.92:
         write_alignment_for_raxml(con)
 
@@ -102,6 +103,9 @@ if jump <= 3 and stop > 3:
     write_log(con, "Inferring ML phylogenies with RAxML.")
     p = write_raxml_commands(con)
     run_script(p)
+
+if jump <= 3.1 and stop > 3.1:
+    """ML trees, part 2"""
     check_raxml_output(con)
     get_mlalpha_pp(con)
 
@@ -109,7 +113,6 @@ if jump <= 3 and stop > 3:
 if jump <= 4 and stop > 4:
     ap.params["checkpoint"] = 3
     ap.params["pending_checkpoint"] = 4
-    print "\n. Calculating aLRT branch support with PhyML..."
     write_log(con, "Calculating aLRT branch support values with PhyML.")
 
     x = calc_alrt(con)
@@ -156,6 +159,10 @@ if jump <= 6 and stop > 6:
         args = x.split()
         run_script(x)
 
+if jump <= 6.5 and stop > 6.5:
+    """Do dn/ds test."""
+    get_dnds_commands(con)
+    exit()
 
 """December 2014: The new Django-version of this code should stop here.
     Rather than building static HTML pages (code below), we'll use Django
@@ -165,8 +172,6 @@ if jump <= 6 and stop > 6:
 
     write a method to delete all the residual files from the above analysis.
 """
-
-
 
 """ Build an HTML Report """
 if jump <= 7 and stop > 7:

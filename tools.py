@@ -364,3 +364,41 @@ def get_boundary_sites(seq, start_motif=None, end_motif=None):
                         endsite = j
                         break
     return [startsite, endsite]
+
+
+def align_codon_to_aaseq(con, aaseq, codonseq):
+    """Maps the codon sequence to the aligned (may contain indels) aa seq."""
+    
+    # ret is the returned aligned codon sequence.
+    ret = ""
+    
+    """Quick sanity check: do we have exactly 3x more nucleotides than amino acids?"""
+    aa_no_indels = re.sub("-", "", aaseq)
+    nt_no_indels = re.sub("-", "", codonseq)
+    
+    """Remove stop codon in the nt sequence."""
+    if nt_no_indels.endswith("TAG") or nt_no_indels.endswith("TAA") or nt_no_indels.endswith("TGA"):
+        nt_no_indels = nt_no_indels[0:  nt_no_indels.__len__()-3 ]
+    
+    if float( aa_no_indels.__len__() ) != float(nt_no_indels.__len__())/3.0:
+        write_error(con, "The nt and aa sequence don't match.")
+        print aa_no_indels.__len__(), nt_no_indels.__len__()
+        print aa_no_indels
+        print nt_no_indels
+        return None
+
+    """Map the codons onto the aa sequence."""
+    ntptr = 0
+    for ii in range(0, aaseq.__len__()):
+        codon = None
+        if aaseq[ii] == "-":
+            codon = "---"
+        else:
+            codon = nt_no_indels[ntptr : ntptr+3]
+            ntptr += 3
+
+        ret += codon
+    return ret
+
+
+

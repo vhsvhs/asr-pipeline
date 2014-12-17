@@ -564,6 +564,13 @@ def get_getanc_commands(con):
                 modelstr += "/wag.dat"
             elif runid.__contains__("LG"):
                 modelstr += "/lg.dat"
+
+            sql = "select id from TaxaGroups where name='outgroup'"
+            cur.execute(sql)
+            outgroupid = cur.fetchone()[0]
+            taxa = get_taxaid_in_group(con, outgroupid)
+            taxa = [get_taxon_name(con,i) for i in taxa]
+            outgroup_string = "[" + ",".join(taxa) + "]"
                 
             ingroup_ids = get_ingroup_ids(con)    
             for ing in ingroup_ids:
@@ -573,10 +580,6 @@ def get_getanc_commands(con):
                 taxa = get_taxaid_in_group(con, ing)
                 taxa = [get_taxon_name(con,i) for i in taxa]
                 ingroup_string = "[" + ",".join(taxa) + "]"
-
-                taxa = get_taxaid_in_group(con, "outgroup")
-                taxa = [get_taxon_name(con,i) for i in taxa]
-                outgroup_string = "[" + ",".join(taxa) + "]"
                 
                 lazarus_exe = get_setting_values(con, "lazarus_exe")[0]
                 getanc_commands.append(lazarus_exe + " --alignment " + asrmsa + " --tree " + asrtree + " --model " + modelstr + " --outputdir " + here + "/" + msa + "/asr." + model + " --outgroup " + outgroup_string + " --ingroup " + ingroup_string + " --getanc True")
@@ -706,7 +709,7 @@ def get_compareanc_commands(con):
     
     """pairs is a list of tuples, each containing alias names for ancestors."""    
     pairs = get_ancestral_comparison_pairs(con)
-    
+        
     for pair in pairs:   
         #msapathlines = "msapaths "
         msanamelines = ""

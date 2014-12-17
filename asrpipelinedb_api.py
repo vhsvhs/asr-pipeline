@@ -37,9 +37,15 @@ def add_setting_value(con, keyword, value, unique=False):
     cur.execute(sql)
     con.commit()
 
-def import_original_seq(con, shortname, sequence):
+def build_aligned_codon_seq(con, taxonid):
+    pass
+    
+
+def import_original_seq(con, shortname, sequence, datatype=1):
     """Returns the taxonID of the newly imported sequence."""
     cur = con.cursor()
+    
+    """Have we seen this sequence name before?"""
     sql = "select count(*) from Taxa where shortname='" + shortname + "'"
     cur.execute(sql)
     count = cur.fetchone()[0]
@@ -49,31 +55,25 @@ def import_original_seq(con, shortname, sequence):
         con.commit()
     
     taxonid = get_taxonid(con, shortname)
-
-    #
-    # to-do: continue here: I hardcoded in amino acids (1). Fix this.
-    #    
-    sql = "select count(*) from OriginalSequences where taxonid=" + taxonid.__str__()
+    
+    sql = "select count(*) from OriginalSequences where taxonid=" + taxonid.__str__() + " and datatype=" + datatype.__str__()
     cur.execute(sql)
     count = cur.fetchone()[0]
     if count == 0:
-        sql = "insert into OriginalSequences (taxonid, sequence, datatype) VALUES(" + taxonid.__str__() + ",'" + sequence + "',1)"
+        sql = "insert into OriginalSequences (taxonid, sequence, datatype) VALUES(" + taxonid.__str__() + ",'" + sequence + "'," + datatype.__str__() + ")"
         cur.execute(sql)
         con.commit()
     
     return taxonid
 
-def import_aligned_seq(con, taxonid, almethodid, seq):
+def import_aligned_seq(con, taxonid, almethodid, seq, datatype=1):
     cur = con.cursor()    
-    sql = "select count(*) from AlignedSequences where taxonid=" + taxonid.__str__() + " and almethod=" + almethodid.__str__()
+    sql = "select count(*) from AlignedSequences where taxonid=" + taxonid.__str__() + " and almethod=" + almethodid.__str__() + " and datatype=" + datatype.__str__()
     cur.execute(sql)
     count = cur.fetchone()[0]
     if count == 0:      
-        sql = "insert or replace into AlignedSequences (taxonid, alsequence, almethod) VALUES("
-        #
-        # to-do: continue here: I hardcoded the datatype as amino acid (1)
-        #
-        sql += taxonid.__str__() + ",'" + seq + "'," + almethodid.__str__() + ")"
+        sql = "insert or replace into AlignedSequences (taxonid, alsequence, almethod, datatype) VALUES("
+        sql += taxonid.__str__() + ",'" + seq + "'," + almethodid.__str__() + "," + datatype.__str__() + ")"
         cur.execute(sql)
         con.commit()
     
@@ -152,25 +152,25 @@ def get_ingroup_ids(con):
         ids.append(ii[0])
     return ids
 
-def get_original_seq(con, taxonid):
+def get_original_seq(con, taxonid, datatype=1):
     cur = con.cursor()
-    sql = "select sequence from OriginalSequences where taxonid=" + taxonid.__str__()
+    sql = "select sequence from OriginalSequences where taxonid=" + taxonid.__str__() + " and datatype=" + datatype.__str__()
     cur.execute(sql)
     x = cur.fetchall()
     if x.__len__() == 0:
         return None
     return x[0][0] 
 
-def get_aligned_seq(con, taxonid, almethodid):
+def get_aligned_seq(con, taxonid, almethodid,datatype=1):
     cur = con.cursor()
-    sql = "select alsequence from AlignedSequences where taxonid=" + taxonid.__str__() + " and almethod=" + almethodid.__str__()
+    sql = "select alsequence from AlignedSequences where taxonid=" + taxonid.__str__() + " and almethod=" + almethodid.__str__() + " and datatype=" + datatype.__str__()
     cur.execute(sql)
     x = cur.fetchall()
     if x.__len__() == 0:
         return None
     return x[0][0]    
 
-def get_sequences(con, almethod = None, sitesets = [], sites = [], taxagroups = []):
+def get_sequences(con, almethod = None, sitesets = [], sites = [], taxagroups = [], datatype=1):
     """
     Returns a hash of taxa:sequences.
     con = the sqlite3 db
@@ -206,6 +206,7 @@ def get_sequences(con, almethod = None, sitesets = [], sites = [], taxagroups = 
             pieces.append( " where groupid=" + tgid )
         sql += " or ".join( pieces )
         sql += ")"
+    sql += " and datatype=" + datatype.__str__()
     
     cur.execute(sql)
     x = cur.fetchall()
@@ -263,6 +264,17 @@ def get_taxaid_in_group(con, groupid):
     for ii in x:
         taxaids.append( ii[0] )
     return taxaids
+
+def get_taxaid_from_ancestor(con, ancid):
+    cur = con.cursor()
+    sql = "select taxonid from GroupsTaxa where groupid in (select ingroupid from AncestorsGroups where ancid=" + ancid.__str__() + " )"
+    cur.execute(sql)
+    x = cur.fetchall()
+    taxonids = []
+    for ii in x:
+        taxonids.append( ii[0] )
+    return taxonids
+    
 
 def get_siteranges_in_set(con, sitesetid, almethodid):
     """Returns a list of tuples [ (from,to), (from,to), etc. ]"""
