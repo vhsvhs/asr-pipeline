@@ -329,7 +329,7 @@ def parse_dnds_results(con):
         cur.execute(sql)
         con.commit()
         
-        sql = "select dnds_model from DNDS_Tests where id=" + testid.__str__()
+        sql = "select name from DNDS_Models where id in (select dnds_model from DNDS_Tests where id=" + testid.__str__() + ")"
         cur.execute(sql)
         dnds_model = cur.fetchone()[0]
         
@@ -353,12 +353,14 @@ def parse_dnds_results(con):
                 tokens = l.split()
                 pclass1 = float( tokens[1] )
                 pclass2 = float( tokens[2] )
-                pclass3 = float( tokens[3] )        
+                if tokens.__len__() > 3:
+                    pclass3 = float( tokens[3] )        
             if l.startswith("p:"):
                 tokens = l.split()
                 wclass1 = float( tokens[1] )
                 wclass2 = float( tokens[2] )
-                wclass3 = float( tokens[3] ) 
+                if tokens.__len__() > 3:
+                    wclass3 = float( tokens[3] ) 
             if l.startswith("proportion:"):
                 tokens = l.split()
                 pclass1 = float( tokens[1] )
@@ -389,27 +391,35 @@ def parse_dnds_results(con):
             for l in fin.xreadlines():
                 if l.__contains__("BEB"):
                     found_beb = True
-            found1 = False
-            if found_beb == True:
-                tokens = l.split()
-                site = re.sub(" ", "", tokens[0])
-                if site.startswith("1"):
-                    found1 = True
-            if found1 == True:
-                tokens = l.split()
-                site = int( re.sub(" ", "", tokens[0]) )
-                p1 = float( tokens[2] )
-                p2 = float( tokens[3] )
-                p3 = float( tokens[4] )
-                if tokens.__len__() > 5:
-                    p4 = float( tokens[5] )
-                else:
+                
+                found1 = False
+                if found_beb == True:
+                    if l.__len__() > 2:
+                        tokens = l.split()
+                        site = re.sub(" ", "", tokens[0])
+                        if site.startswith("1"):
+                            found1 = True
+                
+                if found1 == True:
+                    tokens = l.split()
+                    print tokens
+                    site = int( re.sub(" ", "", tokens[0]) )
+                    p1 = -1
+                    p2 = -2
+                    p3 = -1
                     p4 = -1
-                sql = "insert into DNDS_BEB_sites (testid, site, ppcat1, ppcat2, ppcat3, ppcat4)"
-                sql += " values(" + testid.__str__() + "," + site.__str__()
-                sql += "," + p1.__str__() + "," + p2.__str__() + "," + p3.__str__() + "," + p4.__str__() + ")"
-                cur.execute(sql)
-                con.commit()
+                    p1 = float( re.sub("\*", "", tokens[2]) )
+                    p2 = float( re.sub("\*", "", tokens[3]) )
+                    if False == tokens[4].startswith("(") and False == tokens[4].startswith("+"):
+                        p3 = float( re.sub("\*", "", tokens[4]) )
+                    if tokens.__len__() > 5:
+                        if False == tokens[5].startswith("(") and False == tokens[5].startswith("+"):
+                            p4 = float( re.sub("\*", "", tokens[5] ) )
+                    sql = "insert into DNDS_BEB_sites (testid, site, ppcat1, ppcat2, ppcat3, ppcat4)"
+                    sql += " values(" + testid.__str__() + "," + site.__str__()
+                    sql += "," + p1.__str__() + "," + p2.__str__() + "," + p3.__str__() + "," + p4.__str__() + ")"
+                    cur.execute(sql)
+                    con.commit()
             fin.close()
                 
                 

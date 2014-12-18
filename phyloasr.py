@@ -705,6 +705,11 @@ def setup_pdb_maps(ap):
 
 def get_compareanc_commands(con):
     cur = con.cursor()
+    
+    sql = "delete from FScore_Tests"
+    cur.execute(sql)
+    con.commit()
+    
     compare_commands = []
     
     """pairs is a list of tuples, each containing alias names for ancestors."""    
@@ -742,6 +747,14 @@ def get_compareanc_commands(con):
                 msanamelines += "msaname " + msapath + " " + runid + "\n"
                 comparelines += "compare " + msa + "/asr." + model + "/" + pair[0] + ".dat " + msa + "/asr." + model + "/" + pair[1] + ".dat " + runid + "\n"
                 weightlines += "msaweight " + runid + " " + pp.__str__() + "\n"
+                
+                ancid1 = get_ancestorid(con, pair[0], msaid, modelid)
+                ancid2 = get_ancestorid(con, pair[1], msaid, modelid)
+                
+                sql = "insert into FScore_Tests (almethod, phylomodel, ancid1, ancid2)"
+                sql += " values(" + msaid.__str__() + "," + modelid.__str__() + "," + ancid1.__str__() + "," + ancid2.__str__() + ")"
+                cur.execute(sql)
+                con.commit()
                 
         specpath = "compare_ancs." + pair[0] + "-" + pair[1] + ".config.txt"
         fout = open(specpath, "w")
@@ -783,6 +796,82 @@ def get_compareanc_commands(con):
         fout.write(c + "\n")
     fout.close()
     return "SCRIPTS/compareanc_commands.sh"
+
+def parse_compareanc_results(con):
+    cur = con.cursor()
+    
+    sql = "delete from FScore_Sites"
+    cur.execute(sql)
+    con.commit()
+    
+    pairs = get_ancestral_comparison_pairs(con)    
+    for pair in pairs:
+        outdir = pair[0] + "to" + pair[1]
+    
+        ancid1 = get_ancestorid(con, pair[0], msaid, modelid)
+        ancid2 = get_ancestorid(con, pair[1], msaid, modelid)
+    
+        summary_path = outdir + "/summary.txt"
+        if False == os.path.exists(summary_path):
+            write_error(con, "I cannot find your Df output file at " + summary_path)
+            continue
+        fin = open(summary_path, "r")
+        header = fin.readline()
+        column_method = {}
+        column_testid = {}
+        site_testid_method_score = {}
+        
+        tokens = header.split()
+        for ii in range( 7, tokens.__len__() ):
+            method = tokens[ii].split(":")[0]
+            
+            alname = tokens[ii].split(":").split(".")[0]
+            modelname = tokens[ii].split(":").split(".")[1]
+            sql = "select id from AlignmentMethods where name='" + alname.__str__() + "'"
+            cur.execute(sql)
+            alid = cur.fetchone()[0]
+            sql = "select modelid from PhyloModels where name='" + modelname.__str__() + "'"
+            cur.execute(sql)
+            modelid = cur.fetchone()[0]
+
+            sql = "select id from FScore_Tests where almethod=" + alid.__str__() + " and phylomodel=" + modelid.__str__()
+            sql += " and ancid1=" + ancid1.__str__() + " and ancid2=" + ancid2.__str__()
+            cur.execute(sql)
+            testid = cur.fetchone()[0]
+            
+            column_method[ ii ] = method
+            column_testid[ ii ] = testid
+        
+        for line in fin.readlines():
+            if line.__len__() < 5:
+                continue
+            tokens = line.split()
+            site = int( tokens[0] ) 
+            if site not in site_testid_method_score:
+                site_testid_method_score[site] = {}
+        
+            for ii in range( 7, tokens.__len__() ):
+                method = column_method[ii]
+                testid = column_testid[ii]
+
+                if testid not in site_testid_method_score[site]:
+                    site_testid_method_score[site][testid] = {}    
+                if method not in site_testid_method_score[site][testid][method]:
+                    site_testid_method_score[site][testid][method] = {}
+                
+                site_testid_method_score[site][testid][method] = float( tokens[ii] )
+                    
+    for site in site_testid_method_score:
+        for testid in site_testid_method_score[site]:
+            df = site_testid_method_score[site][testid]["Df"]
+            k = site_testid_method_score[site][testid]["k"]
+            p = site_testid_method_score[site][testid]["p"]
+                
+            sql = "insert into FScore_Tests (testid,site,df,k,p)"
+            sql += " values(" + testid.__str__() + "," + site.__str__() + "," + df.__str__() + "," + k.__str__() + "," + p.__str__() + ")"
+            cur.execute(sql)
+            con.commit()
+        
 
 def get_branch_supports( treepath ):
     supports = []

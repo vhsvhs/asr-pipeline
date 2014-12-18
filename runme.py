@@ -158,6 +158,8 @@ if jump <= 6 and stop > 6:
         x = get_compareanc_commands(con)
         args = x.split()
         run_script(x)
+if jump <= 6.1 and jump > 6.1:
+    parse_compareanc_results(con)
 
 if jump <= 6.5 and stop > 6.5:
     """Do dn/ds test."""
