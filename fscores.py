@@ -325,6 +325,8 @@ def parse_dnds_results(con):
             write_error(con, "I couldn't find lnL value in the PAML output " + catchpath)
             continue
         
+        #write_log(con, outdir + " Log-Likelihood = " + lnl.__str__())
+        
         sql = "insert into DNDS_lnL(testid, lnl) values(" + testid.__str__() + "," + lnl.__str__() + ")"
         cur.execute(sql)
         con.commit()
@@ -361,13 +363,13 @@ def parse_dnds_results(con):
                 wclass2 = float( tokens[2] )
                 if tokens.__len__() > 3:
                     wclass3 = float( tokens[3] ) 
-            if l.startswith("proportion:"):
+            if l.startswith("proportion"):
                 tokens = l.split()
                 pclass1 = float( tokens[1] )
                 pclass2 = float( tokens[2] )
                 pclass3 = float( tokens[3] )        
                 pclass4 = float( tokens[4] ) 
-            if l.startswith("foreground w:"):
+            if l.startswith("foreground w"):
                 tokens = l.split()
                 wclass1 = float( tokens[2] )
                 wclass2 = float( tokens[3] )
@@ -380,6 +382,11 @@ def parse_dnds_results(con):
         con.commit()
         fin.close()
         
+#         sql = "select * from DNDS_params where testid=" + testid.__str__()
+#         cur.execute(sql)
+#         params = cur.fetchone()
+        #write_log(con, "I found these param. results in " + outdir + ": " + params.__str__() )
+        
         """If its a sites model, get the per-site BEB scores from the PAML rst file."""
         if dnds_model.__contains__("sites"):
             rstpath = outdir + "/rst"
@@ -387,22 +394,43 @@ def parse_dnds_results(con):
                 write_error(con, "I cannot find the rst file from codeml at " + rstpath)
                 continue
             fin = open(rstpath, "r")
+   
+            
+            contains_beb = False
+            contains_neb = False
             found_beb = False
-            for l in fin.xreadlines():
+            found_neb = False
+            lines = fin.readlines()
+            for l in lines:
+                if l.__contains__("BEB"):
+                    contains_beb = True
+                if l.__contains__("NEB"):
+                    contains_neb = True
+            
+            print rstpath
+            print contains_beb, contains_neb
+            
+            for l in lines:
+                #print l
                 if l.__contains__("BEB"):
                     found_beb = True
+                if l.__contains__("NEB"):
+                    found_neb = True
+                                
+               # if l.startswith(" ") or l.startswith("lnL"):
+               #    found1 = False    
+               #     continue
                 
                 found1 = False
-                if found_beb == True:
+                if (contains_beb == True and found_beb == True) or (contains_beb == False and contains_neb == True and found_neb == True):
                     if l.__len__() > 2:
                         tokens = l.split()
                         site = re.sub(" ", "", tokens[0])
                         if site.startswith("1"):
                             found1 = True
-                
+                                
                 if found1 == True:
                     tokens = l.split()
-                    print tokens
                     site = int( re.sub(" ", "", tokens[0]) )
                     p1 = -1
                     p2 = -2
@@ -421,6 +449,11 @@ def parse_dnds_results(con):
                     cur.execute(sql)
                     con.commit()
             fin.close()
+        
+            sql = "select count(*) from DNDS_BEB_sites where testid=" + testid.__str__()
+            cur.execute(sql)
+            count = cur.fetchone()[0]
+            write_log(con, "I found " + count.__str__() + " BEB sites in " + outdir)
                 
                 
             
