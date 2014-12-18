@@ -161,7 +161,11 @@ if jump <= 6 and stop > 6:
 
 if jump <= 6.5 and stop > 6.5:
     """Do dn/ds test."""
-    get_dnds_commands(con)
+    x = get_dnds_commands(con)
+    write_log(con, "Launching dN/dS tests.")
+    run_script(x)
+if jump <= 6.6 and stop > 6.6:
+    parse_dnds_results(con)
     exit()
 
 """December 2014: The new Django-version of this code should stop here.

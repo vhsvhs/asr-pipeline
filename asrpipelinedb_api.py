@@ -307,7 +307,7 @@ def write_fasta(seqs, fpath):
         fout.write(seqs[s] + "\n")
     fout.close()
     
-def write_phylip(seqs, ppath):
+def write_phylip(seqs, ppath, firstseq=None):
     """Sanity check: are all the sequences the same length?"""
     l = None
     for s in seqs:
@@ -317,10 +317,19 @@ def write_phylip(seqs, ppath):
             print "\n. Error. (115) You are trying to write a phylip-formatted alignment using a set of sequences that are different lengths."
             exit()
     """Okay, write the phylip file."""
-    fout = open(ppath, "w")
+    fout = open(ppath, "w")    
     fout.write( seqs.__len__().__str__() + "   " + l.__str__() + "\n")
+    
+    """Write the seed sequence first, if it exists."""
+    if firstseq != None and firstseq in seqs:
+        fout.write( firstseq + "   " + seqs[firstseq] + "\n")
+    else:
+        write_error("Error 327: the seed sequence " + firstseq + " cannot be found.")
+        exit()
+    
     for s in seqs:
-        fout.write(s + "   " + seqs[s] + "\n")
+        if s != firstseq:
+            fout.write(s + "   " + seqs[s] + "\n")
     fout.close()
 
 def get_sitesetid(con, sitesetname):
@@ -384,3 +393,40 @@ def get_alignment_method_ids(con):
     for ii in x:
         ids.append( ii[0] )
     return ids
+
+def add_dnds_model(con, modelname):
+    """Returns the ID of the new/updated model."""
+    cur = con.cursor()
+    sql = "select count(*) from DNDS_Models where name='" + modelname + "'"
+    cur.execute(sql)
+    count = cur.fetchone()[0]
+    if count == 0:
+        sql = "insert into DNDS_Models (name) values('" + modelname + "')"
+        cur.execute(sql)
+        con.commit()
+    sql = "select id from DNDS_Models where name='" + modelname + "'"
+    cur.execute(sql)
+    id = cur.fetchone()[0]
+    return id
+
+def add_dnds_test(con, almethodid, phylomodelid, ancid1, ancid2, dnds_modelid):
+    """Returns the ID of the new test"""
+    cur = con.cursor()
+    sql = "select count(*) from DNDS_Tests where almethod=" + almethodid.__str__()
+    sql += " and phylomodel=" + phylomodelid.__str__() + " and anc1=" + ancid1.__str__()
+    sql += " and anc2=" + ancid2.__str__() + " and dnds_model=" + dnds_modelid.__str__()
+    cur.execute(sql)
+    count = cur.fetchone()[0]
+    if count == 0:
+        sql = "insert into DNDS_Tests (almethod, phylomodel, anc1, anc2, dnds_model)"
+        sql += " values(" + almethodid.__str__() + "," + phylomodelid.__str__() + "," + ancid1.__str__()
+        sql += "," + ancid2.__str__() + "," + dnds_modelid.__str__() + ")"
+        cur.execute(sql)
+        con.commit()
+    sql = "select id from DNDS_Tests where almethod=" + almethodid.__str__()
+    sql += " and phylomodel=" + phylomodelid.__str__() + " and anc1=" + ancid1.__str__()
+    sql += " and anc2=" + ancid2.__str__() + " and dnds_model=" + dnds_modelid.__str__()
+    cur.execute(sql) 
+    id = cur.fetchone()[0]
+    return id       
+    

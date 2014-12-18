@@ -92,14 +92,17 @@ def build_db(dbpath = None):
     
     """Tables to store comparisons of ancestral sites."""
     cur.execute("create table if not exists CompareAncestors(alias1 TEXT, alias2 TEXT)")
-    # methods: Df, p, k, dn/ds
-    cur.execute("create table if not exists FScoreMethod(id INTEGER primary key autoincrement, name TEXT unique, short TEXT unique)") # names of methods to predict functional-loci
-    # map the method to a series of scores
-    cur.execute("create table if not exists FScoreSeries(id INTEGER primary key autoincrement, fscoremethod INT, almethod INT, phylomodel INT, ancid1 INT, ancid2 INT)")
-    cur.execute("create table if not exists FScores(id INTEGER primary key, fscoreseries INT, site INT, fscore FLOAT)")
-    
-    cur.execute("create table if not exists LabeledDnDsPhylogenies(id INTEGER primary key, almethod INT, phylomodel INT, anc1 INTEGER, anc2 INTEGER, newick TEXT)")
 
+    cur.execute("create table if not exists FScore_Tests(id INTEGER primary key autoincrement, almethod INT, phylomodel INT, ancid1 INT, ancid2 INT)")
+    cur.execute("create table if not exists FScore_Sites(id INTEGER primary key, testid INT, site INT, df FLOAT, k FLOAT, p FLOAT)")
+    
+    cur.execute("create table if not exists DNDS_Models(id INTEGER primary key, name TEXT)")
+    cur.execute("create table if not exists DNDS_Tests(id INTEGER primary key autoincrement, almethod INT, phylomodel INT, anc1 INTEGER, anc2 INTEGER, dnds_model INT)")
+    #cur.execute("drop table LabeledDnDsPhylogenies")
+    cur.execute("create table if not exists LabeledDnDsPhylogenies(id INTEGER primary key autoincrement, testid INT, newick TEXT)") # testid is an ID from DNDS_Tests
+    cur.execute("create table if not exists DNDS_lnL(testid INT, lnl FLOAT)")
+    cur.execute("create table if not exists DNDS_params(testid INT, pclass1 FLOAT, plcass2 FLOAT, pclass3 FLOAT, plcass4 FLOAT, wclass1 FLOAT, wclass2 FLOAT, wclass3 FLOAT, wclass4 FLOAT)")
+    cur.execute("create table if not exists DNDS_BEB_sites(testid INT, site INT, ppcat1 FLOAT, ppcat2 FLOAT, ppcat3 FLOAT, ppcat4 FLOAT)")
 
     """For HTML visualization"""
     cur.execute("create table if not exists HtmlPieces(id INTEGER primary key autoincrement, keyword TEXT unique, htmlstring TEXT)")

@@ -3,6 +3,7 @@ from tools import *
 from asrpipelinedb_api import *
 
 def get_dnds_commands(con):
+    """Returns the path to a script that can be launched by MPIrun"""
     fscoremethods = get_setting_values(con, "fscoremethods")
     if "dnds" not in fscoremethods:
         return None
@@ -12,9 +13,20 @@ def get_dnds_commands(con):
     sql = "delete from LabeledDnDsPhylogenies"
     cur.execute(sql)
     con.commit()
+    sql = "delete from DNDS_Tests"
+    cur.execute(sql)
+    con.commit()
+    sql = "delete from DNDS_Models"
+    cur.execute(sql)
+    con.commit()
+    sql = "delete from DNDS_lnL"
+    cur.execute(sql)
+    con.commit()
     
     if False == os.path.exists("dnds"):
         os.system("mkdir dnds")
+        
+    commands = []
         
     """For each msa/model/anccomp pair, create a labeled ML tree with #1 label on the branch of interest."""
     for msa in get_alignment_method_names(con):
@@ -65,65 +77,87 @@ def get_dnds_commands(con):
                 else:
                     mrca1.label = "#1"
                 labeled_tree = mltree.__str__()
-                
                 labeled_tree = re.sub("'", "", labeled_tree)
-                
-                sql = "insert into LabeledDnDsPhylogenies (almethod, phylomodel, anc1, anc2, newick) "
-                sql += " values(" + msaid.__str__() + "," + modelid.__str__() + "," + ancid1.__str__() + "," + ancid2.__str__() + ",'" + labeled_tree.__str__() + "')"
-                cur.execute(sql)
-                con.commit()
-                
+                                
                 """Many different models of variable dN/dS"""
                 dnds_models = ["M0", "M0_branch", "M0_branch_neutral", "M1a", "M2a", "Nsites", "Nsites_branch", "Nsites_branch_neutral"]
                 
                 for dnds_model in dnds_models:             
+                    dnds_modelid = add_dnds_model(con, dnds_model)
+                    
                     """Does the dN/dS test exist in the DB?"""
-                    sql = "select count(*) from FScoreMethod where short='dN/dS'"
+                    testid = add_dnds_test(con, msaid, modelid, ancid1, ancid2, dnds_modelid)
+                    outdir = get_dnds_directory(con, testid)
+                    
+                    sql = "insert into LabeledDnDsPhylogenies (testid, newick) "
+                    sql += " values(" + testid.__str__() + ",'" + labeled_tree.__str__() + "')"
                     cur.execute(sql)
-                    count = cur.fetchone()[0]
-                    if count == 0:
-                        sql = "insert into FscoreMethod (short,name) values('dN/dS', 'dN/dS')"
-                        cur.execute(sql)
-                        con.commit()
+                    con.commit()
                     
                     """Make a directory for the Codeml dN/dS work"""
-                    dndsdir = get_dnds_directory(con, msaid, modelid, ancid1, ancid2, dnds_model)
+                    dndsdir = get_dnds_directory(con, testid)
                     if False == os.path.exists(dndsdir):
                         os.system("mkdir " + dndsdir)
                     
                     """Put init. stuff in the working directory"""
-                    phylippath = write_codeml_alignment(con, msaid, modelid, ancid1, ancid2, dnds_model)
-                    treepath = write_codeml_tree(con, msaid, modelid, ancid1, ancid2, dnds_model)
-                    controlpath = write_dnds_control_file(con, msaid, modelid, ancid1, ancid2, dnds_model)
-    # For each ancestral comparison
-    
-    # find the branch, and label it in a new tree file
-    
-    # run dn/ds
-    
-    # read dn/ds results into SQL DB
+                    phylippath = write_codeml_alignment(con, testid)
+                    treepath = write_codeml_tree(con, testid)
+                    controlpath = write_dnds_control_file(con, testid)
+                    
+                    runmepath = outdir + "/runme.sh"
+                    fout = open(runmepath, "w")
+                    fout.write("cd " + outdir + "\n")
+                    fout.write("codeml " + get_setting_values(con, "geneid" )[0] + ".ctl > catch.out\n")
+                    fout.write("cd -\n")
+                    fout.close()
+ 
+                    commands.append("source " + runmepath)
+    p = "SCRIPTS/dnds.commands.sh"
+    fout = open(p, "w")
+    for c in commands:
+        fout.write( c + "\n")
+    fout.close()
+    return p
 
-def get_dnds_directory(con, almethod, phylomodel, ancid1, ancid2, dnds_model):
+def get_dnds_directory(con, testid):
+    cur = con.cursor()
+    sql = "select almethod, phylomodel, anc1, anc2, dnds_model from DNDS_Tests where id=" + testid.__str__()
+    cur.execute(sql)
+    x = cur.fetchall()
+    if x.__len__() == 0:
+        return None
+    almethod = x[0][0]
+    phylomodel = x[0][1]
+    ancid1 = x[0][2]
+    ancid2 = x[0][3]
+    dnds_model = x[0][4]
     dndsdir = "dnds/dnds." + almethod.__str__() + "." + phylomodel.__str__() + "." + ancid1.__str__() + "." + ancid2.__str__() + "." + dnds_model.__str__()
     return dndsdir
 
-def write_codeml_tree(con, almethod, phylomodel, ancid1, ancid2, dnds_model):
+def write_codeml_tree(con, testid):
     cur = con.cursor()
+    
+    sql = "select almethod, phylomodel, dnds_model from DNDS_Tests where id=" + testid.__str__()
+    cur.execute(sql)
+    x = cur.fetchone()
+    almethod = x[0]
+    phylomodel = x[1]
+    dnds_modelid = x[2]
+    sql = "select name from DNDS_Models where id=" + dnds_modelid.__str__()
+    cur.execute(sql)
+    dnds_model = cur.fetchone()[0]
     
     if dnds_model == "M0":
         sql = "select newick from UnsupportedMlPhylogenies where almethod=" + almethod.__str__() + " and phylomodelid=" + phylomodel.__str__()
     else:
-        sql = "select newick from LabeledDnDsPhylogenies where almethod=" + almethod.__str__()
-        sql += " and phylomodel=" + phylomodel.__str__()
-        sql += " and anc1=" + ancid1.__str__()
-        sql += " and anc2=" + ancid2.__str__()
+        sql = "select newick from LabeledDnDsPhylogenies where testid=" + testid.__str__()
     cur.execute(sql)
     x = cur.fetchone()
     if x == None:
         return None
-    newick = x[0]
+    newick = x[0] + ";"
     
-    outdir = get_dnds_directory(con, almethod, phylomodel, ancid1, ancid2, dnds_model)
+    outdir = get_dnds_directory(con, testid)
     treepath = outdir + "/" + get_setting_values(con, "geneid" )[0] + ".tree"
     
     fout = open(treepath, "w")
@@ -131,10 +165,22 @@ def write_codeml_tree(con, almethod, phylomodel, ancid1, ancid2, dnds_model):
     fout.close()
     return treepath
 
-def write_codeml_alignment(con, almethod, phylomodel, ancid1, ancid2, dnds_model):
+def write_codeml_alignment(con, testid):
     cur = con.cursor()    
-    outdir = get_dnds_directory(con, almethod, phylomodel, ancid1, ancid2, dnds_model)
+    
+    sql = "select almethod from DNDS_tests where id=" + testid.__str__()
+    cur.execute(sql)
+    x = cur.fetchone()
+    if x == None:
+        return None
+    almethod = x[0]
+    
+    outdir = get_dnds_directory(con, testid)
     phylippath = outdir + "/" + get_setting_values(con, "geneid" )[0] + ".codons.phylip"
+    
+    """We want to write the seed taxon on top of the alignment. PAML will then report site scores
+        relative to that seed sequence."""
+    seedname = get_setting_values(con, "seedtaxa")[0]
     
     sql = "select taxonid, alsequence from AlignedSequences where almethod=" + almethod.__str__() + " and datatype=0"
     cur.execute(sql)
@@ -152,15 +198,22 @@ def write_codeml_alignment(con, almethod, phylomodel, ancid1, ancid2, dnds_model
         seq = re.sub("K", "G", seq)
         seq = re.sub("M", "A", seq)
         seq = re.sub("B", "C", seq)
-        seq = re.sub("-", "N", seq)
+        #seq = re.sub("-", "N", seq)
         seqs[ taxonname ] = seq
-    write_phylip(seqs, phylippath)
+    write_phylip(seqs, phylippath, firstseq=seedname)
     print phylippath
     return phylippath
     
-def write_dnds_control_file(con, almethod, phylomodel, ancid1, ancid2, dnds_model):
+def write_dnds_control_file(con, testid):
     cur = con.cursor()    
-    outdir = get_dnds_directory(con, almethod, phylomodel, ancid1, ancid2, dnds_model)
+    sql = "select name from DNDS_Models where id in (select dnds_model from DNDS_Tests where id=" + testid.__str__() + ")"
+    cur.execute(sql)
+    x = cur.fetchall()
+    if x == None:
+        return None
+    dnds_model = x[0][0]
+    
+    outdir = get_dnds_directory(con, testid)
     controlpath = outdir + "/" + get_setting_values(con, "geneid" )[0] + ".ctl"
     
     out = ""
@@ -176,7 +229,7 @@ def write_dnds_control_file(con, almethod, phylomodel, ancid1, ancid2, dnds_mode
     out += "    CodonFreq = 2  * 0:1/61 each, 1:F1X4, 2:F3X4, 3:codon table\n"
     out += "        clock = 0   * 0:no clock, 1:global clock; 2:local clock; 3:TipDate\n"
     out += "       aaDist = 0  * 0:equal, +:geometric; -:linear, 1-6:G1974,Miyata,c,p,v,a\n"
-    out += "   aaRatefile = /../wag.dat\n"
+    #out += "   aaRatefile = /../wag.dat\n"
     out += "\n"
     
     if dnds_model in ["M0", "M1a", "M2a", "Nsites"]:  
@@ -213,10 +266,10 @@ def write_dnds_control_file(con, almethod, phylomodel, ancid1, ancid2, dnds_mode
     else:
         out += "    fix_omega = 0  * 1: omega or omega_1 fixed, 0: estimate \n"
     
-    if dnds_model in ["M1a", "M2a"]:
-        out += "        omega = 1.3  * initial or fixed kappa\n"
-    else:
-        out += "        omega = 1  * initial or fixed omega, for codons or codon-based AAs\n"
+    #if dnds_model in ["M1a", "M2a"]:
+    #    out += "        omega = 1  * initial or fixed kappa\n"
+    #else:
+    out += "        omega = 1  * initial or fixed omega, for codons or codon-based AAs\n"
     
     out += "\n"
     out += "    fix_alpha = 1  * 0: estimate gamma shape parameter; 1: fix it at alpha\n"
@@ -235,4 +288,134 @@ def write_dnds_control_file(con, almethod, phylomodel, ancid1, ancid2, dnds_mode
     fout.write( out )
     fout.close()
     return controlpath
+
+
+def parse_dnds_results(con):
+    cur = con.cursor()
+    
+    sql = "delete from DNDS_lnL"
+    cur.execute(sql)
+    con.commit()
+    sql = "delete from DNDS_BEB_sites"
+    cur.execute(sql)
+    con.commit()    
+    sql = "delete from DNDS_params"
+    cur.execute(sql)
+    con.commit() 
+    
+    sql = "select id from DNDS_Tests"
+    cur.execute(sql)
+    x = cur.fetchall()
+    for ii in x:
+        testid = ii[0]
+        outdir = get_dnds_directory(con, testid)
+        
+        """Get the likelihood.
+        If we encounter errors, just continue to the next dN/dS folder"""
+        catchpath = outdir + "/catch.out"
+        if False == os.path.exists( catchpath ):
+            write_error(con, "I cannot find dN/dS output in the folder " + outdir)
+            continue
+        fin = open(catchpath, "r")
+        lnl = None
+        for l in fin.xreadlines():
+            if l.startswith("lnL"):
+                lnl = float( l.split()[2] )
+        if lnl == None:
+            write_error(con, "I couldn't find lnL value in the PAML output " + catchpath)
+            continue
+        
+        sql = "insert into DNDS_lnL(testid, lnl) values(" + testid.__str__() + "," + lnl.__str__() + ")"
+        cur.execute(sql)
+        con.commit()
+        
+        sql = "select dnds_model from DNDS_Tests where id=" + testid.__str__()
+        cur.execute(sql)
+        dnds_model = cur.fetchone()[0]
+        
+        """Get the omega values."""
+        outpath = outdir + "/out.paml"
+        if False == os.path.exists( outpath ):
+            write_error(con, "I cannot find dN/dS output file " + outpath)
+            continue
+        pclass1 = -1.0
+        pclass2 = -1.0
+        pclass3 = -1.0
+        pclass4 = -1.0
+        wclass1 = -1.0
+        wclass2 = -1.0
+        wclass3 = -1.0
+        wclass4 = -1.0
+        
+        fin = open(outpath, "r")
+        for l in fin.xreadlines():
+            if l.startswith("p:"):
+                tokens = l.split()
+                pclass1 = float( tokens[1] )
+                pclass2 = float( tokens[2] )
+                pclass3 = float( tokens[3] )        
+            if l.startswith("p:"):
+                tokens = l.split()
+                wclass1 = float( tokens[1] )
+                wclass2 = float( tokens[2] )
+                wclass3 = float( tokens[3] ) 
+            if l.startswith("proportion:"):
+                tokens = l.split()
+                pclass1 = float( tokens[1] )
+                pclass2 = float( tokens[2] )
+                pclass3 = float( tokens[3] )        
+                pclass4 = float( tokens[4] ) 
+            if l.startswith("foreground w:"):
+                tokens = l.split()
+                wclass1 = float( tokens[2] )
+                wclass2 = float( tokens[3] )
+                wclass3 = float( tokens[4] ) 
+                wclass4 = float( tokens[5] )
+        sql = "insert into DNDS_params (testid, pclass1, pclass2, pclass3, pclass4, wclass1, wclass2, wclass3, wclass4)"
+        sql += " values(" + testid.__str__() + "," + pclass1.__str__() + "," + pclass2.__str__() + "," + pclass3.__str__() + "," + pclass4.__str__()
+        sql += "," + wclass1.__str__() + "," + wclass2.__str__() + "," + wclass3.__str__() + "," + wclass4.__str__() + ")"
+        cur.execute(sql)
+        con.commit()
+        fin.close()
+        
+        """If its a sites model, get the per-site BEB scores from the PAML rst file."""
+        if dnds_model.__contains__("sites"):
+            rstpath = outdir + "/rst"
+            if False == os.path.exists(rstpath):
+                write_error(con, "I cannot find the rst file from codeml at " + rstpath)
+                continue
+            fin = open(rstpath, "r")
+            found_beb = False
+            for l in fin.xreadlines():
+                if l.__contains__("BEB"):
+                    found_beb = True
+            found1 = False
+            if found_beb == True:
+                tokens = l.split()
+                site = re.sub(" ", "", tokens[0])
+                if site.startswith("1"):
+                    found1 = True
+            if found1 == True:
+                tokens = l.split()
+                site = int( re.sub(" ", "", tokens[0]) )
+                p1 = float( tokens[2] )
+                p2 = float( tokens[3] )
+                p3 = float( tokens[4] )
+                if tokens.__len__() > 5:
+                    p4 = float( tokens[5] )
+                else:
+                    p4 = -1
+                sql = "insert into DNDS_BEB_sites (testid, site, ppcat1, ppcat2, ppcat3, ppcat4)"
+                sql += " values(" + testid.__str__() + "," + site.__str__()
+                sql += "," + p1.__str__() + "," + p2.__str__() + "," + p3.__str__() + "," + p4.__str__() + ")"
+                cur.execute(sql)
+                con.commit()
+            fin.close()
+                
+                
+            
+            
+        
+    
+    
     
