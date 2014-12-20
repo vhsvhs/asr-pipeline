@@ -400,4 +400,17 @@ def setup_workspace(con):
             exit()
     if False == os.path.exists("SCRIPTS"):
         os.system("mkdir SCRIPTS")
-            
+
+
+def cleanup(con):
+    """This method delete all the residual files, leaving only the SQL DB"""
+    write_log(con, "Cleaning up residual files.")
+    for msa in get_alignment_method_names(con):
+        os.system("rm -rf " + msa)
+    
+    if os.path.exists("dnds"):
+        os.system("rm -rf dnds")
+    
+    os.system("rm -rf *to*")
+    
+    

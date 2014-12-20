@@ -115,8 +115,11 @@ def check_raxml_output(con):
             treestring = fin.readline()
             fin.close()
             
+            """Re-root the tree based on the user-supplied outgroup"""
+            rooted_treestring = reroot_tree_at_outgroup(con, treestring)
+            
             sql = "insert into UnsupportedMlPhylogenies (almethod,phylomodelid,newick) VALUES("
-            sql += msaid.__str__() + "," + modelid.__str__() + ",'" + treestring + "')"
+            sql += msaid.__str__() + "," + modelid.__str__() + ",'" + rooted_treestring + "')"
             cur.execute(sql)
             con.commit()
 
@@ -453,13 +456,13 @@ def get_asr_commands(con):
             sql = "select id from TaxaGroups where name='outgroup'"
             cur.execute(sql)
             outgroup_id = cur.fetchone()[0]
-            print "456:", outgroup_id
+            #print "456:", outgroup_id
             outgroup_list = get_taxaid_in_group(con, outgroup_id)
-            print "457:", outgroup_list
+            #print "457:", outgroup_list
             outgroup_list = [get_taxon_name(con, i) for i in outgroup_list]
-            print "458:", outgroup_list
+            #print "458:", outgroup_list
             outgroup_string = "[" + ",".join( outgroup_list ) + "]"
-            print "460:", outgroup_string
+            #print "460:", outgroup_string
             asr_commands.append(lazaarus_exe + " --alignment " + fastapath + " --tree " + asrtreepath + " --model " + modelstr + " --outputdir " + msa + "/asr." + model + " --branch_lengths fixed --asrv 8 --codeml --gapcorrect True --outgroup " + outgroup_string)
 
     fout = open("SCRIPTS/asr_commands.sh", "w")
@@ -803,76 +806,88 @@ def parse_compareanc_results(con):
     sql = "delete from FScore_Sites"
     cur.execute(sql)
     con.commit()
-    
+        
     pairs = get_ancestral_comparison_pairs(con)    
     for pair in pairs:
         outdir = pair[0] + "to" + pair[1]
     
-        ancid1 = get_ancestorid(con, pair[0], msaid, modelid)
-        ancid2 = get_ancestorid(con, pair[1], msaid, modelid)
-    
-        summary_path = outdir + "/summary.txt"
-        if False == os.path.exists(summary_path):
-            write_error(con, "I cannot find your Df output file at " + summary_path)
-            continue
-        fin = open(summary_path, "r")
-        header = fin.readline()
-        column_method = {}
-        column_testid = {}
-        site_testid_method_score = {}
-        
-        tokens = header.split()
-        for ii in range( 7, tokens.__len__() ):
-            method = tokens[ii].split(":")[0]
-            
-            alname = tokens[ii].split(":").split(".")[0]
-            modelname = tokens[ii].split(":").split(".")[1]
-            sql = "select id from AlignmentMethods where name='" + alname.__str__() + "'"
+        for msa in get_alignment_method_names(con):        
+            sql = "select id from AlignmentMethods where name='" + msa + "'"
             cur.execute(sql)
-            alid = cur.fetchone()[0]
-            sql = "select modelid from PhyloModels where name='" + modelname.__str__() + "'"
-            cur.execute(sql)
-            modelid = cur.fetchone()[0]
-
-            sql = "select id from FScore_Tests where almethod=" + alid.__str__() + " and phylomodel=" + modelid.__str__()
-            sql += " and ancid1=" + ancid1.__str__() + " and ancid2=" + ancid2.__str__()
-            cur.execute(sql)
-            testid = cur.fetchone()[0]
-            
-            column_method[ ii ] = method
-            column_testid[ ii ] = testid
-        
-        for line in fin.readlines():
-            if line.__len__() < 5:
-                continue
-            tokens = line.split()
-            site = int( tokens[0] ) 
-            if site not in site_testid_method_score:
-                site_testid_method_score[site] = {}
-        
-            for ii in range( 7, tokens.__len__() ):
-                method = column_method[ii]
-                testid = column_testid[ii]
-
-                if testid not in site_testid_method_score[site]:
-                    site_testid_method_score[site][testid] = {}    
-                if method not in site_testid_method_score[site][testid][method]:
-                    site_testid_method_score[site][testid][method] = {}
+            msaid = cur.fetchone()[0]
                 
-                site_testid_method_score[site][testid][method] = float( tokens[ii] )
-                    
-    for site in site_testid_method_score:
-        for testid in site_testid_method_score[site]:
-            df = site_testid_method_score[site][testid]["Df"]
-            k = site_testid_method_score[site][testid]["k"]
-            p = site_testid_method_score[site][testid]["p"]
+            for modelname in get_phylo_modelnames(con):                
+                sql = "select modelid from PhyloModels where name='" + modelname + "'"
+                cur.execute(sql)
+                modelid = cur.fetchone()[0]
                 
-            sql = "insert into FScore_Tests (testid,site,df,k,p)"
-            sql += " values(" + testid.__str__() + "," + site.__str__() + "," + df.__str__() + "," + k.__str__() + "," + p.__str__() + ")"
-            cur.execute(sql)
-            con.commit()
-        
+                ancid1 = get_ancestorid(con, pair[0], msaid, modelid)
+                ancid2 = get_ancestorid(con, pair[1], msaid, modelid)
+                
+                sql = "select id from FScore_Tests where almethod=" + msaid.__str__() + " and phylomodel=" + modelid.__str__()
+                sql += " and ancid1=" + ancid1.__str__() + " and ancid2=" + ancid2.__str__()
+                cur.execute(sql)
+                testid = cur.fetchone()[0]
+                
+                site_df = {}
+                summary_path = outdir + "/Df." + msa + "." + modelname + ".summary.txt"
+                if False == os.path.exists(summary_path):
+                    write_error(con, "I cannot find your Df output file at " + summary_path)
+                    continue
+                fin = open(summary_path, "r")
+                lines = fin.readlines()
+                for l in lines:
+                    if l.__len__() > 2:
+                        tokens = l.split()
+                        site = int(tokens[0])
+                        site_df[site] = float(tokens[3])
+                fin.close()
 
+                site_p = {}
+                summary_path = outdir + "/p." + msa + "." + modelname + ".summary.txt"
+                if False == os.path.exists(summary_path):
+                    write_error(con, "I cannot find your p output file at " + summary_path)
+                    continue
+                fin = open(summary_path, "r")
+                lines = fin.readlines()
+                for l in lines:
+                    if l.__len__() > 2:
+                        tokens = l.split()
+                        site = int(tokens[0])
+                        site_p[site] = float(tokens[3])
+                fin.close()
+
+                site_k = {}
+                summary_path = outdir + "/k." + msa + "." + modelname + ".summary.txt"
+                if False == os.path.exists(summary_path):
+                    write_error(con, "I cannot find your k output file at " + summary_path)
+                    continue
+                fin = open(summary_path, "r")
+                lines = fin.readlines()
+                for l in lines:
+                    if l.__len__() > 2:
+                        tokens = l.split()
+                        site = int(tokens[0])
+                        site_k[site] = float(tokens[3])                
+                fin.close()
+                
+                for site in site_df:
+                    df = site_df[site]
+                    p = site_p[site]
+                    k = site_k[site]
+                    sql = "insert into FScore_Sites (testid,site,df,k,p)"
+                    sql += " values(" + testid.__str__() + "," + site.__str__() + "," + df.__str__() + "," + k.__str__() + "," + p.__str__() + ")"
+                    cur.execute(sql)
+                    print sql
+
+                con.commit()
+                
+                sql = "select count(*) from FScore_Sites where testid=" + testid.__str__()
+                cur.execute(sql)
+                count = cur.fetchone()[0]
+                
+                write_log(con, "I found " + count.__str__() + " F-scored sites for test ID " + testid.__str__() )                
+        
 def get_branch_supports( treepath ):
     supports = []
     fin = open(treepath, "r")
@@ -891,6 +906,8 @@ def get_sum_of_branches( treepath ):
     fin = open(treepath, "r")
     newick = fin.readline().strip()
     t = Tree()
-    t.read_from_string(newick, "newick")
+    t.read_from_string(newick.__str__(), "newick")
     fin.close()
     return t.length()
+
+

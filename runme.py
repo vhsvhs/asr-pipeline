@@ -35,11 +35,13 @@ verify_config(con, ap)
 setup_workspace(con)
 
 if jump <= 0 and stop > 0:
+    write_log(con, "Checkpoint: reading sequences.")
     ap.params["checkpoint"] = -1
     ap.params["pending_checkpoint"] = 0
     print "\n. Reading your FASTA sequences..."
     write_log(con, "Reading sequences")
     import_and_clean_erg_seqs(con, ap)
+
 
 verify_erg_seqs(con, ap)
 
@@ -47,6 +49,7 @@ verify_erg_seqs(con, ap)
 
 """ MSAs """
 if jump <= 1 and stop > 1:
+    write_log(con, "Checkpoint: aligning sequences.")
     ap.params["checkpoint"] = 0
     ap.params["pending_checkpoint"] = 1
     print "\n. Aligning sequences..."
@@ -55,6 +58,7 @@ if jump <= 1 and stop > 1:
     run_script(p)
 
 if jump <= 1.1 and stop > 1.1:
+    write_log(con, "Checkpoint: checking aligned sequences.")
     ap.params["checkpoint"] = 1
     ap.params["pending_checkpoint"] = 1.1
     check_aligned_sequences(con)
@@ -63,13 +67,16 @@ if jump <= 1.9 and stop > 1.91:
     clear_sitesets(con)
 
 if jump <= 2 and stop > 2.1:
+    write_log(con, "Checkpoint: trimming alignments.")
     """Trim the alignments to match the seed sequence(s)."""
     trim_alignments(con)
 
 if ap.getOptionalToggle("--skip_zorro"):
+    write_log(con, "Checkpoint: skipping ZORRO analysis.")
     bypass_zorro(con)
 
 if False == ap.getOptionalToggle("--skip_zorro"):
+    write_log(con, "Checkpoint: starting ZORRO analysis")
     """Use ZORRO to the find the phylogenetically informative sites."""
     if jump <= 2.1 and stop > 2.2:
         p = build_zorro_commands(con)
@@ -94,26 +101,28 @@ if False == ap.getOptionalToggle("--skip_zorro"):
         write_alignment_for_raxml(con)
 
 if jump <= 2.99 and stop > 2.99:
+    write_log(con, "Checkpoint: converting all FASTA to PHYLIP")
     convert_all_fasta_to_phylip(con)
 
 """ ML Trees """
 if jump <= 3 and stop > 3:
+    write_log(con, "Checkpoint: finding ML trees with RAxML")
     ap.params["checkpoint"] = 2
     ap.params["pending_checkpoint"] = 3
-    write_log(con, "Inferring ML phylogenies with RAxML.")
     p = write_raxml_commands(con)
     run_script(p)
 
 if jump <= 3.1 and stop > 3.1:
+    write_log(con, "Checkpoint: checking RAxML output")
     """ML trees, part 2"""
     check_raxml_output(con)
     get_mlalpha_pp(con)
 
 """ Branch Support """
 if jump <= 4 and stop > 4:
+    write_log(con, "Checkpoint: calculating branch support")
     ap.params["checkpoint"] = 3
     ap.params["pending_checkpoint"] = 4
-    write_log(con, "Calculating aLRT branch support values with PhyML.")
 
     x = calc_alrt(con)
     run_script(x)
@@ -122,24 +131,24 @@ if jump <= 4 and stop > 4:
 
 """ A.S.R. """
 if jump <= 5 and stop > 5:
+    write_log(con, "Checkpoint: reconstructing ancestral sequences")
     ap.params["checkpoint"] = 4
     ap.params["pending_checkpoint"] = 5
-    print "\n. Reconstructing ancestral sequences..."
-    write_log(con, "Reconstructing ancestral sequences, using Lazarus.")
     x = get_asr_commands(con)
     run_script(x)
 if jump <= 5.1 and stop > 5.1:
     check_asr_output(con)
     
 if jump <= 5.2 and stop > 5.3:
+    write_log(con, "Checkpoint: extracting relevant ancestors")
     ap.params["checkpoint"] = 5
     ap.params["pending_checkpoint"] = 5.1
-    write_log(con, "Extracting relevant ancestors")
     x = get_getanc_commands(con)
     run_script(x)
     check_getanc_output(con)
 
 if jump <= 5.9 and stop > 5.9:
+    write_log(con, "Checkpoint: calculating Bayesian-sampled alternate ancestors")
     ap.params["checkpoint"] = 5.1
     ap.params["pending_checkpoint"] = 5.2
     run_asr_bayes(con, ap)
@@ -147,6 +156,7 @@ if jump <= 5.9 and stop > 5.9:
 """ Predict sites of functional evolution """
 if jump <= 6 and stop > 6:
     if "compareanc" in ap.params:
+        write_log(con, "Checkpoint: performing Df ranking for functional loci")
         ap.params["checkpoint"] = 5.2
         ap.params["pending_checkpoint"] = 6
         
@@ -158,17 +168,23 @@ if jump <= 6 and stop > 6:
         x = get_compareanc_commands(con)
         args = x.split()
         run_script(x)
-if jump <= 6.1 and jump > 6.1:
+if jump <= 6.1 and stop > 6.1:
+    write_log(con, "Checkpoint: checking Df output")
     parse_compareanc_results(con)
 
 if jump <= 6.5 and stop > 6.5:
     """Do dn/ds test."""
+    write_log(con, "Checkpoint: performing dN/dS tests")
     x = get_dnds_commands(con)
-    write_log(con, "Launching dN/dS tests.")
     run_script(x)
 if jump <= 6.6 and stop > 6.6:
+    write_log(con, "Checkpoint: checking dN/dS output")
     parse_dnds_results(con)
-    exit()
+    
+if jump <= 6.8 and stop > 6.8:
+    write_log(con, "Checkpoint: comparing Df to dN/dS")
+    setup_compare_functional_loci(con)
+    compare_functional_loci(con)
 
 """December 2014: The new Django-version of this code should stop here.
     Rather than building static HTML pages (code below), we'll use Django
@@ -179,8 +195,16 @@ if jump <= 6.6 and stop > 6.6:
     write a method to delete all the residual files from the above analysis.
 """
 
+if jump <= 7 and stop > 7:
+    write_log(con, "Checkpoint: cleaning-up residual files")
+    cleanup(con) 
+
+
+exit()
+
 """ Build an HTML Report """
 if jump <= 7 and stop > 7:
+    write_log(con, "Checkpoint - writing an HTML report.")
     ap.params["checkpoint"] = 6
     ap.params["pending_checkpoint"] = 7
     write_log(con, "Writing an HTML report.")

@@ -255,6 +255,18 @@ def is_valid_almethod(con, methodid):
     else:
         return False
 
+def get_outgroup_list(con):
+    cur = con.cursor()
+    sql = "select id from TaxaGroups where name='outgroup'"
+    cur.execute(sql)
+    x = cur.fetchall()
+    if x.__len__() == 0:
+        return None
+    outgroup_id = x[0][0]
+    outgroup_list = get_taxaid_in_group(con, outgroup_id)
+    outgroup_list = [get_taxon_name(con, i) for i in outgroup_list]
+    return outgroup_list
+
 def get_taxaid_in_group(con, groupid):
     cur = con.cursor()
     sql = "select taxonid from GroupsTaxa where groupid=" + groupid.__str__()
@@ -323,7 +335,7 @@ def write_phylip(seqs, ppath, firstseq=None):
     """Write the seed sequence first, if it exists."""
     if firstseq != None and firstseq in seqs:
         fout.write( firstseq + "   " + seqs[firstseq] + "\n")
-    else:
+    elif firstseq != None:
         write_error("Error 327: the seed sequence " + firstseq + " cannot be found.")
         exit()
     

@@ -101,9 +101,10 @@ def build_db(dbpath = None):
     #cur.execute("drop table LabeledDnDsPhylogenies")
     cur.execute("create table if not exists LabeledDnDsPhylogenies(id INTEGER primary key autoincrement, testid INT, newick TEXT)") # testid is an ID from DNDS_Tests
     cur.execute("create table if not exists DNDS_lnL(testid INT, lnl FLOAT)")
-    cur.execute("drop table DNDS_params")
     cur.execute("create table if not exists DNDS_params(testid INT, pclass1 FLOAT, pclass2 FLOAT, pclass3 FLOAT, pclass4 FLOAT, wclass1 FLOAT, wclass2 FLOAT, wclass3 FLOAT, wclass4 FLOAT)")
     cur.execute("create table if not exists DNDS_BEB_sites(testid INT, site INT, ppcat1 FLOAT, ppcat2 FLOAT, ppcat3 FLOAT, ppcat4 FLOAT)")
+
+    cur.execute("create table if not exists Compare_DNDS_Fscores(dnds_testid INT, fscore_testid INT)")
 
     """For HTML visualization"""
     cur.execute("create table if not exists HtmlPieces(id INTEGER primary key autoincrement, keyword TEXT unique, htmlstring TEXT)")

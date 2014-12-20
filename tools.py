@@ -146,21 +146,10 @@ def get_tree_length(path):
     t.read_from_path(path, "newick")
     return t.length()
 
-def get_tree_newick(path):
-    """Input: path to newick tree. Returns the tree's Newick string"""
-    t = Tree()
-    t.read_from_path(path, "newick")
-    edges = t.get_edge_set()
-    for e in edges:
-        e.length = e.length = float( "%.4f"%e.length )
-    return t.__str__()
-
 def reroot_tree(tstr):
     """Input: a tree path to a Newick tree.  Output: a re-rooted version of the tree, based on the outgroup defined in configuration.py"""
     t = Tree()
-    #print tstr
-    t.read_from_string(tstr, "newick")
-    #print "t:", t.__str__()
+    t.read_from_string(tstr.__str__(), "newick")
     og = ap.params["outgroup"]
     og = re.sub("\[", "", og)
     og = re.sub("\]", "", og)
@@ -173,6 +162,23 @@ def reroot_tree(tstr):
     ret = ret.strip()
     return ret
 
+def reroot_tree_at_outgroup(con, newickstring):
+    """Returns a newick-formatted string containing the re-rooted vesion of the tree.
+    If something goes wrong, a message will be written to the ErrorLog table, and this
+    method will return Non."""
+    cur = con.cursor()
+    
+    ogs = get_outgroup_list(con)
+    
+    t = Tree()
+    t.read_from_string(newickstring.__str__(), "newick")
+
+    mrca = t.mrca(taxon_labels=ogs)
+    t.reroot_at_edge(mrca.edge, update_splits=False)
+    ret = t.as_string("newick")
+    ret = re.sub("\[\&\R\] ", "", ret)
+    ret = ret.strip()
+    return ret
 
 def get_cladogram_path(d, model):
     tpath = d + "/asr." + model + "/tree1/tree1.txt"
@@ -382,7 +388,7 @@ def align_codon_to_aaseq(con, aaseq, codonseq):
     
     if float( aa_no_indels.__len__() ) != float(nt_no_indels.__len__())/3.0:
         write_error(con, "The nt and aa sequence don't match.")
-        print aa_no_indels.__len__(), nt_no_indels.__len__()
+        print aa_no_indels.__len__(), codonseq.__len__()
         print aa_no_indels
         print nt_no_indels
         return None
@@ -400,5 +406,18 @@ def align_codon_to_aaseq(con, aaseq, codonseq):
         ret += codon
     return ret
 
-
-
+def get_ml_model(con, almethod):
+    cur = con.cursor()
+    sql = "select mltreeid, max(pp) from TreePP where mltreeid in (select id from UnsupportedMlPhylogenies where almethod=" + almethod.__str__() + ")"
+    cur.execute(sql)
+    x = cur.fetchall()
+    if x.__len__() == 0:
+        return None
+    mltreeid = x[0][0]
+    maxpp = x[0][1]
+    
+    sql = "select phylomodelid from UnsupportedMlPhylogenies where id=" + mltreeid.__str__()
+    cur.execute(sql)
+    x = cur.fetchone()[0]
+    return x
+    

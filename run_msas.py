@@ -440,6 +440,10 @@ def write_alignment_for_raxml(con):
         best_treeid = y[0][0]
         #print "200:", msaid, best_treeid
         
+        if best_treeid == None:
+            write_error(con, "RAxML cannot be run until a ZORRO threshold has been established.")
+            exit()
+        
         sql = "select thresh from ZorroThreshFasttree where treeid=" + best_treeid.__str__()
         cur.execute(sql)
         y = cur.fetchall()

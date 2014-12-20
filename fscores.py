@@ -3,11 +3,7 @@ from tools import *
 from asrpipelinedb_api import *
 
 def get_dnds_commands(con):
-    """Returns the path to a script that can be launched by MPIrun"""
-    fscoremethods = get_setting_values(con, "fscoremethods")
-    if "dnds" not in fscoremethods:
-        return None
-    
+    """Returns the path to a script that can be launched by MPIrun"""    
     cur = con.cursor()
     
     sql = "delete from LabeledDnDsPhylogenies"
@@ -47,9 +43,9 @@ def get_dnds_commands(con):
                 write_error(con, "I can't find your ML phylogeny. Error 34.")
                 exit()
             unsupported_newick = x[0][0]
-            
+                        
             mltree = Tree()
-            mltree.read_from_string(unsupported_newick, "newick")
+            mltree.read_from_string(unsupported_newick.__str__(), "newick")
             
             for pair in get_ancestral_comparison_pairs(con):
                 ancid1 = get_ancestorid(con, pair[0], msaid, modelid)
@@ -127,11 +123,31 @@ def get_dnds_directory(con, testid):
     if x.__len__() == 0:
         return None
     almethod = x[0][0]
+    sql = "select name from AlignmentMethods where id=" + almethod.__str__()
+    cur.execute(sql)
+    alname = cur.fetchone()[0]
+    
     phylomodel = x[0][1]
+    sql = "select name from PhyloModels where modelid=" + phylomodel.__str__()
+    cur.execute(sql)
+    phylomodelname = cur.fetchone()[0]
+    
     ancid1 = x[0][2]
+    sql = "select name from Ancestors where id=" + ancid1.__str__()
+    cur.execute(sql)
+    ancid1name = cur.fetchone()[0]
+    
     ancid2 = x[0][3]
+    sql = "select name from Ancestors where id=" + ancid2.__str__()
+    cur.execute(sql)
+    ancid2name = cur.fetchone()[0]
+    
     dnds_model = x[0][4]
-    dndsdir = "dnds/dnds." + almethod.__str__() + "." + phylomodel.__str__() + "." + ancid1.__str__() + "." + ancid2.__str__() + "." + dnds_model.__str__()
+    sql = "select name from DNDS_Models where id=" + dnds_model.__str__()
+    cur.execute(sql)
+    dnds_modelname = cur.fetchone()[0]
+    
+    dndsdir = "dnds/dnds." + alname.__str__() + "." + phylomodelname.__str__() + "." + ancid1name.__str__() + "." + ancid2name.__str__() + "." + dnds_modelname.__str__()
     return dndsdir
 
 def write_codeml_tree(con, testid):
@@ -201,7 +217,6 @@ def write_codeml_alignment(con, testid):
         #seq = re.sub("-", "N", seq)
         seqs[ taxonname ] = seq
     write_phylip(seqs, phylippath, firstseq=seedname)
-    print phylippath
     return phylippath
     
 def write_dnds_control_file(con, testid):
@@ -339,7 +354,7 @@ def parse_dnds_results(con):
         outpath = outdir + "/out.paml"
         if False == os.path.exists( outpath ):
             write_error(con, "I cannot find dN/dS output file " + outpath)
-            continue
+            exit()
         pclass1 = -1.0
         pclass2 = -1.0
         pclass3 = -1.0
@@ -392,7 +407,7 @@ def parse_dnds_results(con):
             rstpath = outdir + "/rst"
             if False == os.path.exists(rstpath):
                 write_error(con, "I cannot find the rst file from codeml at " + rstpath)
-                continue
+                exit()
             fin = open(rstpath, "r")
    
             
@@ -406,59 +421,153 @@ def parse_dnds_results(con):
                     contains_beb = True
                 if l.__contains__("NEB"):
                     contains_neb = True
-            
-            print rstpath
-            print contains_beb, contains_neb
-            
+
+            expected_columns = None
+            found1 = False
             for l in lines:
                 #print l
                 if l.__contains__("BEB"):
                     found_beb = True
                 if l.__contains__("NEB"):
                     found_neb = True
-                                
+                                                
                # if l.startswith(" ") or l.startswith("lnL"):
                #    found1 = False    
                #     continue
                 
-                found1 = False
-                if (contains_beb == True and found_beb == True) or (contains_beb == False and contains_neb == True and found_neb == True):
+
+                if found1 == False and (contains_beb == True and found_beb == True) or (contains_beb == False and contains_neb == True and found_neb == True):
                     if l.__len__() > 2:
                         tokens = l.split()
                         site = re.sub(" ", "", tokens[0])
                         if site.startswith("1"):
                             found1 = True
-                                
+                            expected_columns = tokens.__len__()
+                                                                
                 if found1 == True:
                     tokens = l.split()
-                    site = int( re.sub(" ", "", tokens[0]) )
-                    p1 = -1
-                    p2 = -2
-                    p3 = -1
-                    p4 = -1
-                    p1 = float( re.sub("\*", "", tokens[2]) )
-                    p2 = float( re.sub("\*", "", tokens[3]) )
-                    if False == tokens[4].startswith("(") and False == tokens[4].startswith("+"):
-                        p3 = float( re.sub("\*", "", tokens[4]) )
-                    if tokens.__len__() > 5:
-                        if False == tokens[5].startswith("(") and False == tokens[5].startswith("+"):
-                            p4 = float( re.sub("\*", "", tokens[5] ) )
-                    sql = "insert into DNDS_BEB_sites (testid, site, ppcat1, ppcat2, ppcat3, ppcat4)"
-                    sql += " values(" + testid.__str__() + "," + site.__str__()
-                    sql += "," + p1.__str__() + "," + p2.__str__() + "," + p3.__str__() + "," + p4.__str__() + ")"
-                    cur.execute(sql)
-                    con.commit()
+                    if tokens.__len__() == expected_columns:
+                        site = int( re.sub(" ", "", tokens[0]) )
+                        p1 = -1
+                        p2 = -2
+                        p3 = -1
+                        p4 = -1
+                        p1 = float( re.sub("\*", "", tokens[2]) )
+                        p2 = float( re.sub("\*", "", tokens[3]) )
+                        if False == tokens[4].startswith("(") and False == tokens[4].startswith("+"):
+                            p3 = float( re.sub("\*", "", tokens[4]) )
+                        if tokens.__len__() > 5:
+                            if False == tokens[5].startswith("(") and False == tokens[5].startswith("+"):
+                                p4 = float( re.sub("\*", "", tokens[5] ) )
+                        if p1 > 1 or p2 > 1 or p3 > 1 or p4 > 1:
+                            write_error(con, "probability cannot exceed 1.0 Error 444")
+                            print rstpath
+                            print l
+                            exit()
+                        
+                        sql = "insert into DNDS_BEB_sites (testid, site, ppcat1, ppcat2, ppcat3, ppcat4)"
+                        sql += " values(" + testid.__str__() + "," + site.__str__()
+                        sql += "," + p1.__str__() + "," + p2.__str__() + "," + p3.__str__() + "," + p4.__str__() + ")"
+                        cur.execute(sql)
+                        con.commit()
             fin.close()
         
             sql = "select count(*) from DNDS_BEB_sites where testid=" + testid.__str__()
             cur.execute(sql)
             count = cur.fetchone()[0]
             write_log(con, "I found " + count.__str__() + " BEB sites in " + outdir)
-                
-                
             
-            
+
+def setup_compare_functional_loci(con):
+    cur = con.cursor()
+    
+    sql = "delete from Compare_DNDS_Fscores"
+    cur.execute(sql)
+    con.commit()
+    
+    sql = "select id from DNDS_Models where name='Nsites_branch'"
+    cur.execute(sql)
+    nsites_id = cur.fetchone()[0]
+    
+    sql = "select id from AlignmentMethods where name='mafft'"
+    cur.execute(sql)
+    mafftid = cur.fetchone()[0]
+    ml_modelid = get_ml_model(con, mafftid)
+    
+    sql = "select id, almethod, anc1, anc2 from DNDS_Tests where dnds_model=" + nsites_id.__str__() + " and phylomodel=" + ml_modelid.__str__()
+    cur.execute(sql)
+    x = cur.fetchall()
+    for ii in x:
+        dnds_testid = ii[0]
+        almethod = ii[1]
+        phylomodel = ml_modelid
+        anc1 = ii[2]
+        anc2 = ii[3]
         
+        """Find the matching Fscore test"""
+        sql = "select id from FScore_Tests where almethod=" + almethod.__str__() + " and phylomodel=" + phylomodel.__str__() + " and ancid1=" + anc1.__str__() + " and ancid2=" + anc2.__str__()
+        cur.execute(sql)
+        y = cur.fetchall()
+        if y.__len__() > 0:
+            fscore_testid = y[0][0]
+            
+            sql = "insert into Compare_DNDS_Fscores (dnds_testid, fscore_testid) values(" + dnds_testid.__str__()
+            sql += "," + fscore_testid.__str__() + ")"
+            cur.execute(sql)
+            con.commit()
+
+def compare_functional_loci(con):
+    cur = con.cursor()
+    sql = "select dnds_testid, fscore_testid from Compare_DNDS_Fscores"
+    cur.execute(sql)
+    x = cur.fetchall()
+    
+    fout = open("compare_dnds_Df.txt", "w")
+    
+    for ii in x:
+        dnds_testid = ii[0]
+        fscore_testid = ii[1]
+        
+        """Get scores for sites."""
+        site_ppcat2 = {}
+        site_ppcat3 = {}
+        site_ppcat4 = {}
+        site_df = {}
+        site_k = {}
+        site_p = {}
+        
+        sql = "select site, ppcat1, ppcat2, ppcat3, ppcat4 from DNDS_BEB_sites where testid=" + dnds_testid.__str__()
+        cur.execute(sql)
+        qq = cur.fetchall()
+        for jj in qq:
+            site_ppcat2[ jj[0] ] = jj[2] 
+            site_ppcat3[ jj[0] ] = jj[3]
+            site_ppcat4[ jj[0] ] = jj[4]
+        
+        sql = "select site, df, k, p from FScore_Sites where testid=" + fscore_testid.__str__()
+        cur.execute(sql)
+        qq = cur.fetchall()
+        for jj in qq:
+            site_df[ jj[0] ] = jj[1] 
+            site_k[ jj[0] ] = jj[2]
+            site_p[ jj[0] ] = jj[3]
+        
+        dnds_sites = site_ppcat2.keys()
+        df_sites = site_df.keys()
+        sites = []
+        for s in dnds_sites:
+            if s in df_sites:
+                sites.append(s)
+            else:
+                print "Site ", s, "not in Df"
+                
+        sites.sort()
+        for s in sites:
+            line = s.__str__() + "\t" + site_ppcat2[s].__str__() + "\t" +  site_ppcat3[s].__str__() + "\t" + site_ppcat4[s].__str__() + "\t" + site_df[s].__str__() + "\t" + site_k[s].__str__() + "\t" + site_p[s].__str__()
+            fout.write(line + "\n")
+            
+    fout.close()
+    
     
     
     
