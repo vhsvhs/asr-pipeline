@@ -319,7 +319,7 @@ def write_fasta(seqs, fpath):
         fout.write(seqs[s] + "\n")
     fout.close()
     
-def write_phylip(seqs, ppath, firstseq=None):
+def write_phylip(con, seqs, ppath, firstseq=None):
     """Sanity check: are all the sequences the same length?"""
     l = None
     for s in seqs:
@@ -331,12 +331,12 @@ def write_phylip(seqs, ppath, firstseq=None):
     """Okay, write the phylip file."""
     fout = open(ppath, "w")    
     fout.write( seqs.__len__().__str__() + "   " + l.__str__() + "\n")
-    
+        
     """Write the seed sequence first, if it exists."""
     if firstseq != None and firstseq in seqs:
         fout.write( firstseq + "   " + seqs[firstseq] + "\n")
     elif firstseq != None:
-        write_error("Error 327: the seed sequence " + firstseq + " cannot be found.")
+        write_error(con, "Error 327: the seed sequence " + firstseq + " cannot be found.")
         exit()
     
     for s in seqs:

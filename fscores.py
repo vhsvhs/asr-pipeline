@@ -202,6 +202,9 @@ def write_codeml_alignment(con, testid):
     cur.execute(sql)
     x = cur.fetchall()
     seqs = {}
+    
+    #print seqs
+    
     for ii in x:
         taxonid = ii[0]
         taxonname = get_taxon_name(con, taxonid)
@@ -216,7 +219,7 @@ def write_codeml_alignment(con, testid):
         seq = re.sub("B", "C", seq)
         #seq = re.sub("-", "N", seq)
         seqs[ taxonname ] = seq
-    write_phylip(seqs, phylippath, firstseq=seedname)
+    write_phylip(con, seqs, phylippath, firstseq=seedname)
     return phylippath
     
 def write_dnds_control_file(con, testid):

@@ -172,19 +172,26 @@ if jump <= 6.1 and stop > 6.1:
     write_log(con, "Checkpoint: checking Df output")
     parse_compareanc_results(con)
 
-if jump <= 6.5 and stop > 6.5:
-    """Do dn/ds test."""
-    write_log(con, "Checkpoint: performing dN/dS tests")
-    x = get_dnds_commands(con)
-    run_script(x)
-if jump <= 6.6 and stop > 6.6:
-    write_log(con, "Checkpoint: checking dN/dS output")
-    parse_dnds_results(con)
-    
-if jump <= 6.8 and stop > 6.8:
-    write_log(con, "Checkpoint: comparing Df to dN/dS")
-    setup_compare_functional_loci(con)
-    compare_functional_loci(con)
+
+sql = "select count(*) from Compare_DNDS_Fscores"
+cur = con.cursor()
+cur.execute(sql)
+if cur.fetchone()[0] > 0:
+    if jump <= 6.5 and stop > 6.5:
+        """Do dn/ds test."""
+        write_log(con, "Checkpoint: performing dN/dS tests")
+        x = get_dnds_commands(con)
+        run_script(x)
+    if jump <= 6.6 and stop > 6.6:
+        write_log(con, "Checkpoint: checking dN/dS output")
+        parse_dnds_results(con)
+        
+    if jump <= 6.8 and stop > 6.8:
+        write_log(con, "Checkpoint: comparing Df to dN/dS")
+        setup_compare_functional_loci(con)
+        compare_functional_loci(con)
+else:
+    write_log(con, "Codon sequences were not given by the user; I will skip dN/dS analysis.")
 
 """December 2014: The new Django-version of this code should stop here.
     Rather than building static HTML pages (code below), we'll use Django

@@ -807,7 +807,7 @@ def get_fasttree_zorro_commands_for_alignment(con, almethod, scoringmethodid):
             #aseq = get_aligned_seq(con, taxonid, almethod)
             #print "468:", aseq[  max( site_scores.keys() )-1  ]
             
-        write_phylip(seqs, ppath)
+        write_phylip(con, seqs, ppath)
 
         """Write a FastTree command to analyze these sites."""
         c = make_fasttree_command(con, ap, alname, ppath )
