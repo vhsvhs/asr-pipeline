@@ -106,7 +106,7 @@ if jump <= 2.99 and stop > 2.99:
 
 """ ML Trees """
 if jump <= 3 and stop > 3:
-    write_log(con, "Checkpoint: finding ML trees with RAxML")
+    write_log(con, "Checkpoint: finding ML trees with RAxML (be patient)")
     ap.params["checkpoint"] = 2
     ap.params["pending_checkpoint"] = 3
     p = write_raxml_commands(con)

@@ -265,7 +265,11 @@ def get_outgroup_list(con):
     outgroup_id = x[0][0]
     outgroup_list = get_taxaid_in_group(con, outgroup_id)
     outgroup_list = [get_taxon_name(con, i) for i in outgroup_list]
-    return outgroup_list
+    
+    ogs = []
+    for ii in outgroup_list:
+        ogs.append(  ii.__str__() )
+    return ogs
 
 def get_taxaid_in_group(con, groupid):
     cur = con.cursor()

@@ -27,8 +27,6 @@ def run_script(path):
     #
     # version 2
     #
-    print "\n. ASR pipeline: Running the system command:"
-    print exe
     os.system(exe)
 
 def run_subprocess(command):
@@ -172,9 +170,18 @@ def reroot_tree_at_outgroup(con, newickstring):
     
     t = Tree()
     t.read_from_string(newickstring.__str__(), "newick")
-
+    t.update_splits(delete_outdegree_one=False)
+    
+    """Root the tree, temporarily, at a terminal node."""
+    t.reroot_at_midpoint(update_splits=True, delete_outdegree_one=True)
+    
+    """And now re-root at the outgroup mrca"""
     mrca = t.mrca(taxon_labels=ogs)
-    t.reroot_at_edge(mrca.edge, update_splits=False)
+    candidate_edges = []
+    for edge in t.postorder_edge_iter():
+        if edge.tail_node == mrca or edge.head_node == mrca:
+            candidate_edges.append( edge )           
+    t.reroot_at_edge(mrca.edge, update_splits=False, delete_outdegree_one=True)
     ret = t.as_string("newick")
     ret = re.sub("\[\&\R\] ", "", ret)
     ret = ret.strip()
