@@ -85,9 +85,10 @@ def build_db(dbpath = None):
     cur.execute("create table if not exists AncestralCladogram(id INTEGER primary key autoincrement, unsupportedmltreeid INTEGER, newick TEXT)")
     
     """Some ancestors have alias names, in addition to their default number-based name."""
-    cur.execute("create table if not exists AncestorsAlias(ancid INTEGER, alias TEXT)") # alias names for this ancestor
+
+    cur.execute("create table if not exists AncestorsAlias(pairid INTEGER primary key autoincrement, ancid INTEGER, alias TEXT)") # alias names for this ancestor
     """Some ancestors are special, with pre-defined mappings to known ingroups and outgroups."""
-    cur.execute("create table if not exists AncestorsGroups(ancid INTEGER unique, ingroupid INTEGER, outgroupid INTEGER)") # some ancestors, but not all, will have a mapping to known taxa groups.
+    cur.execute("create table if not exists AncestorsGroups(ancid INTEGER, ingroupid INTEGER, outgroupid INTEGER)") # some ancestors, but not all, will have a mapping to known taxa groups.
     
     
     """Tables to store comparisons of ancestral sites."""

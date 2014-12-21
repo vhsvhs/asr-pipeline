@@ -24,6 +24,13 @@ def get_dnds_commands(con):
         
     commands = []
         
+    codeml_exe = get_setting_values(con, "codeml_exe")
+    if codeml_exe == None:
+        write_error(con, "I cannot find the executable for codeml. Error 29")
+        exit()
+    else:
+        codeml_exe = codeml_exe[0]
+        
     """For each msa/model/anccomp pair, create a labeled ML tree with #1 label on the branch of interest."""
     for msa in get_alignment_method_names(con):
         sql = "select id from AlignmentMethods where name='" + msa + "'"
@@ -103,7 +110,7 @@ def get_dnds_commands(con):
                     runmepath = outdir + "/runme.sh"
                     fout = open(runmepath, "w")
                     fout.write("cd " + outdir + "\n")
-                    fout.write("codeml " + get_setting_values(con, "geneid" )[0] + ".ctl > catch.out\n")
+                    fout.write(codeml_exe + " " + get_setting_values(con, "geneid" )[0] + ".ctl > catch.out\n")
                     fout.write("cd -\n")
                     fout.close()
  
@@ -561,9 +568,11 @@ def compare_functional_loci(con):
         for s in dnds_sites:
             if s in df_sites:
                 sites.append(s)
-            else:
-                print "Site ", s, "not in Df"
-                
+            #else:
+                #print "Site ", s, "not in Df"
+            
+        print "\n. " + sites.__len__().__str__() + " sites have scores for both Df and dN/dS."   
+        print "\n. " + (dnds_sites.__len__()-sites.__len__()).__str__() + " do not match." 
         sites.sort()
         for s in sites:
             line = s.__str__() + "\t" + site_ppcat2[s].__str__() + "\t" +  site_ppcat3[s].__str__() + "\t" + site_ppcat4[s].__str__() + "\t" + site_df[s].__str__() + "\t" + site_k[s].__str__() + "\t" + site_p[s].__str__()

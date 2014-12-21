@@ -83,10 +83,18 @@ def import_alignment_method(con, name, exe):
     cur.execute(sql)
     count = cur.fetchone()[0]
     if count == 0:  
-        sql = " insert into AlignmentMethods(name, exe_path) VALUES("
+        sql = "insert into AlignmentMethods(name, exe_path) VALUES("
         sql += "'" + name + "','" + exe + "')"
         cur.execute(sql)
         con.commit()
+    else:
+        sql = "select id from AlignmentMethods where name='" + name + "'"
+        cur.execute(sql)
+        id = cur.fetchone()[0]
+        
+        sql ="update  AlignmentMethods set exe_path='" + exe + "' where id=" + id.__str__()
+        cur.execute(sql)
+        con.commit()        
 
 def get_taxonid(con, shortname):
     cur = con.cursor()

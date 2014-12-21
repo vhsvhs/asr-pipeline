@@ -43,11 +43,11 @@ def write_raxml_commands(con):
         phypath = get_raxml_phylippath(msa)
         for model in get_phylo_modelnames(con):
             runid = get_runid(msa, model) 
+            """Remove residual files from previous RAxML job with the same runID"""
             if os.path.exists(here + "/" + msa + "/RAxML_info." + runid): # Remove dirty RAxML data.
                 rmcmd = "rm " + here + "/" + msa + "/RAxML_*"
-                print rmcmd
-                #p = run_subprocess(rmcmd)
                 os.system(rmcmd)
+            """Verify the raxml executable"""
             cv = get_setting_values(con, "raxml_exe")
             if cv == None:
                 write_error(con, "I cannot find the executable path for raxml.")
@@ -114,12 +114,16 @@ def check_raxml_output(con):
             fin = open(raxml_treepath, "r")
             treestring = fin.readline()
             fin.close()
+
+            """Continue here -- check this -- new for December 2014"""
+            rooted_treestring = re.sub("'", "", rooted_treestring)
             
             """Re-root the tree based on the user-supplied outgroup"""
             rooted_treestring = reroot_tree_at_outgroup(con, treestring)
             
-            """Continue here -- check this -- new for December 2014"""
-            rooted_treestring = re.sub("'", "", rooted_treestring)
+            print "121:", rooted_treestring
+            
+
                     
             sql = "insert into UnsupportedMlPhylogenies (almethod,phylomodelid,newick) VALUES("
             sql += msaid.__str__() + "," + modelid.__str__() + ",'" + rooted_treestring + "')"
@@ -651,13 +655,14 @@ def check_getanc_output(con):
                     write_error(con, "I cannot find the expected ancestor " + ancpath)
                     exit()
                 
+                """this_node will be ID of the node corresponding to the ancestor."""
                 this_node = None
                 fin = open(ancpath, "r")
                 for l in fin.readlines():
                     if l.__contains__("On the ML tree"):
                         this_node = int(  re.sub("#", "", l.split()[8])  )
                 fin.close()
-                
+                                
                 sql = "select id from Ancestors where name='Node" + this_node.__str__() + "' and almethod=" + msaid.__str__() + " and phylomodel=" + modelid.__str__()
                 print ancpath, sql
                 cur.execute(sql)
@@ -668,13 +673,13 @@ def check_getanc_output(con):
                 ancid = x[0][0]
                 
                 sql = "insert into AncestorsAlias (ancid, alias) values(" + ancid.__str__() + ",'" + groupid_name[ ingroupid ] + "')"
+                print sql
                 cur.execute(sql)
                 con.commit()
 
                 sql = "insert into AncestorsGroups (ancid, ingroupid, outgroupid) values(" + ancid.__str__() + "," + ingroupid.__str__() + "," + outgroupid.__str__() + ")"
                 cur.execute(sql)
                 con.commit()
-                
 
 
 def setup_pdb_maps(ap):
@@ -881,7 +886,6 @@ def parse_compareanc_results(con):
                     sql = "insert into FScore_Sites (testid,site,df,k,p)"
                     sql += " values(" + testid.__str__() + "," + site.__str__() + "," + df.__str__() + "," + k.__str__() + "," + p.__str__() + ")"
                     cur.execute(sql)
-                    print sql
 
                 con.commit()
                 

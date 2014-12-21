@@ -145,6 +145,11 @@ def read_config_file(con, ap):
             ap.params["zorro_exe"] = exe
             add_setting_value(con, "zorro_exe", exe)
 
+        elif tokens[0].startswith("CODEML"):
+            exe = tokens[1].strip()
+            ap.params["codeml_exe"] = exe
+            add_setting_value(con, "codeml_exe", exe)
+        
         elif tokens[0].startswith("ALIGNMENT_ALGORITHMS"):
             x = tokens[1].split()
             ap.params["msa_algorithms"] = []
@@ -385,6 +390,60 @@ def verify_config(con, ap):
     con.commit()
         
     return ap
+
+def verify_all_exe(con):
+    """Verifies that all executables (e.g., codeml, RAxML, etc.) actually exist."""
+    cur = con.cursor()
+
+    name_exe = {} # key = name of the exe, value = the path
+
+    """Alignment methods"""
+    sql = "select name, exe_path from AlignmentMethods"""
+    cur.execute(sql)
+    x = cur.fetchall()
+    for ii in x:
+        name = ii[0]
+        exe_path = ii[1]
+        name_exe[ name ] = exe_path
+            
+    """ ZORRO """
+    if False == ap.getOptionalToggle("--skip_zorro"):
+        zorro_exe = get_setting_values(con, "zorro_exe")[0]
+        name_exe["ZORRO"] = zorro_exe
+        
+        """FastTree"""
+        ft_exe = get_setting_values(con, "fasttree_exe")[0]
+        name_exe["FastTree"] = ft_exe
+    
+    """Everything Else"""
+    rexe = get_setting_values(con, "raxml_exe")[0]
+    name_exe["RAxML"] = rexe
+    pexe = get_setting_values(con, "phyml_exe")[0]    
+    name_exe["PhyML"] = pexe
+    lexe = get_setting_values(con, "lazarus_exe")[0]    
+    name_exe["Lazarus"] = lexe
+    
+    cexe = get_setting_values(con, "codeml_exe") 
+    if cexe != None:  
+        name_exe["codeml"] = cexe[0]    
+    
+    aexe = get_setting_values(con, "anccomp_exe")
+    if aexe != None:
+        name_exe["AncComp"] = aexe[0]
+    
+    for name in name_exe:
+        tokens = name_exe[name].split()
+        if name.startswith("RAxML"):
+            name_exe["RAxML"] = tokens[0]
+        elif tokens.__len__() > 1:
+            name_exe[name] = tokens[  tokens.__len__()-1  ]
+
+        if False == os.path.exists( name_exe[name] ) and which(name_exe[name]) == None:
+            """Some executable paths may start with 'python', or some other program.
+                So, we need to strip off those beginning parts and just examine the exe path."""
+            write_error(con, "I cannot find the executable for " + name + " at '" + name_exe[name] + "'" )
+            exit()
+
 
 def print_config(ap):
     for p in ap.params:

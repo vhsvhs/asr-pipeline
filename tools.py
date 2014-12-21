@@ -160,6 +160,7 @@ def reroot_tree(tstr):
     ret = ret.strip()
     return ret
 
+
 def reroot_tree_at_outgroup(con, newickstring):
     """Returns a newick-formatted string containing the re-rooted vesion of the tree.
     If something goes wrong, a message will be written to the ErrorLog table, and this
@@ -186,6 +187,7 @@ def reroot_tree_at_outgroup(con, newickstring):
     ret = re.sub("\[\&\R\] ", "", ret)
     ret = ret.strip()
     return ret
+
 
 def get_cladogram_path(d, model):
     tpath = d + "/asr." + model + "/tree1/tree1.txt"

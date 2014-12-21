@@ -32,6 +32,7 @@ con = build_db( dbpath = ap.getOptionalArg("--dbpath") )
 read_config_file( con, ap )
 print_config(ap)
 verify_config(con, ap)
+verify_all_exe(con)
 setup_workspace(con)
 
 if jump <= 0 and stop > 0:
@@ -44,6 +45,7 @@ if jump <= 0 and stop > 0:
 
 
 verify_erg_seqs(con, ap)
+write_log(con, "Checkpoint: configuration is OK.")
 
 """Note: An imported SQL DB could be retrieved right here, avoiding all the prior steps."""
 
@@ -72,8 +74,9 @@ if jump <= 2 and stop > 2.1:
     trim_alignments(con)
 
 if ap.getOptionalToggle("--skip_zorro"):
-    write_log(con, "Checkpoint: skipping ZORRO analysis.")
-    bypass_zorro(con)
+    if jump <= 2.99:
+        write_log(con, "Checkpoint: skipping ZORRO analysis.")
+        bypass_zorro(con)
 
 if False == ap.getOptionalToggle("--skip_zorro"):
     write_log(con, "Checkpoint: starting ZORRO analysis")
@@ -173,10 +176,8 @@ if jump <= 6.1 and stop > 6.1:
     parse_compareanc_results(con)
 
 
-sql = "select count(*) from Compare_DNDS_Fscores"
-cur = con.cursor()
-cur.execute(sql)
-if cur.fetchone()[0] > 0:
+x = get_setting_values(con, "ergntpath")
+if x != None:
     if jump <= 6.5 and stop > 6.5:
         """Do dn/ds test."""
         write_log(con, "Checkpoint: performing dN/dS tests")
@@ -202,9 +203,9 @@ else:
     write a method to delete all the residual files from the above analysis.
 """
 
-if jump <= 7 and stop > 7:
-    write_log(con, "Checkpoint: cleaning-up residual files")
-    cleanup(con) 
+#if jump <= 7 and stop > 7:
+#    write_log(con, "Checkpoint: cleaning-up residual files")
+#    cleanup(con) 
 
 
 exit()
