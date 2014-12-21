@@ -114,12 +114,12 @@ def check_raxml_output(con):
             fin = open(raxml_treepath, "r")
             treestring = fin.readline()
             fin.close()
-
-            """Continue here -- check this -- new for December 2014"""
-            rooted_treestring = re.sub("'", "", rooted_treestring)
             
             """Re-root the tree based on the user-supplied outgroup"""
             rooted_treestring = reroot_tree_at_outgroup(con, treestring)
+            """Continue here -- check this -- new for December 2014"""
+            rooted_treestring = re.sub("'", "", rooted_treestring)
+
             
             print "121:", rooted_treestring
             
