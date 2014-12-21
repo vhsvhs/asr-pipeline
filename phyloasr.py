@@ -119,11 +119,6 @@ def check_raxml_output(con):
             rooted_treestring = reroot_tree_at_outgroup(con, treestring)
             """Continue here -- check this -- new for December 2014"""
             rooted_treestring = re.sub("'", "", rooted_treestring)
-
-            
-            print "121:", rooted_treestring
-            
-
                     
             sql = "insert into UnsupportedMlPhylogenies (almethod,phylomodelid,newick) VALUES("
             sql += msaid.__str__() + "," + modelid.__str__() + ",'" + rooted_treestring + "')"
