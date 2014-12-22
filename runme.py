@@ -203,9 +203,9 @@ else:
     write a method to delete all the residual files from the above analysis.
 """
 
-#if jump <= 7 and stop > 7:
-#    write_log(con, "Checkpoint: cleaning-up residual files")
-#    cleanup(con) 
+if jump <= 7 and stop > 7:
+    write_log(con, "Checkpoint: cleaning-up residual files")
+    cleanup(con) 
 
 
 exit()
