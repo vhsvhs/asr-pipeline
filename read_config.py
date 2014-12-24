@@ -392,7 +392,9 @@ def verify_config(con, ap):
     return ap
 
 def verify_all_exe(con):
-    """Verifies that all executables (e.g., codeml, RAxML, etc.) actually exist."""
+    """Verifies that all executables (e.g., codeml, RAxML, etc.) actually exist.
+        If a user-specificed exe does not exist, then this method will call exit()
+        and leave a message in the ErrorLog table."""
     cur = con.cursor()
 
     name_exe = {} # key = name of the exe, value = the path
@@ -430,7 +432,8 @@ def verify_all_exe(con):
     aexe = get_setting_values(con, "anccomp_exe")
     if aexe != None:
         name_exe["AncComp"] = aexe[0]
-    
+        
+    """Now check if each exe exists."""
     for name in name_exe:
         tokens = name_exe[name].split()
         if name.startswith("RAxML"):
@@ -438,6 +441,8 @@ def verify_all_exe(con):
         elif tokens.__len__() > 1:
             name_exe[name] = tokens[  tokens.__len__()-1  ]
 
+        """Expand the '~' in the path, if it exists."""
+        name_exe[name] = os.path.expanduser( name_exe[name])
         if False == os.path.exists( name_exe[name] ) and which(name_exe[name]) == None:
             """Some executable paths may start with 'python', or some other program.
                 So, we need to strip off those beginning parts and just examine the exe path."""

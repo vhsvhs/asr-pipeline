@@ -659,7 +659,6 @@ def check_getanc_output(con):
                 fin.close()
                                 
                 sql = "select id from Ancestors where name='Node" + this_node.__str__() + "' and almethod=" + msaid.__str__() + " and phylomodel=" + modelid.__str__()
-                print ancpath, sql
                 cur.execute(sql)
                 x = cur.fetchall()
                 if x.__len__() == 0:
@@ -668,7 +667,7 @@ def check_getanc_output(con):
                 ancid = x[0][0]
                 
                 sql = "insert into AncestorsAlias (ancid, alias) values(" + ancid.__str__() + ",'" + groupid_name[ ingroupid ] + "')"
-                print sql
+                sql
                 cur.execute(sql)
                 con.commit()
 
@@ -738,7 +737,15 @@ def get_compareanc_commands(con):
                 sql = "select modelid from PhyloModels where name='" + model + "'"
                 cur.execute(sql)
                 modelid = cur.fetchone()[0]
-#                 
+
+                ancid1 = get_ancestorid(con, pair[0], msaid, modelid)
+                ancid2 = get_ancestorid(con, pair[1], msaid, modelid)
+                
+                if ancid1 == ancid2:
+                    """Potentially skip this analysis if anc1 == anc2"""
+                    write_log(con, "I'm skipping the Fscore analysis for " + msa + "." + model + " " + pair.__str__() + " because the ancestors are the same node.")
+                    continue
+
                 sql = "select id from UnsupportedMlPhylogenies where almethod=" + msaid.__str__() + " and phylomodelid=" + modelid.__str__()
                 cur.execute(sql)
                 treeid = cur.fetchone()[0]
@@ -748,53 +755,50 @@ def get_compareanc_commands(con):
                 pp = cur.fetchone()[0]
             
                 msapath = msa + "/asr." + model + "/reformatted_alignment.phy"
-                
-                #msapathlines += msapath + " "
+
                 msanamelines += "msaname " + msapath + " " + runid + "\n"
                 comparelines += "compare " + msa + "/asr." + model + "/" + pair[0] + ".dat " + msa + "/asr." + model + "/" + pair[1] + ".dat " + runid + "\n"
                 weightlines += "msaweight " + runid + " " + pp.__str__() + "\n"
-                
-                ancid1 = get_ancestorid(con, pair[0], msaid, modelid)
-                ancid2 = get_ancestorid(con, pair[1], msaid, modelid)
-                
+                                
                 sql = "insert into FScore_Tests (almethod, phylomodel, ancid1, ancid2)"
                 sql += " values(" + msaid.__str__() + "," + modelid.__str__() + "," + ancid1.__str__() + "," + ancid2.__str__() + ")"
                 cur.execute(sql)
                 con.commit()
                 
         specpath = "compare_ancs." + pair[0] + "-" + pair[1] + ".config.txt"
-        fout = open(specpath, "w")
-        
-        seed_taxonname = get_setting_values(con, "seedtaxa")[0]
-        fout.write("seed " + seed_taxonname + "\n")
-        #if pair[1] in ap.params["map2pdb"]: # there was a definition to map scores on this PDB:
-        #    fout.write("pdb " + ap.params["map2pdb"][pair[1]] + "\n")
-        fout.write(msanamelines)
-        fout.write(comparelines)
-        fout.write(weightlines)
-        fout.close()
+        if msanamelines.__len__() > 2 and comparelines.__len__() > 2 and weightlines.__len__() > 2:      
+            fout = open(specpath, "w")
+            
+            seed_taxonname = get_setting_values(con, "seedtaxa")[0]
+            fout.write("seed " + seed_taxonname + "\n")
+            #if pair[1] in ap.params["map2pdb"]: # there was a definition to map scores on this PDB:
+            #    fout.write("pdb " + ap.params["map2pdb"][pair[1]] + "\n")
+            fout.write(msanamelines)
+            fout.write(comparelines)
+            fout.write(weightlines)
+            fout.close()
     
-        #
-        # to-do continue here -- fix this so we're not using just one model.
-        #
-        modelstr = get_model_path(   get_phylo_modelnames(con)[0] , con)
-                    
-        c = get_setting_values(con, "anccomp_exe")[0]
-        c += " --specpath " + specpath
-        c += " --modelpath " + modelstr
-        c += " --window_sizes 1"
-        c += " --metrics k p Df"
-        c += " --runid " + pair[0] + "to" + pair[1]
-        c += " --restrict_to_seed True"
-        c += " --renumber_sites True"
-        #if ap.params["do_pdb_analysis"]:
-        #    c += " --pdbtoolsdir " + ap.params["pdbtoolsdir"]
-        #    c += " --pymol_exe " + get_setting_values(con, "pymol_exe")
-        #c += " --force_bin_width 0.25"
-        #if startsite != None and endsite != None:
-        #    c += " --highlight_sites " + startsite.__str__() + "-" + endsite.__str__()
-        compare_commands.append(c)
-        compare_commands.append("source run_rscripts.sh")
+            #
+            # to-do continue here -- fix this so we're not using just one model.
+            #
+            modelstr = get_model_path(   get_phylo_modelnames(con)[0] , con)
+                        
+            c = get_setting_values(con, "anccomp_exe")[0]
+            c += " --specpath " + specpath
+            c += " --modelpath " + modelstr
+            c += " --window_sizes 1"
+            c += " --metrics k p Df"
+            c += " --runid " + pair[0] + "to" + pair[1]
+            c += " --restrict_to_seed True"
+            c += " --renumber_sites True"
+            #if ap.params["do_pdb_analysis"]:
+            #    c += " --pdbtoolsdir " + ap.params["pdbtoolsdir"]
+            #    c += " --pymol_exe " + get_setting_values(con, "pymol_exe")
+            #c += " --force_bin_width 0.25"
+            #if startsite != None and endsite != None:
+            #    c += " --highlight_sites " + startsite.__str__() + "-" + endsite.__str__()
+            compare_commands.append(c)
+            compare_commands.append("source run_rscripts.sh")
     
     fout = open("SCRIPTS/compareanc_commands.sh", "w")
     print compare_commands
@@ -827,10 +831,17 @@ def parse_compareanc_results(con):
                 ancid1 = get_ancestorid(con, pair[0], msaid, modelid)
                 ancid2 = get_ancestorid(con, pair[1], msaid, modelid)
                 
+                if ancid1 == ancid2:
+                    """Skip this analysis, because it probably wasn't computed."""
+                    continue
+                
                 sql = "select id from FScore_Tests where almethod=" + msaid.__str__() + " and phylomodel=" + modelid.__str__()
                 sql += " and ancid1=" + ancid1.__str__() + " and ancid2=" + ancid2.__str__()
                 cur.execute(sql)
-                testid = cur.fetchone()[0]
+                x = cur.fetchall()
+                if x.__len__() == 0:
+                    continue
+                testid = x[0][0]
                 
                 site_df = {}
                 summary_path = outdir + "/Df." + msa + "." + modelname + ".summary.txt"

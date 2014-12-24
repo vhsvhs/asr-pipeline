@@ -58,6 +58,10 @@ def get_dnds_commands(con):
                 ancid1 = get_ancestorid(con, pair[0], msaid, modelid)
                 ancid2 = get_ancestorid(con, pair[1], msaid, modelid)
   
+                if ancid1 == ancid2:
+                    write_log(con, "I'm skipping dnds test for model=" + model + ", msa=" + msa.__str__() + " because anc1 and anc2 match.")
+                    continue
+  
                 taxaids1 = get_taxaid_from_ancestor(con, ancid1)
                 taxaids2 = get_taxaid_from_ancestor(con, ancid2)
                 
@@ -315,15 +319,191 @@ def write_dnds_control_file(con, testid):
     return controlpath
 
 
+def get_neb_scores_from_rstfile(con, rstpath, testid, neb_sig_sites):
+    """Parses an RST file, places NEB scores into the SQL database."""
+    cur = con.cursor()
+    
+    fin = open(rstpath, "r")
+    found_beb = False
+    found_neb = False
+    lines = fin.readlines()
+
+    expected_columns = None
+    found1 = False
+    for l in lines:
+                
+        if l.__contains__("NEB"):
+            found_neb = True
+        
+        if found_neb == True and False == l.startswith("(amino"):
+            if l.__len__() > 2:
+                tokens = l.split()
+                site = re.sub(" ", "", tokens[0])
+                if site.startswith("1"):
+                    found1 = True
+                    expected_columns = tokens.__len__()
+        
+        if found_neb == True and l.__len__() < 2:
+            if found1 == False:
+                found1 = True
+            else:
+                found_neb = False
+                                                        
+        if found1 == True:
+            tokens = l.split()
+            if tokens.__len__() == expected_columns:
+                site = int( re.sub(" ", "", tokens[0]) )
+                p1 = -1
+                p2 = -2
+                p3 = -1
+                p4 = -1
+                p1 = float( re.sub("\*", "", tokens[2]) )
+                p2 = float( re.sub("\*", "", tokens[3]) )
+                if False == tokens[4].startswith("(") and False == tokens[4].startswith("+"):
+                    p3 = float( re.sub("\*", "", tokens[4]) )
+                if tokens.__len__() > 5:
+                    if False == tokens[5].startswith("(") and False == tokens[5].startswith("+"):
+                        p4 = float( re.sub("\*", "", tokens[5] ) )
+                if p1 > 1 or p2 > 1 or p3 > 1 or p4 > 1:
+                    write_error(con, "probability cannot exceed 1.0 Error 444")
+                    print rstpath
+                    print l
+                    exit()
+                
+                """Did the ancestors mutate their state at this site?"""
+                sql = "select anc1, anc2 from DNDS_Tests where id=" + testid.__str__()
+                cur.execute(sql)
+                x = cur.fetchone()
+                ancid1 = x[0]
+                ancid2 = x[1]
+                
+                sql = "select max(pp), state from AncestralStates where site=" + site.__str__() + " and ancid=" + ancid1.__str__()
+                cur.execute(sql)
+                x = cur.fetchone()
+                maxpp1 = x[0]
+                state1 = x[1]
+                
+                sql = "select max(pp), state from AncestralStates where site=" + site.__str__() + " and ancid=" + ancid2.__str__()
+                cur.execute(sql)
+                x = cur.fetchone()
+                maxpp2 = x[0]
+                state2 = x[1]                      
+                
+                ancmu = 0
+                if state1 != state2 and (maxpp1 > 0.6 and maxpp2 > 0.6):
+                    ancmu = 1
+                    
+                sig_flag = 0
+                if site in neb_sig_sites:
+                    sig_flag = 1
+                
+                """Finally, save the results into the DB."""
+                sql = "insert into NEB_scores (testid, site, ppcat1, ppcat2, ppcat3, ppcat4, ancmu, significant)"
+                sql += " values(" + testid.__str__() + "," + site.__str__()
+                sql += "," + p1.__str__() + "," + p2.__str__() + "," + p3.__str__() + "," + p4.__str__() + "," + ancmu.__str__() + ","  + sig_flag.__str__() + ")"
+                cur.execute(sql)
+                con.commit()
+    fin.close()
+
+
+
+def get_beb_scores_from_rstfile(con, rstpath, testid, beb_sig_sites):
+    """Parses an RST file, places BEB scores into the SQL database."""
+    fin = open(rstpath, "r")
+    found_beb = False
+    found_neb = False
+    lines = fin.readlines()
+
+    expected_columns = None
+    found1 = False
+    for l in lines:
+                
+        if l.__contains__("BEB"):
+            found_beb = True
+        
+        if found_neb == True and False == l.startswith("(amino"):
+            if l.__len__() > 2:
+                tokens = l.split()
+                site = re.sub(" ", "", tokens[0])
+                if site.startswith("1"):
+                    found1 = True
+                    expected_columns = tokens.__len__()
+        
+        if found_beb == True and l.__len__() < 2:
+            if found1 == False:
+                found1 = True
+            else:
+                found_beb = False
+                                                        
+        if found1 == True:
+            tokens = l.split()
+            if tokens.__len__() == expected_columns:
+                site = int( re.sub(" ", "", tokens[0]) )
+                p1 = -1
+                p2 = -2
+                p3 = -1
+                p4 = -1
+                p1 = float( re.sub("\*", "", tokens[2]) )
+                p2 = float( re.sub("\*", "", tokens[3]) )
+                if False == tokens[4].startswith("(") and False == tokens[4].startswith("+"):
+                    p3 = float( re.sub("\*", "", tokens[4]) )
+                if tokens.__len__() > 5:
+                    if False == tokens[5].startswith("(") and False == tokens[5].startswith("+"):
+                        p4 = float( re.sub("\*", "", tokens[5] ) )
+                if p1 > 1 or p2 > 1 or p3 > 1 or p4 > 1:
+                    write_error(con, "probability cannot exceed 1.0 Error 444")
+                    print rstpath
+                    print l
+                    exit()
+                
+                """Did the ancestors mutate their state at this site?"""
+                sql = "select anc1, anc2 from DNDS_Tests where id=" + testid.__str__()
+                cur.execute(sql)
+                x = cur.fetchone()
+                ancid1 = x[0]
+                ancid2 = x[1]
+                
+                sql = "select max(pp), state from AncestralStates where site=" + site.__str__() + " and ancid=" + ancid1.__str__()
+                cur.execute(sql)
+                x = cur.fetchone()
+                maxpp1 = x[0]
+                state1 = x[1]
+                
+                sql = "select max(pp), state from AncestralStates where site=" + site.__str__() + " and ancid=" + ancid2.__str__()
+                cur.execute(sql)
+                x = cur.fetchone()
+                maxpp2 = x[0]
+                state2 = x[1]                      
+                
+                ancmu = 0
+                if state1 != state2 and (maxpp1 > 0.6 and maxpp2 > 0.6):
+                    ancmu = 1
+                    
+                sig_flag = 0
+                if site in beb_sig_sites:
+                    sig_flag = 1
+                
+                """Finally, save the results into the DB."""
+                sql = "insert into BEB_scores (testid, site, ppcat1, ppcat2, ppcat3, ppcat4, ancmu, significant)"
+                sql += " values(" + testid.__str__() + "," + site.__str__()
+                sql += "," + p1.__str__() + "," + p2.__str__() + "," + p3.__str__() + "," + p4.__str__() + "," + ancmu.__str__() + "," + sig_flag.__str__() + ")"
+                cur.execute(sql)
+                con.commit()
+    fin.close()
+
+
 def parse_dnds_results(con):
     cur = con.cursor()
     
     sql = "delete from DNDS_lnL"
     cur.execute(sql)
     con.commit()
-    sql = "delete from DNDS_BEB_sites"
+    sql = "delete from NEB_scores"
     cur.execute(sql)
     con.commit()    
+    sql = "delete from BEB_scores"
+    cur.execute(sql)
+    con.commit()  
     sql = "delete from DNDS_params"
     cur.execute(sql)
     con.commit() 
@@ -407,86 +587,83 @@ def parse_dnds_results(con):
         con.commit()
         fin.close()
         
-#         sql = "select * from DNDS_params where testid=" + testid.__str__()
-#         cur.execute(sql)
-#         params = cur.fetchone()
-        #write_log(con, "I found these param. results in " + outdir + ": " + params.__str__() )
         
         """If its a sites model, get the per-site BEB scores from the PAML rst file."""
         if dnds_model.__contains__("sites"):
+            
+            neb_sig_sites = []      
+            print outpath       
+            fin = open(outpath, "r")
+            found_sig_sites = False
+            for l in fin.xreadlines():
+                if l.__len__() < 2 and neb_sig_sites.__len__() > 1:
+                    found_sig_sites = False
+                elif l.__contains__("Naive Empirical Bayes (NEB)"):
+                    found_sig_sites = True
+                    print "629: found NEB"
+                elif l.__contains__("Bayes Empirical Bayes (BEB)"):
+                    found_sig_sites = False
+                
+                if found_sig_sites == True and False == l.__contains__("Pr") and l.__len__() > 1 and False == l.__contains__("Naive Empirical Bayes (NEB)"):
+                    if l.startswith("Positive"):
+                        continue
+                    if l.startswith("(amino acids"):
+                        continue
+                    tokens = l.split()
+                    site = int(tokens[0])
+                    p = tokens[2]
+                    if p.__contains__("*"):
+                        neb_sig_sites.append( site )
+            fin.close()
+   
+            print "641:", neb_sig_sites
+
+            beb_sig_sites = []      
+            print outpath       
+            fin = open(outpath, "r")
+            found_sig_sites = False
+            for l in fin.xreadlines():
+                if l.__len__() < 2 and beb_sig_sites.__len__() > 1:
+                    found_sig_sites = False
+                elif l.__contains__("Bayes Empirical Bayes (BEB)"):
+                    found_sig_sites = True
+                    print "427: found BEB"
+                elif l.startswith("The"):
+                    found_sig_sites = False
+                
+                if found_sig_sites == True and False == l.__contains__("Pr") and l.__len__() > 1 and False == l.__contains__("Bayes Empirical Bayes (BEB)"):
+                    if l.startswith("Positive"):
+                        continue
+                    if l.startswith("(amino acids"):
+                        continue
+                    tokens = l.split()
+                    site = int(tokens[0])
+                    p = tokens[2]
+                    if p.__contains__("*"):
+                        beb_sig_sites.append( site )
+            fin.close()
+   
+            print "433:", beb_sig_sites
+
             rstpath = outdir + "/rst"
             if False == os.path.exists(rstpath):
                 write_error(con, "I cannot find the rst file from codeml at " + rstpath)
                 exit()
-            fin = open(rstpath, "r")
-   
-            
-            contains_beb = False
-            contains_neb = False
-            found_beb = False
-            found_neb = False
-            lines = fin.readlines()
-            for l in lines:
-                if l.__contains__("BEB"):
-                    contains_beb = True
-                if l.__contains__("NEB"):
-                    contains_neb = True
 
-            expected_columns = None
-            found1 = False
-            for l in lines:
-                #print l
-                if l.__contains__("BEB"):
-                    found_beb = True
-                if l.__contains__("NEB"):
-                    found_neb = True
-                                                
-               # if l.startswith(" ") or l.startswith("lnL"):
-               #    found1 = False    
-               #     continue
-                
-
-                if found1 == False and (contains_beb == True and found_beb == True) or (contains_beb == False and contains_neb == True and found_neb == True):
-                    if l.__len__() > 2:
-                        tokens = l.split()
-                        site = re.sub(" ", "", tokens[0])
-                        if site.startswith("1"):
-                            found1 = True
-                            expected_columns = tokens.__len__()
-                                                                
-                if found1 == True:
-                    tokens = l.split()
-                    if tokens.__len__() == expected_columns:
-                        site = int( re.sub(" ", "", tokens[0]) )
-                        p1 = -1
-                        p2 = -2
-                        p3 = -1
-                        p4 = -1
-                        p1 = float( re.sub("\*", "", tokens[2]) )
-                        p2 = float( re.sub("\*", "", tokens[3]) )
-                        if False == tokens[4].startswith("(") and False == tokens[4].startswith("+"):
-                            p3 = float( re.sub("\*", "", tokens[4]) )
-                        if tokens.__len__() > 5:
-                            if False == tokens[5].startswith("(") and False == tokens[5].startswith("+"):
-                                p4 = float( re.sub("\*", "", tokens[5] ) )
-                        if p1 > 1 or p2 > 1 or p3 > 1 or p4 > 1:
-                            write_error(con, "probability cannot exceed 1.0 Error 444")
-                            print rstpath
-                            print l
-                            exit()
-                        
-                        sql = "insert into DNDS_BEB_sites (testid, site, ppcat1, ppcat2, ppcat3, ppcat4)"
-                        sql += " values(" + testid.__str__() + "," + site.__str__()
-                        sql += "," + p1.__str__() + "," + p2.__str__() + "," + p3.__str__() + "," + p4.__str__() + ")"
-                        cur.execute(sql)
-                        con.commit()
-            fin.close()
+            get_neb_scores_from_rstfile(con, rstpath, testid, neb_sig_sites)
+            get_beb_scores_from_rstfile(con, rstpath, testid, beb_sig_sites)
         
-            sql = "select count(*) from DNDS_BEB_sites where testid=" + testid.__str__()
+            sql = "select count(*) from NEB_scores where testid=" + testid.__str__()
             cur.execute(sql)
             count = cur.fetchone()[0]
-            write_log(con, "I found " + count.__str__() + " BEB sites in " + outdir)
-            
+            write_log(con, "I found " + count.__str__() + " NEB sites in " + outdir)
+
+
+            sql = "select count(*) from BEB_scores where testid=" + testid.__str__()
+            cur.execute(sql)
+            count = cur.fetchone()[0]
+            write_log(con, "I found " + count.__str__() + " BEB sites in " + outdir)       
+                 
 
 def setup_compare_functional_loci(con):
     cur = con.cursor()
@@ -497,7 +674,11 @@ def setup_compare_functional_loci(con):
     
     sql = "select id from DNDS_Models where name='Nsites_branch'"
     cur.execute(sql)
-    nsites_id = cur.fetchone()[0]
+    x = cur.fetchall()
+    if x.__len__() == 0:
+        write_log(con, "There are no DNDS_Models in the database, so I'm skipping the comparison of DNDS to Df.")
+        return
+    nsites_id = x[0][0]
     
     sql = "select id from AlignmentMethods where name='mafft'"
     cur.execute(sql)
@@ -513,6 +694,10 @@ def setup_compare_functional_loci(con):
         phylomodel = ml_modelid
         anc1 = ii[2]
         anc2 = ii[3]
+        
+        if anc1 == anc2:
+            write_log(con, "I'm skipping the dnds comparison " + dnds_testid.__str__() + " because anc 1 and 2 match.")
+            continue
         
         """Find the matching Fscore test"""
         sql = "select id from FScore_Tests where almethod=" + almethod.__str__() + " and phylomodel=" + phylomodel.__str__() + " and ancid1=" + anc1.__str__() + " and ancid2=" + anc2.__str__()
@@ -532,27 +717,50 @@ def compare_functional_loci(con):
     cur.execute(sql)
     x = cur.fetchall()
     
-    fout = open("compare_dnds_Df.txt", "w")
-    
+    outl = ""
     for ii in x:
+        """For each test"""
         dnds_testid = ii[0]
         fscore_testid = ii[1]
         
         """Get scores for sites."""
-        site_ppcat2 = {}
-        site_ppcat3 = {}
-        site_ppcat4 = {}
+        site_nebppcat2 = {}
+        site_nebppcat3 = {}
+        site_nebppcat4 = {}
+        site_nebsigflag = {}
+        site_nebmut = {}
+        
+        site_bebppcat2 = {}
+        site_bebppcat3 = {}
+        site_bebppcat4 = {}
+        site_bebsigflag = {}
+        site_bebmut = {}
+        
         site_df = {}
         site_k = {}
         site_p = {}
+
+
         
-        sql = "select site, ppcat1, ppcat2, ppcat3, ppcat4 from DNDS_BEB_sites where testid=" + dnds_testid.__str__()
+        sql = "select site, ppcat1, ppcat2, ppcat3, ppcat4, ancmu, significant from NEB_scores where testid=" + dnds_testid.__str__()
         cur.execute(sql)
         qq = cur.fetchall()
         for jj in qq:
-            site_ppcat2[ jj[0] ] = jj[2] 
-            site_ppcat3[ jj[0] ] = jj[3]
-            site_ppcat4[ jj[0] ] = jj[4]
+            site_nebppcat2[ jj[0] ]    = jj[2] 
+            site_nebppcat3[ jj[0] ]    = jj[3]
+            site_nebppcat4[ jj[0] ]    = jj[4]
+            site_nebmut[ jj[0] ]       = jj[5]
+            site_nebsigflag[ jj[0] ]   = jj[6]
+
+        sql = "select site, ppcat1, ppcat2, ppcat3, ppcat4, ancmu, significant from BEB_scores where testid=" + dnds_testid.__str__()
+        cur.execute(sql)
+        qq = cur.fetchall()
+        for jj in qq:
+            site_bebppcat2[ jj[0] ]    = jj[2] 
+            site_bebppcat3[ jj[0] ]    = jj[3]
+            site_bebppcat4[ jj[0] ]    = jj[4]
+            site_bebmut[ jj[0] ]       = jj[5]
+            site_bebsigflag[ jj[0] ]   = jj[6]
         
         sql = "select site, df, k, p from FScore_Sites where testid=" + fscore_testid.__str__()
         cur.execute(sql)
@@ -568,17 +776,45 @@ def compare_functional_loci(con):
         for s in dnds_sites:
             if s in df_sites:
                 sites.append(s)
-            #else:
-                #print "Site ", s, "not in Df"
+
+        
+        """Resolve differences between NEB and BEB"""
+        for s in sites:
+            if s not in site_bebppcat2:
+                site_bebppcat2[site]    = None
+                site_bebppcat3[site]    = None
+                site_bebppcat4[site]    = None
+                site_bebmut[site]       = None
+                site_bebsigflag[site]   = None
+            if s not in site_nebppcat2:
+                site_nebppcat2[site]    = None
+                site_nebppcat3[site]    = None
+                site_nebppcat4[site]    = None
+                site_nebmut[site]       = None
+                site_nebsigflag[site]   = None
             
         print "\n. " + sites.__len__().__str__() + " sites have scores for both Df and dN/dS."   
         print "\n. " + (dnds_sites.__len__()-sites.__len__()).__str__() + " do not match." 
         sites.sort()
         for s in sites:
-            line = s.__str__() + "\t" + site_ppcat2[s].__str__() + "\t" +  site_ppcat3[s].__str__() + "\t" + site_ppcat4[s].__str__() + "\t" + site_df[s].__str__() + "\t" + site_k[s].__str__() + "\t" + site_p[s].__str__()
-            fout.write(line + "\n")
+            line = s.__str__() + "\t"
+            line += site_nebppcat2[s].__str__() + "\t"
+            line += site_nebppcat3[s].__str__() + "\t" + site_nebppcat4[s].__str__()
+            line += "\t" + site_nebmut[s].__str__() + "\t" + site_nebsigflag[s].__str__()
+
+            line += "\t" + site_bebppcat2[s].__str__() + "\t"
+            line += site_bebppcat3[s].__str__() + "\t" + site_bebppcat4[s].__str__()
+            line += "\t" + site_bebmut[s].__str__() + "\t" + site_bebsigflag[s].__str__()
             
-    fout.close()
+            line += "\t" + site_df[s].__str__() + "\t" + site_k[s].__str__() 
+            line += "\t" + site_p[s].__str__()
+            
+            outl += line + "\n"
+    
+    if outl.__len__() > 1:
+        fout = open("compare_dnds_Df.txt", "w")
+        fout.write( outl )     
+        fout.close()
     
     
     

@@ -176,6 +176,9 @@ if jump <= 6.1 and stop > 6.1:
     parse_compareanc_results(con)
 
 
+"""
+dN/dS Tests
+"""
 x = get_setting_values(con, "ergntpath")
 if x != None:
     if jump <= 6.5 and stop > 6.5:
@@ -194,14 +197,14 @@ if x != None:
 else:
     write_log(con, "Codon sequences were not given by the user; I will skip dN/dS analysis.")
 
-"""December 2014: The new Django-version of this code should stop here.
-    Rather than building static HTML pages (code below), we'll use Django
-    to produce dynamic HTML content on the fly."""
-    
-"""Continue here:
 
-    write a method to delete all the residual files from the above analysis.
+
 """
+    December 2014: The new Django-version of this code should stop here.
+    Rather than building static HTML pages (code below), we'll use Django
+    to produce dynamic HTML content on the fly.
+"""
+
 
 if jump <= 7 and stop > 7:
     write_log(con, "Checkpoint: cleaning-up residual files")
@@ -209,6 +212,14 @@ if jump <= 7 and stop > 7:
 
 
 exit()
+
+"""
+    December 2014: The following HTML-generation methods are disabled.
+    The new architecture will dynamically generate HTML views, using
+    Django, instead of pre-computing all the static HTML pages.
+    This new dynamic approach will consume less disk space, and be
+    more flexible, than the static approach.
+"""
 
 """ Build an HTML Report """
 if jump <= 7 and stop > 7:
@@ -230,10 +241,10 @@ if jump <= 7.1 and stop > 7.1:
             write_anccomp_indi(pair, con, ap)
             write_mutations_indi(pair, con, ap)
 
-# if jump <= 7.2 and stop > 7.3:
-#     ap.params["checkpoint"] = 7.1
-#     ap.params["pending_checkpoint"] = 7.2
-#     write_ancseq_fasta(con, ap)
+if jump <= 7.2 and stop > 7.3:
+    ap.params["checkpoint"] = 7.1
+    ap.params["pending_checkpoint"] = 7.2
+    write_ancseq_fasta(con, ap)
 
 if stop >= 8:
     ap.params["checkpoint"] = 100

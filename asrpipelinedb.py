@@ -88,6 +88,8 @@ def build_db(dbpath = None):
 
     cur.execute("create table if not exists AncestorsAlias(pairid INTEGER primary key autoincrement, ancid INTEGER, alias TEXT)") # alias names for this ancestor
     """Some ancestors are special, with pre-defined mappings to known ingroups and outgroups."""
+    
+    
     cur.execute("create table if not exists AncestorsGroups(ancid INTEGER, ingroupid INTEGER, outgroupid INTEGER)") # some ancestors, but not all, will have a mapping to known taxa groups.
     
     
@@ -99,11 +101,11 @@ def build_db(dbpath = None):
     
     cur.execute("create table if not exists DNDS_Models(id INTEGER primary key, name TEXT)")
     cur.execute("create table if not exists DNDS_Tests(id INTEGER primary key autoincrement, almethod INT, phylomodel INT, anc1 INTEGER, anc2 INTEGER, dnds_model INT)")
-    #cur.execute("drop table LabeledDnDsPhylogenies")
     cur.execute("create table if not exists LabeledDnDsPhylogenies(id INTEGER primary key autoincrement, testid INT, newick TEXT)") # testid is an ID from DNDS_Tests
     cur.execute("create table if not exists DNDS_lnL(testid INT, lnl FLOAT)")
     cur.execute("create table if not exists DNDS_params(testid INT, pclass1 FLOAT, pclass2 FLOAT, pclass3 FLOAT, pclass4 FLOAT, wclass1 FLOAT, wclass2 FLOAT, wclass3 FLOAT, wclass4 FLOAT)")
-    cur.execute("create table if not exists DNDS_BEB_sites(testid INT, site INT, ppcat1 FLOAT, ppcat2 FLOAT, ppcat3 FLOAT, ppcat4 FLOAT)")
+    cur.execute("create table if not exists NEB_scores(testid INT, site INT, ppcat1 FLOAT, ppcat2 FLOAT, ppcat3 FLOAT, ppcat4 FLOAT, ancmu INT, significant INT)") # ancmu = 1 if the ancestor mutated amino acids at this site.
+    cur.execute("create table if not exists BEB_scores(testid INT, site INT, ppcat1 FLOAT, ppcat2 FLOAT, ppcat3 FLOAT, ppcat4 FLOAT, ancmu INT, significant INT)")
 
     cur.execute("create table if not exists Compare_DNDS_Fscores(dnds_testid INT, fscore_testid INT)")
 
