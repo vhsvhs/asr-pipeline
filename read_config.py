@@ -247,7 +247,6 @@ def read_config_file(con, ap):
             ap.params["compareanc"].append( (anc1,anc2) )
             
         elif tokens[0].startswith("USE_MPI"):
-            print tokens[1]
             answer = re.sub(" ", "", tokens[1])
             if answer == "on" or answer == "True":
                 ap.params["usempi"] = True

@@ -600,7 +600,6 @@ def parse_dnds_results(con):
                     found_sig_sites = False
                 elif l.__contains__("Naive Empirical Bayes (NEB)"):
                     found_sig_sites = True
-                    print "629: found NEB"
                 elif l.__contains__("Bayes Empirical Bayes (BEB)"):
                     found_sig_sites = False
                 
@@ -616,7 +615,7 @@ def parse_dnds_results(con):
                         neb_sig_sites.append( site )
             fin.close()
    
-            print "641:", neb_sig_sites
+            print "\n. Significant NEB sites:", neb_sig_sites
 
             beb_sig_sites = []      
             print outpath       
@@ -627,7 +626,6 @@ def parse_dnds_results(con):
                     found_sig_sites = False
                 elif l.__contains__("Bayes Empirical Bayes (BEB)"):
                     found_sig_sites = True
-                    print "427: found BEB"
                 elif l.startswith("The"):
                     found_sig_sites = False
                 
@@ -643,7 +641,7 @@ def parse_dnds_results(con):
                         beb_sig_sites.append( site )
             fin.close()
    
-            print "433:", beb_sig_sites
+            print "\n. Significant BEB sites:", beb_sig_sites
 
             rstpath = outdir + "/rst"
             if False == os.path.exists(rstpath):
@@ -770,29 +768,30 @@ def compare_functional_loci(con):
             site_k[ jj[0] ] = jj[2]
             site_p[ jj[0] ] = jj[3]
         
-        dnds_sites = site_ppcat2.keys()
+        """Resolve differences between NEB and BEB"""
+        for s in site_nebppcat2:
+            if s not in site_bebppcat2:
+                site_bebppcat2[s]    = None
+                site_bebppcat3[s]    = None
+                site_bebppcat4[s]    = None
+                site_bebmut[s]       = None
+                site_bebsigflag[s]   = None
+        for s in site_bebppcat2:
+            if s not in site_nebppcat2:
+                site_nebppcat2[s]    = None
+                site_nebppcat3[s]    = None
+                site_nebppcat4[s]    = None
+                site_nebmut[s]       = None
+                site_nebsigflag[s]   = None
+        
+        
+        dnds_sites = site_nebppcat2.keys()
         df_sites = site_df.keys()
         sites = []
         for s in dnds_sites:
             if s in df_sites:
                 sites.append(s)
-
         
-        """Resolve differences between NEB and BEB"""
-        for s in sites:
-            if s not in site_bebppcat2:
-                site_bebppcat2[site]    = None
-                site_bebppcat3[site]    = None
-                site_bebppcat4[site]    = None
-                site_bebmut[site]       = None
-                site_bebsigflag[site]   = None
-            if s not in site_nebppcat2:
-                site_nebppcat2[site]    = None
-                site_nebppcat3[site]    = None
-                site_nebppcat4[site]    = None
-                site_nebmut[site]       = None
-                site_nebsigflag[site]   = None
-            
         print "\n. " + sites.__len__().__str__() + " sites have scores for both Df and dN/dS."   
         print "\n. " + (dnds_sites.__len__()-sites.__len__()).__str__() + " do not match." 
         sites.sort()
