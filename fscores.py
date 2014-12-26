@@ -323,9 +323,11 @@ def get_neb_scores_from_rstfile(con, rstpath, testid, neb_sig_sites):
     """Parses an RST file, places NEB scores into the SQL database."""
     cur = con.cursor()
     
+    cur.execute("delete from NEB_Scores where testid=" + testid.__str__() )
+        
     fin = open(rstpath, "r")
-    found_beb = False
     found_neb = False
+    done = False
     lines = fin.readlines()
 
     expected_columns = None
@@ -333,23 +335,29 @@ def get_neb_scores_from_rstfile(con, rstpath, testid, neb_sig_sites):
     for l in lines:
                 
         if l.__contains__("NEB"):
-            found_neb = True
+            found_neb = True # this boolean indicates that we found the NEB header line
         
-        if found_neb == True and False == l.startswith("(amino"):
+        if l.__contains__("BEB"):
+            done = True
+        
+        if found_neb == True and False == l.startswith("(amino") and done == False:
             if l.__len__() > 2:
                 tokens = l.split()
                 site = re.sub(" ", "", tokens[0])
                 if site.startswith("1"):
+                    """found1 indicates that we found NEB scores for the first site."""
                     found1 = True
                     expected_columns = tokens.__len__()
         
         if found_neb == True and l.__len__() < 2:
+            """If we find an empty line, after we've already grabbed some data,
+                then we're done."""
             if found1 == False:
                 found1 = True
             else:
-                found_neb = False
+                done = True
                                                         
-        if found1 == True:
+        if found1 == True and done == False:
             tokens = l.split()
             if tokens.__len__() == expected_columns:
                 site = int( re.sub(" ", "", tokens[0]) )
@@ -409,9 +417,12 @@ def get_neb_scores_from_rstfile(con, rstpath, testid, neb_sig_sites):
 
 def get_beb_scores_from_rstfile(con, rstpath, testid, beb_sig_sites):
     """Parses an RST file, places BEB scores into the SQL database."""
+    cur = con.cursor()
+    
+    cur.execute("delete from BEB_Scores where testid=" + testid.__str__() )
+    
     fin = open(rstpath, "r")
     found_beb = False
-    found_neb = False
     lines = fin.readlines()
 
     expected_columns = None
@@ -421,7 +432,7 @@ def get_beb_scores_from_rstfile(con, rstpath, testid, beb_sig_sites):
         if l.__contains__("BEB"):
             found_beb = True
         
-        if found_neb == True and False == l.startswith("(amino"):
+        if found_beb == True and False == l.startswith("(amino"):
             if l.__len__() > 2:
                 tokens = l.split()
                 site = re.sub(" ", "", tokens[0])
@@ -591,6 +602,7 @@ def parse_dnds_results(con):
         """If its a sites model, get the per-site BEB scores from the PAML rst file."""
         if dnds_model.__contains__("sites"):
             
+            """Get the significant NEB sites (if any)"""
             neb_sig_sites = []      
             print outpath       
             fin = open(outpath, "r")
@@ -617,6 +629,8 @@ def parse_dnds_results(con):
    
             print "\n. Significant NEB sites:", neb_sig_sites
 
+
+            """Now get the significant BEB sites."""
             beb_sig_sites = []      
             print outpath       
             fin = open(outpath, "r")
@@ -662,7 +676,6 @@ def parse_dnds_results(con):
             count = cur.fetchone()[0]
             write_log(con, "I found " + count.__str__() + " BEB sites in " + outdir)       
                  
-
 def setup_compare_functional_loci(con):
     cur = con.cursor()
     
@@ -738,8 +751,6 @@ def compare_functional_loci(con):
         site_k = {}
         site_p = {}
 
-
-        
         sql = "select site, ppcat1, ppcat2, ppcat3, ppcat4, ancmu, significant from NEB_scores where testid=" + dnds_testid.__str__()
         cur.execute(sql)
         qq = cur.fetchall()
