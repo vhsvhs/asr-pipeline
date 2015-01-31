@@ -202,7 +202,8 @@ def read_config_file(con, ap):
 
         elif tokens[0].startswith("FAMILY_DESCRIPTION"):
             ap.params["family_description"] = tokens[1] 
- 
+            add_setting_value(con, "family_description", ap.params["family_description"])
+
 # depricated: 
 # continue here... and look in the msa get_bondary_sites function      
         elif tokens[0].startswith("SEED"):
@@ -275,6 +276,12 @@ def read_config_file(con, ap):
             methods = tokens[1].split()
             for m in methods:
                 add_setting_value(con, "fscoremethods", m)
+                
+        elif tokens[0].startswith("AA_FROM_UNIPROT"):
+            vtok = re.sub(" ", "", tokens[1])
+            print "282:", vtok
+            if vtok == "1" or vtok == "True" or vtok == "true" or vtok == "yes" or vtok == "Yes":
+                add_setting_value(con, "aa_from_uniprot", "1")
         
         elif tokens[0].startswith("HTML_SPECIAL1"):
             thing = ""

@@ -385,21 +385,37 @@ def get_neb_scores_from_rstfile(con, rstpath, testid, neb_sig_sites):
                 ancid1 = x[0]
                 ancid2 = x[1]
                 
-                sql = "select max(pp), state from AncestralStates where site=" + site.__str__() + " and ancid=" + ancid1.__str__()
+                sql = "select pp, state from AncestralStates where site=" + site.__str__() + " and ancid=" + ancid1.__str__()
                 cur.execute(sql)
-                x = cur.fetchone()
-                maxpp1 = x[0]
-                state1 = x[1]
+                x = cur.fetchall()
+                maxpp1 = 0.0
+                state1 = None
+                for ii in x:
+                    if ii[0] > maxpp1:
+                        maxpp1 = ii[0]
+                        state1 = ii[1]
                 
-                sql = "select max(pp), state from AncestralStates where site=" + site.__str__() + " and ancid=" + ancid2.__str__()
+                sql = "select pp, state from AncestralStates where site=" + site.__str__() + " and ancid=" + ancid2.__str__()
                 cur.execute(sql)
-                x = cur.fetchone()
-                maxpp2 = x[0]
-                state2 = x[1]                      
+                x = cur.fetchall()
+                maxpp2 = 0.0
+                state2 = None 
+                for ii in x:
+                    if ii[0] > maxpp2:
+                        maxpp2 = ii[0]
+                        state2 = ii[1]                     
                 
                 ancmu = 0
-                if state1 != state2 and (maxpp1 > 0.6 and maxpp2 > 0.6):
+                if state1 != state2 and (maxpp1 > 0.6 or maxpp2 > 0.6):
                     ancmu = 1
+                if state1 != state2 and (maxpp1 > 0.6 and maxpp2 > 0.6):
+                    ancmu = 2
+                if state1 != state2 and (maxpp1 > 0.7 and maxpp2 > 0.7):
+                    ancmu = 3
+                if state1 != state2 and (maxpp1 > 0.8 and maxpp2 > 0.8):
+                    ancmu = 4
+                if state1 != state2 and (maxpp1 > 0.9 and maxpp2 > 0.9):
+                    ancmu = 5
                     
                 sig_flag = 0
                 if site in neb_sig_sites:
@@ -411,6 +427,8 @@ def get_neb_scores_from_rstfile(con, rstpath, testid, neb_sig_sites):
                 sql += "," + p1.__str__() + "," + p2.__str__() + "," + p3.__str__() + "," + p4.__str__() + "," + ancmu.__str__() + ","  + sig_flag.__str__() + ")"
                 cur.execute(sql)
                 con.commit()
+                
+                #print "\n. checkpoint 431:", site, ancmu, state1, state2
     fin.close()
 
 
@@ -462,10 +480,10 @@ def get_beb_scores_from_rstfile(con, rstpath, testid, beb_sig_sites):
                     if False == tokens[5].startswith("(") and False == tokens[5].startswith("+"):
                         p4 = float( re.sub("\*", "", tokens[5] ) )
                 if p1 > 1 or p2 > 1 or p3 > 1 or p4 > 1:
-                    write_error(con, "probability cannot exceed 1.0 Error 444")
+                    write_log(con, "Warning: probability cannot exceed 1.0.")
                     print rstpath
                     print l
-                    exit()
+                    continue
                 
                 """Did the ancestors mutate their state at this site?"""
                 sql = "select anc1, anc2 from DNDS_Tests where id=" + testid.__str__()
@@ -474,21 +492,37 @@ def get_beb_scores_from_rstfile(con, rstpath, testid, beb_sig_sites):
                 ancid1 = x[0]
                 ancid2 = x[1]
                 
-                sql = "select max(pp), state from AncestralStates where site=" + site.__str__() + " and ancid=" + ancid1.__str__()
+                sql = "select pp, state from AncestralStates where site=" + site.__str__() + " and ancid=" + ancid1.__str__()
                 cur.execute(sql)
-                x = cur.fetchone()
-                maxpp1 = x[0]
-                state1 = x[1]
+                x = cur.fetchall()
+                maxpp1 = 0.0
+                state1 = None
+                for ii in x:
+                    if ii[0] > maxpp1:
+                        maxpp1 = ii[0]
+                        state1 = ii[1]
                 
-                sql = "select max(pp), state from AncestralStates where site=" + site.__str__() + " and ancid=" + ancid2.__str__()
+                sql = "select pp, state from AncestralStates where site=" + site.__str__() + " and ancid=" + ancid2.__str__()
                 cur.execute(sql)
-                x = cur.fetchone()
-                maxpp2 = x[0]
-                state2 = x[1]                      
+                x = cur.fetchall()
+                maxpp2 = 0.0
+                state2 = None 
+                for ii in x:
+                    if ii[0] > maxpp2:
+                        maxpp2 = ii[0]
+                        state2 = ii[1]                    
                 
                 ancmu = 0
-                if state1 != state2 and (maxpp1 > 0.6 and maxpp2 > 0.6):
+                if state1 != state2 and (maxpp1 > 0.6 or maxpp2 > 0.6):
                     ancmu = 1
+                if state1 != state2 and (maxpp1 > 0.6 and maxpp2 > 0.6):
+                    ancmu = 2
+                if state1 != state2 and (maxpp1 > 0.7 and maxpp2 > 0.7):
+                    ancmu = 3
+                if state1 != state2 and (maxpp1 > 0.8 and maxpp2 > 0.8):
+                    ancmu = 4
+                if state1 != state2 and (maxpp1 > 0.9 and maxpp2 > 0.9):
+                    ancmu = 5
                     
                 sig_flag = 0
                 if site in beb_sig_sites:
@@ -500,6 +534,8 @@ def get_beb_scores_from_rstfile(con, rstpath, testid, beb_sig_sites):
                 sql += "," + p1.__str__() + "," + p2.__str__() + "," + p3.__str__() + "," + p4.__str__() + "," + ancmu.__str__() + "," + sig_flag.__str__() + ")"
                 cur.execute(sql)
                 con.commit()
+                
+                #print "\n. checkpoint 538:", site, ancmu, state1, state2
     fin.close()
 
 
@@ -597,7 +633,6 @@ def parse_dnds_results(con):
         cur.execute(sql)
         con.commit()
         fin.close()
-        
         
         """If its a sites model, get the per-site BEB scores from the PAML rst file."""
         if dnds_model.__contains__("sites"):
@@ -755,29 +790,32 @@ def compare_functional_loci(con):
         cur.execute(sql)
         qq = cur.fetchall()
         for jj in qq:
-            site_nebppcat2[ jj[0] ]    = jj[2] 
-            site_nebppcat3[ jj[0] ]    = jj[3]
-            site_nebppcat4[ jj[0] ]    = jj[4]
-            site_nebmut[ jj[0] ]       = jj[5]
-            site_nebsigflag[ jj[0] ]   = jj[6]
+            site = jj[0]
+            site_nebppcat2[ site ]    = jj[2] 
+            site_nebppcat3[ site ]    = jj[3]
+            site_nebppcat4[ site ]    = jj[4]
+            site_nebmut[    site ]    = jj[5]
+            site_nebsigflag[ site ]   = jj[6]
 
         sql = "select site, ppcat1, ppcat2, ppcat3, ppcat4, ancmu, significant from BEB_scores where testid=" + dnds_testid.__str__()
         cur.execute(sql)
         qq = cur.fetchall()
         for jj in qq:
-            site_bebppcat2[ jj[0] ]    = jj[2] 
-            site_bebppcat3[ jj[0] ]    = jj[3]
-            site_bebppcat4[ jj[0] ]    = jj[4]
-            site_bebmut[ jj[0] ]       = jj[5]
-            site_bebsigflag[ jj[0] ]   = jj[6]
+            site = jj[0]
+            site_bebppcat2[ site ]    = jj[2] 
+            site_bebppcat3[ site ]    = jj[3]
+            site_bebppcat4[ site ]    = jj[4]
+            site_bebmut[    site ]    = jj[5]
+            site_bebsigflag[ site ]   = jj[6]
         
         sql = "select site, df, k, p from FScore_Sites where testid=" + fscore_testid.__str__()
         cur.execute(sql)
         qq = cur.fetchall()
         for jj in qq:
-            site_df[ jj[0] ] = jj[1] 
-            site_k[ jj[0] ] = jj[2]
-            site_p[ jj[0] ] = jj[3]
+            site = jj[0]
+            site_df[ site ] = jj[1] 
+            site_k[ site ] = jj[2]
+            site_p[ site ] = jj[3]
         
         """Resolve differences between NEB and BEB"""
         for s in site_nebppcat2:

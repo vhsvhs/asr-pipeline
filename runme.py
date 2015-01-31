@@ -127,6 +127,8 @@ if jump <= 4 and stop > 4:
     ap.params["checkpoint"] = 3
     ap.params["pending_checkpoint"] = 4
 
+    #compare_dnds_Df
+
     x = calc_alrt(con)
     run_script(x)
     calc_alr(con)
@@ -150,11 +152,16 @@ if jump <= 5.2 and stop > 5.3:
     run_script(x)
     check_getanc_output(con)
 
-if jump <= 5.9 and stop > 5.9:
-    write_log(con, "Checkpoint: calculating Bayesian-sampled alternate ancestors")
-    ap.params["checkpoint"] = 5.1
-    ap.params["pending_checkpoint"] = 5.2
-    run_asr_bayes(con, ap)
+#
+# The Bayesian-sampling of ancestral sequences is now depricated.
+# These alternate sequences are now generated just-in-time by the Django
+# web framework when requested by the user.
+#
+# if jump <= 5.9 and stop > 5.9:
+#     write_log(con, "Checkpoint: calculating Bayesian-sampled alternate ancestors")
+#     ap.params["checkpoint"] = 5.1
+#     ap.params["pending_checkpoint"] = 5.2
+#     run_asr_bayes(con, ap)
 
 """ Predict sites of functional evolution """
 if jump <= 6 and stop > 6:
@@ -210,8 +217,15 @@ if jump <= 7 and stop > 7:
     write_log(con, "Checkpoint: cleaning-up residual files")
     cleanup(con) 
 
+write_log(con, "Checkpoint: Analysis is complete.")
 
 exit()
+
+
+
+
+
+
 
 """
     December 2014: The following HTML-generation methods are disabled.
@@ -221,31 +235,31 @@ exit()
     more flexible, than the static approach.
 """
 
-""" Build an HTML Report """
-if jump <= 7 and stop > 7:
-    write_log(con, "Checkpoint - writing an HTML report.")
-    ap.params["checkpoint"] = 6
-    ap.params["pending_checkpoint"] = 7
-    write_log(con, "Writing an HTML report.")
-    write_css()
-    write_index(con)
-    write_alignments(con)
-    write_treesancs(con)
-    write_ancestors_indi(con) # write individual ancestor pages
-
-if jump <= 7.1 and stop > 7.1:
-    ap.params["checkpoint"] = 7
-    ap.params["pending_checkpoint"] = 7.1
-    if "compareanc" in ap.params:
-        for pair in ap.params["compareanc"]:
-            write_anccomp_indi(pair, con, ap)
-            write_mutations_indi(pair, con, ap)
-
-if jump <= 7.2 and stop > 7.3:
-    ap.params["checkpoint"] = 7.1
-    ap.params["pending_checkpoint"] = 7.2
-    write_ancseq_fasta(con, ap)
-
-if stop >= 8:
-    ap.params["checkpoint"] = 100
-    write_log(con, "Done")
+# """ Build an HTML Report """
+# if jump <= 7 and stop > 7:
+#     write_log(con, "Checkpoint - writing an HTML report.")
+#     ap.params["checkpoint"] = 6
+#     ap.params["pending_checkpoint"] = 7
+#     write_log(con, "Writing an HTML report.")
+#     write_css()
+#     write_index(con)
+#     write_alignments(con)
+#     write_treesancs(con)
+#     write_ancestors_indi(con) # write individual ancestor pages
+# 
+# if jump <= 7.1 and stop > 7.1:
+#     ap.params["checkpoint"] = 7
+#     ap.params["pending_checkpoint"] = 7.1
+#     if "compareanc" in ap.params:
+#         for pair in ap.params["compareanc"]:
+#             write_anccomp_indi(pair, con, ap)
+#             write_mutations_indi(pair, con, ap)
+# 
+# if jump <= 7.2 and stop > 7.3:
+#     ap.params["checkpoint"] = 7.1
+#     ap.params["pending_checkpoint"] = 7.2
+#     write_ancseq_fasta(con, ap)
+# 
+# if stop >= 8:
+#     ap.params["checkpoint"] = 100
+#     write_log(con, "Done")

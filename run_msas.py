@@ -25,7 +25,7 @@ mpirun -np 4 SCRIPTS/run_msas.mpi.sh
 """
 from asrpipelinedb_api import *
 
-def read_fasta(fpath):
+def read_fasta(fpath, names_are_uniprot=False):
     """Returns a hash: key = taxon name, value = sequence from the fasta file.
         Ignores redundant taxa."""
     fin = open(fpath, "r")    
@@ -44,6 +44,18 @@ def read_fasta(fpath):
             """Taxon name line:"""
             okay = True
             taxaname = re.sub(">", "", l.split()[0] )
+            
+            if names_are_uniprot:
+                speciesname = ""
+                nametokens = l.split()
+                for index, nn in enumerate(nametokens):
+                    if nn.startswith("OS="):
+                        speciesname = re.sub("OS=", "", nn) + "." + nametokens[index+1]
+                idid = re.sub(">", "", l.split()[0])
+                idname = idid.split("|")[2]
+                idname = re.sub("_", ".", idname)
+                taxaname = speciesname + "." + idname
+            
             if taxaname in taxa_seq:
                 okay = False
             else:
@@ -77,7 +89,11 @@ def import_and_clean_erg_seqs(con, ap):
         exit()
     ergseqpath = x[0]
 
-    taxa_seq = read_fasta(ergseqpath)
+    x = get_setting_values(con, "aa_from_uniprot")
+    if x == None:
+        taxa_seq = read_fasta(ergseqpath)
+    else:
+        taxa_seq = read_fasta(ergseqpath, names_are_uniprot=True)
 
     cur = con.cursor()
     sql = "delete from OriginalSequences"
