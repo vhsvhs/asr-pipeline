@@ -35,6 +35,7 @@ def build_db(dbpath = None):
     cur.execute("create table if not exists AlignmentMethods(id INTEGER primary key autoincrement, name TEXT unique, exe_path TEXT)")
     cur.execute("create table if not exists AlignedSequences(id INTEGER primary key autoincrement, taxonid INT, alsequence TEXT, almethod INT, datatype INT)") # these sequences contain indels
 
+    cur.execute("create table if not exists SequenceSimilarityNetwork(id INTEGER primary key autoincrement, label TEXT unique, xgmml TEXT, filter_name TEXT, filter_direction TEXT, filter_value FLOAT)") # label is the XGMML lable
 
     """A SiteSet is a collection of sites in the alignment. For example, after trimming the sequences, instead of storing a new
         instance of the sequences, a SiteSet can be used to define the trimmed boundaries.

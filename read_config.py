@@ -149,6 +149,11 @@ def read_config_file(con, ap):
             exe = tokens[1].strip()
             ap.params["codeml_exe"] = exe
             add_setting_value(con, "codeml_exe", exe)
+
+        elif tokens[0].startswith("BLASTP"):
+            exe = tokens[1].strip()
+            ap.params["blastp_exe"] = exe
+            add_setting_value(con, "blastp_exe", exe)
         
         elif tokens[0].startswith("ALIGNMENT_ALGORITHMS"):
             x = tokens[1].split()

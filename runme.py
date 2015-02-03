@@ -9,6 +9,7 @@ from fscores import *
 from asr_bayes import *
 from html_helper import *
 from struct_analysis import *
+from pythoscape_tools import *
 from log import *
 from plots import *
 print_splash()
@@ -47,8 +48,14 @@ if jump <= 0 and stop > 0:
 verify_erg_seqs(con, ap)
 write_log(con, "Checkpoint: configuration is OK.")
 
-"""Note: An imported SQL DB could be retrieved right here, avoiding all the prior steps."""
+"""Note: Continue Here: An imported SQL DB could be retrieved right here, avoiding all the prior steps,
+    and avoiding the need to keep the original FASTA and the configuration file around.
+    This would need to be added as a command-line option."""
 
+if jump <= 0.5 and stop > 0.5:
+    write_log(con, "Checkpoint: building sequence similarity network")
+    run_similarity_network_analysis(con)
+    
 """ MSAs """
 if jump <= 1 and stop > 1:
     write_log(con, "Checkpoint: aligning sequences.")
