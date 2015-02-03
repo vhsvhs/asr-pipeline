@@ -325,6 +325,14 @@ def verify_config(con, ap):
         ap.params["run_exe"] = "source"
         add_setting_value(con, "run_exe", "source")
     
+    if "blastp_exe" not in ap.params:
+        ap.params["blastp_exe"] = "blastp"
+        add_setting_value(con, "blastp_exe", "blastp")
+
+    if "cdhit_exe" not in ap.params:
+        ap.params["cdhit_exe"] = "cd-hit"
+        add_setting_value(con, "cdhit_exe", "cd-hit")
+
     if "ingroup" in ap.params:
         for a in ap.params["ingroup"]:
             print a, ap.params["asrseedtaxa"]
@@ -444,6 +452,14 @@ def verify_all_exe(con):
     if aexe != None:
         name_exe["AncComp"] = aexe[0]
         
+    qqq = get_setting_values(con, "blastp_exe")
+    if qqq != None:
+        name_exe["BLASTp"] = qqq[0]
+
+    qqq = get_setting_values(con, "cdhit_exe")
+    if qqq != None:
+        name_exe["CD-HIT"] = qqq[0]
+                
     """Now check if each exe exists."""
     for name in name_exe:
         tokens = name_exe[name].split()

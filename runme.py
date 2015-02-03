@@ -40,8 +40,7 @@ if jump <= 0 and stop > 0:
     write_log(con, "Checkpoint: reading sequences.")
     ap.params["checkpoint"] = -1
     ap.params["pending_checkpoint"] = 0
-    print "\n. Reading your FASTA sequences..."
-    write_log(con, "Reading sequences")
+    write_log(con, "Reading input sequences")
     import_and_clean_erg_seqs(con, ap)
 
 
@@ -55,13 +54,15 @@ write_log(con, "Checkpoint: configuration is OK.")
 if jump <= 0.5 and stop > 0.5:
     write_log(con, "Checkpoint: building sequence similarity network")
     run_similarity_network_analysis(con)
+if jump <= 0.6 and stop > 0.6:
+    write_log(con, "Checkpoint: checking the output from the similarity network analysis.")
+    check_similarity_network_analysis(con)
     
 """ MSAs """
 if jump <= 1 and stop > 1:
     write_log(con, "Checkpoint: aligning sequences.")
     ap.params["checkpoint"] = 0
     ap.params["pending_checkpoint"] = 1
-    print "\n. Aligning sequences..."
     write_log(con, "Aligning sequences")
     p = write_msa_commands(con)
     run_script(p)
