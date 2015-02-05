@@ -939,5 +939,66 @@ def match_ancestors_across_models(con):
     modelids = get_phylo_modelids(con)
     msaids = get_alignment_method_ids(con)
     
+    ancid_childrenids = {} # key = Ancestor ID, value = list of Taxa IDs
     
+    """Pull the map of taxon names to IDs from the database.
+        We'll access this information a lot, so let's save it in a separate hashtable
+        rather than repeatedly querying the databse."""
+    taxonname_id = {}
+    sql = "select id, shortname from Taxa"
+    cur.execute(sql)
+    for ii in cur.fetchall():
+        id = ii[0]
+        name = ii[1]
+        taxonname_id[ name ] = id
+    
+    for modelid in modelids:
+        for msaid in msaids:
+            sql = "select newick from AncestralCladogram where unsupportedmltreeid in (select id from UnsupportedMlPhylogenies where almethod=" + msaid.__str__() + " and phylomodelid=" + modelid.__str__() + ")"
+            cur.execute(sql)
+            xx = cur.fetchone()
+            if xx == None:
+                write_error(con, "I cannot find the ancestral Newick cladogram for almethod=" + msaid.__str__() + " and phylomodelid=" + modelid.__str__())
+            cladonewick = xx[0]
+            
+            t = Tree()
+            t.read_from_string(cladonewick, "newick")
+            
+            for node in t.nodes():
+                if node.is_leaf() == False and node.level() > 0:                    
+                    sql = "select id from Ancestors where name='Node" + node.label + "' and almethod=" + msaid.__str__() + " and phylomodel=" + modelid.__str__()
+                    cur.execute(sql)
+                    ancid = cur.fetchone()[0]
+                    ancid_childrenids[ancid] = []
+                    
+                    for l in node.leaf_iter():
+                        taxonname = l.as_newick_string()
+                        ancid_childrenids[ancid].append( taxonname_id[taxonname] )
+    
+    ancid_matches = {} # key = Ancestor ID, value = list of other ancestor IDs with the same children.
+    for anc1 in ancid_childrenids:
+        ancid_matches[anc1] = []
+        mychildren = ancid_childrenids[anc1]
+        mychildren.sort()
+        for anc2 in ancid_childrenids:
+            if anc1 == anc2:
+                """Skip the self comparison."""
+                continue
+            theirchildren = ancid_childrenids[anc2]
+            theirchildren.sort()
+            if mychildren == theirchildren:
+                ancid_matches[anc1].append(anc2)
+    
+    sql = "delete from AncestorsAcrossModels"
+    cur.execute(sql)
+    con.commit()
+    
+    for anc1 in ancid_matches:
+        for anc2 in ancid_matches[anc1]:
+            sql = "insert into AncestorsAcrossModels (ancid, same_ancid) values(" + anc1.__str__() + "," + anc2.__str__() + ")"
+            cur.execute(sql)
+    con.commit()
+                        
+                        
+            
     

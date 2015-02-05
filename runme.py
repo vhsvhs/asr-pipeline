@@ -145,6 +145,7 @@ if jump <= 5 and stop > 5:
     ap.params["pending_checkpoint"] = 5
     x = get_asr_commands(con)
     run_script(x)
+    
 if jump <= 5.1 and stop > 5.1:
     check_asr_output(con)
 
