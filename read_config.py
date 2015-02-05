@@ -154,6 +154,11 @@ def read_config_file(con, ap):
             exe = tokens[1].strip()
             ap.params["blastp_exe"] = exe
             add_setting_value(con, "blastp_exe", exe)
+            
+        elif tokens[0].startswith("CDHIT"):
+            exe = tokens[1].strip()
+            ap.params["cdhit_exe"] = exe
+            add_setting_value(con, "cdhit_exe", exe)
         
         elif tokens[0].startswith("ALIGNMENT_ALGORITHMS"):
             x = tokens[1].split()

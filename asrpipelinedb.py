@@ -85,6 +85,10 @@ def build_db(dbpath = None):
     cur.execute("create table if not exists AncestralStates(ancid INTEGER, site INT, state CHAR, pp FLOAT)") # site is specific to the almethod for this Ancestor
     cur.execute("create table if not exists AncestralCladogram(id INTEGER primary key autoincrement, unsupportedmltreeid INTEGER, newick TEXT)")
     
+    """The table AncestorsAcrossModels says that ancestor 'ancid' is the same as another ancestor 'same_ancid'
+        from a different alignment and/or model."""
+    cur.execute("create table if not exists AncestorsAcrossModels(ancid INTEGER, same_ancid INTEGER)") 
+    
     """Some ancestors have alias names, in addition to their default number-based name."""
 
     cur.execute("create table if not exists AncestorsAlias(pairid INTEGER primary key autoincrement, ancid INTEGER, alias TEXT)") # alias names for this ancestor

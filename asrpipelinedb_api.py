@@ -142,6 +142,10 @@ def get_ancestral_alias(con, ancid):
     return x[0][0]
 
 def get_ancestral_comparison_pairs(con):
+    """This method returns a list of tuples, each tuple is two Ancestor ids
+        expressing that ancestor 1 is a deeper ancestor and ancestor 2 is 
+        a derived ancestor, and that these ancestors should be compared
+        for functional loci and/or sites under positive selection."""
     cur = con.cursor()
     sql = "select alias1, alias2 from CompareAncestors"
     cur.execute(sql)

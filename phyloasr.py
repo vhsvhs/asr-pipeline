@@ -116,7 +116,8 @@ def check_raxml_output(con):
             fin.close()
             
             """Re-root the tree based on the user-supplied outgroup"""
-            rooted_treestring = reroot_tree_at_outgroup(con, treestring)
+            rooted_treestring = reroot_newick(con, treestring)
+            
             """Continue here -- check this -- new for December 2014"""
             rooted_treestring = re.sub("'", "", rooted_treestring)
                     
@@ -388,16 +389,20 @@ def import_supported_trees(con):
             exit()       
         alrt_string = open(alrt_treepath,"r").readline()
         alr_string = open(alr_treepath,"r").readline()
+                
+        """Ensure the trees are rooted according go the outgroup."""
+        alrt_string = reroot_newick(con, alrt_string)
+        alrt_string = reroot_newick(con, alr_string)
         
         """Save the aLRT tree"""
         sql = "insert into SupportedMlPhylogenies (unsupportedmltreeid,newick,supportmethodid)"
-        sql += " values(" + treeid.__str__() + ",'" + alrt_string + "'," + alrt_id.__str__() + ")"
+        sql += " values(" + treeid.__str__() + ",\"" + alrt_string + "\"," + alrt_id.__str__() + ")"
         cur.execute(sql)
         con.commit()
         
         """Save the aLR tree"""
         sql = "insert into SupportedMlPhylogenies (unsupportedmltreeid,newick,supportmethodid)"
-        sql += " values(" + treeid.__str__() + ",'" + alr_string + "'," + alr_id.__str__() + ")" 
+        sql += " values(" + treeid.__str__() + ",\"" + alr_string + "\"," + alr_id.__str__() + ")" 
         cur.execute(sql)
         con.commit()
             
@@ -506,7 +511,6 @@ def check_asr_output(con):
             outputdir = msa + "/asr." + model
             
             """Get the post-ASR cladogram with ancestral node numbers."""
-            #cladopath = outputdir + "/cladogram.tre"
             cladopath = outputdir + "/tree1/tree1.txt" 
             if False == os.path.exists( cladopath ):
                 write_error(con, "I cannot find the expected cladogram at " + cladopath)
@@ -514,11 +518,16 @@ def check_asr_output(con):
             fin = open(cladopath, "r")
             cladostring = fin.readlines()[3]
             fin.close()
+            
+            """Ensure the cladogram is rooted according to the outgroup."""
+            cladostring = reroot_newick(con, cladostring)
+            
+            """Save the cladogram to the database."""
             sql = "insert into AncestralCladogram (unsupportedmltreeid,newick) values(" + treeid.__str__() + ",'" + cladostring + "')"
             cur.execute(sql)
             con.commit()
             
-            """Where do the ancestral DAT files live?"""
+            """Where do the ancestral DAT files live? (i.e. the state posterior probability distributions for each ancestor)"""
             datpath = outputdir + "/tree1"
              
             if False == os.path.exists(datpath):
@@ -923,4 +932,12 @@ def get_sum_of_branches( treepath ):
     fin.close()
     return t.length()
 
-
+def match_ancestors_across_models(con):
+    """This method fills data in the table AncestorsAcrossModels"""
+    cur = con.cursor()
+    
+    modelids = get_phylo_modelids(con)
+    msaids = get_alignment_method_ids(con)
+    
+    
+    

@@ -464,8 +464,6 @@ def write_alignment_for_raxml(con):
         cur.execute(sql)
         y = cur.fetchall()
         best_thresh = y[0][0]
-        #best_thresh = 0.1
-        #print "199:", msaid, best_thresh
         
         sql = "select min_score from ZorroThreshStats where thresh=" + best_thresh.__str__() + " and almethod=" + msaid.__str__()
         cur.execute(sql)
@@ -977,7 +975,7 @@ def compare_fasttrees_for_alignment(con, msaid):
                 cur.execute(sql)
                 d = cur.fetchone()                
             line += "%.1f\t"%d
-        print line
+        #print line
         
     """Plot Symmetric Distances"""
     for ii in range(0, threshes.__len__()):
@@ -991,7 +989,7 @@ def compare_fasttrees_for_alignment(con, msaid):
                 cur.execute(sql)
                 d = cur.fetchone()                
             line += "%.1f\t"%d
-        print line 
+        #print line 
 
         
 def cleanup_zorro_analysis(con):

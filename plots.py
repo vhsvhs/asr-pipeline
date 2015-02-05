@@ -64,8 +64,6 @@ def histogram(data, filekeyword, xlab="score", ylab="proportion"):
     cranstr = "pdf(\"" + pdfpath + "\", width=6, height=4);\n"    
     cranstr += "bars <- read.table(\"" + tablepath + "\", header=T, sep=\"\\t\")\n"
 
-    print "pointsets=", pointsets
-
     cranstr += "pointsets <- c("
     for p in pointsets:
         cranstr += (p).__str__() + ","

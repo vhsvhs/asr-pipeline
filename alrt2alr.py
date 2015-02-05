@@ -15,9 +15,11 @@ def alrt_to_alr( treepath, outpath ):
                 if alrt > 1418:
                     alrt = 1418.0
                 alr = math.exp(alrt/2.0)
-                #print alr
-                #newline += alr.__str__()
-                newline += "%.4e"%alr
+
+                """Wrap the ALR value in single quotes '...'
+                    because the scientific notation causes problems
+                    for Newick viewers later in this pipeline."""
+                newline += "'%.4e'"%alr
                 newline += ":"
             else:
                 newline += t

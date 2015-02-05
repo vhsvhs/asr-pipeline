@@ -43,7 +43,6 @@ if jump <= 0 and stop > 0:
     write_log(con, "Reading input sequences")
     import_and_clean_erg_seqs(con, ap)
 
-
 verify_erg_seqs(con, ap)
 write_log(con, "Checkpoint: configuration is OK.")
 
@@ -134,9 +133,6 @@ if jump <= 4 and stop > 4:
     write_log(con, "Checkpoint: calculating branch support")
     ap.params["checkpoint"] = 3
     ap.params["pending_checkpoint"] = 4
-
-    #compare_dnds_Df
-
     x = calc_alrt(con)
     run_script(x)
     calc_alr(con)
@@ -151,6 +147,9 @@ if jump <= 5 and stop > 5:
     run_script(x)
 if jump <= 5.1 and stop > 5.1:
     check_asr_output(con)
+
+if jump <= 5.11 and stop > 5.11:
+    match_ancestors_across_models(con)
     
 if jump <= 5.2 and stop > 5.3:
     write_log(con, "Checkpoint: extracting relevant ancestors")
@@ -227,14 +226,6 @@ if jump <= 7 and stop > 7:
 
 write_log(con, "Checkpoint: Analysis is complete.")
 
-exit()
-
-
-
-
-
-
-
 """
     December 2014: The following HTML-generation methods are disabled.
     The new architecture will dynamically generate HTML views, using
@@ -244,30 +235,30 @@ exit()
 """
 
 # """ Build an HTML Report """
-# if jump <= 7 and stop > 7:
-#     write_log(con, "Checkpoint - writing an HTML report.")
-#     ap.params["checkpoint"] = 6
-#     ap.params["pending_checkpoint"] = 7
-#     write_log(con, "Writing an HTML report.")
-#     write_css()
-#     write_index(con)
-#     write_alignments(con)
-#     write_treesancs(con)
-#     write_ancestors_indi(con) # write individual ancestor pages
-# 
-# if jump <= 7.1 and stop > 7.1:
-#     ap.params["checkpoint"] = 7
-#     ap.params["pending_checkpoint"] = 7.1
-#     if "compareanc" in ap.params:
-#         for pair in ap.params["compareanc"]:
-#             write_anccomp_indi(pair, con, ap)
-#             write_mutations_indi(pair, con, ap)
-# 
-# if jump <= 7.2 and stop > 7.3:
-#     ap.params["checkpoint"] = 7.1
-#     ap.params["pending_checkpoint"] = 7.2
-#     write_ancseq_fasta(con, ap)
-# 
-# if stop >= 8:
-#     ap.params["checkpoint"] = 100
-#     write_log(con, "Done")
+if jump <= 8 and stop > 8:
+    write_log(con, "Checkpoint - writing an HTML report.")
+    ap.params["checkpoint"] = 6
+    ap.params["pending_checkpoint"] = 7
+    write_log(con, "Writing an HTML report.")
+    write_css()
+    write_index(con)
+    write_alignments(con)
+    write_treesancs(con)
+    write_ancestors_indi(con) # write individual ancestor pages
+ 
+if jump <= 8.1 and stop > 8.1:
+    ap.params["checkpoint"] = 7
+    ap.params["pending_checkpoint"] = 7.1
+    if "compareanc" in ap.params:
+        for pair in ap.params["compareanc"]:
+            write_anccomp_indi(pair, con, ap)
+            write_mutations_indi(pair, con, ap)
+ 
+if jump <= 8.2 and stop > 8.3:
+    ap.params["checkpoint"] = 7.1
+    ap.params["pending_checkpoint"] = 7.2
+    write_ancseq_fasta(con, ap)
+ 
+if stop >= 9:
+    ap.params["checkpoint"] = 100
+    write_log(con, "Done")

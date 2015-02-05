@@ -161,33 +161,52 @@ def reroot_tree(tstr):
     return ret
 
 
-def reroot_tree_at_outgroup(con, newickstring):
-    """Returns a newick-formatted string containing the re-rooted vesion of the tree.
-    If something goes wrong, a message will be written to the ErrorLog table, and this
-    method will return Non."""
-    cur = con.cursor()
-    
-    ogs = get_outgroup_list(con)
-    
-    t = Tree()
-    t.read_from_string(newickstring.__str__(), "newick")
-    t.update_splits(delete_outdegree_one=False)
-    
-    """Root the tree, temporarily, at a terminal node."""
-    t.reroot_at_midpoint(update_splits=True, delete_outdegree_one=True)
-    
-    """And now re-root at the outgroup mrca"""
-    mrca = t.mrca(taxon_labels=ogs)
-    candidate_edges = []
-    for edge in t.postorder_edge_iter():
-        if edge.tail_node == mrca or edge.head_node == mrca:
-            candidate_edges.append( edge )           
-    t.reroot_at_edge(mrca.edge, update_splits=False, delete_outdegree_one=True)
-    ret = t.as_string("newick")
-    ret = re.sub("\[\&\R\] ", "", ret)
-    ret = ret.strip()
-    return ret
+#
+# depricated?
+#
+# def reroot_tree_at_outgroup(con, newickstring):
+#     """Returns a newick-formatted string containing the re-rooted vesion of the tree.
+#     If something goes wrong, a message will be written to the ErrorLog table, and this
+#     method will return Non."""
+#     cur = con.cursor()
+#     
+#     ogs = get_outgroup_list(con)
+#     
+#     t = Tree()
+#     t.read_from_string(newickstring.__str__(), "newick")
+#     t.update_splits(delete_outdegree_one=False)
+#     
+#     """Root the tree, temporarily, at a terminal node."""
+#     t.reroot_at_midpoint(update_splits=True, delete_outdegree_one=True)
+#     
+#     """And now re-root at the outgroup mrca"""
+#     mrca = t.mrca(taxon_labels=ogs)
+#     candidate_edges = []
+#     for edge in t.postorder_edge_iter():
+#         if edge.tail_node == mrca or edge.head_node == mrca:
+#             candidate_edges.append( edge )           
+#     t.reroot_at_edge(mrca.edge, update_splits=False, delete_outdegree_one=True)
+#     ret = t.as_string("newick")
+#     ret = re.sub("\[\&\R\] ", "", ret)
+#     ret = ret.strip()
+#     return ret
 
+def reroot_newick(con, newick):
+    """Provide a newick string, this method will re-root the tree
+        based on the 'outgroup' setting."""
+    cur = con.cursor()
+    dendrotree = Tree()
+    dendrotree.read_from_string(newick, "newick")
+    sql = "select shortname from Taxa where id in (select taxonid from GroupsTaxa where groupid in (select id from TaxaGroups where name='outgroup'))"
+    cur.execute(sql)
+    rrr = cur.fetchall()
+    outgroup_labels = []
+    for iii in rrr:
+        outgroup_labels.append( iii[0].__str__() )
+    mrca = dendrotree.mrca(taxon_labels=outgroup_labels)
+    dendrotree.reroot_at_edge(mrca.edge, update_splits=True)
+    newick = dendrotree.as_string("newick")
+    return newick
 
 def get_cladogram_path(d, model):
     tpath = d + "/asr." + model + "/tree1/tree1.txt"
@@ -211,30 +230,6 @@ def get_sequence(msapath, taxa):
         if l.startswith(taxa):
             tokens = l.split()
             return tokens[1]
-
-# def get_ml_sequence(site_states_probs, start=0, stop=-1):
-#     mlseq = ""
-#     sites = site_states_probs.keys()
-#     sites.sort()
-#     for site in sites:
-#         if site < start:
-#             continue
-#         if site > stop and stop > 0:
-#             continue
-#         maxp = 0.0
-#         maxc = ""
-#         for tup in site_states_probs[site]:
-#             #print site_states_probs[site][c]
-#             print "211:", tup
-#             state = tup[0]
-#             p = tup[1]
-#             if  p > maxp:
-#                 maxp = p
-#                 maxc = state
-#         if maxc != "-" and maxc != '-':
-#             mlseq += maxc.upper()
-#         #print site_states_probs, site, maxc
-#     return mlseq
 
 def get_ml_sequence_from_file(path, getindels=False):
     fin = open(path, "r")
@@ -264,7 +259,6 @@ def get_ml_sequence(site_states_probs):
         if maxc != "-":
             mlseq += maxc
     return mlseq
-    #return mlseq
 
 def get_pp_distro(path):
     fin = open( path , "r")
@@ -331,12 +325,12 @@ def get_pp_distro_stats(data):
         pps.append(data[site][1])
     sum = 0.0
 
-# returns a bin number for this P value
 def binForProb(p):
+    """Returns a bin number for the given probability value."""
     return int(p / 0.05)
 
-# return the P value of the floor of this bin
 def probForBin(b):
+    """Returns the probability value for the floor of the given bin number"""
     x = float(b*5) / float(100)
     if x == 1.00:
         return x
