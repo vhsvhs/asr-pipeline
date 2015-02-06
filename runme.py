@@ -71,6 +71,10 @@ if jump <= 1.1 and stop > 1.1:
     ap.params["checkpoint"] = 1
     ap.params["pending_checkpoint"] = 1.1
     check_aligned_sequences(con)
+    
+if jump <= 1.11 and stop > 1.11:
+    write_log(con, "Building a site map between different alignments.")
+    build_site_map(con)
 
 if jump <= 1.9 and stop > 1.91:
     clear_sitesets(con)
@@ -81,36 +85,35 @@ if jump <= 2 and stop > 2.1:
     trim_alignments(con)
 
 if ap.getOptionalToggle("--skip_zorro"):
-    if jump <= 2.99:
+    if jump <= 2.2:
         write_log(con, "Checkpoint: skipping ZORRO analysis.")
         bypass_zorro(con)
 
 if False == ap.getOptionalToggle("--skip_zorro"):
-    write_log(con, "Checkpoint: starting ZORRO analysis")
     """Use ZORRO to the find the phylogenetically informative sites."""
-    if jump <= 2.1 and stop > 2.2:
+    if jump <= 2.41 and stop > 2.41:
+        write_log(con, "Checkpoint: starting ZORRO analysis")
         p = build_zorro_commands(con)
         run_script(p)
-    if jump <= 2.2 and stop > 2.3:
+    if jump <= 2.42 and stop > 2.42:
         import_zorro_scores(con)
-    if jump <= 2.3 and stop > 2.4:
+    if jump <= 2.43 and stop > 2.43:
         plot_zorro_stats(con)
-    if jump <= 2.4 and stop > 2.5:
+    if jump <= 2.44 and stop > 2.44:
         p = build_fasttree4zorro_commands(con)
         run_script(p)
-    if jump <= 2.5 and stop > 2.6:
+    if jump <= 2.45 and stop > 2.45:
         analyze_zorro_fasttrees(con)
-    if jump <= 2.6 and stop > 2.7:
+    if jump <= 2.46 and stop > 2.46:
         measure_fasttree_distances(con)
-    if jump <= 2.7 and stop > 2.8:
+    if jump <= 2.47 and stop > 2.47:
         compare_fasttrees(con)
-    if jump <= 2.9 and stop > 2.91:
+    if jump <= 2.48 and stop > 2.48:
         cleanup_zorro_analysis(con)
-        
-    if jump <= 2.91 and stop > 2.92:
+    if jump <= 2.49 and stop > 2.49:
         write_alignment_for_raxml(con)
 
-if jump <= 2.99 and stop > 2.99:
+if jump <= 2.7 and stop > 2.7:
     write_log(con, "Checkpoint: converting all FASTA to PHYLIP")
     convert_all_fasta_to_phylip(con)
 
@@ -194,23 +197,24 @@ if jump <= 6.1 and stop > 6.1:
 """
 dN/dS Tests
 """
-x = get_setting_values(con, "ergntpath")
-if x != None:
-    if jump <= 6.5 and stop > 6.5:
-        """Do dn/ds test."""
-        write_log(con, "Checkpoint: performing dN/dS tests")
-        x = get_dnds_commands(con)
-        run_script(x)
-    if jump <= 6.6 and stop > 6.6:
-        write_log(con, "Checkpoint: checking dN/dS output")
-        parse_dnds_results(con)
-        
-    if jump <= 6.8 and stop > 6.8:
-        write_log(con, "Checkpoint: comparing Df to dN/dS")
-        setup_compare_functional_loci(con)
-        compare_functional_loci(con)
-else:
-    write_log(con, "Codon sequences were not given by the user; I will skip dN/dS analysis.")
+if jump <= 6.5 and stop > 6.5:
+    x = get_setting_values(con, "ergntpath")
+    if x != None:
+        if jump <= 6.5 and stop > 6.5:
+            """Do dn/ds test."""
+            write_log(con, "Checkpoint: performing dN/dS tests")
+            x = get_dnds_commands(con)
+            run_script(x)
+        if jump <= 6.6 and stop > 6.6:
+            write_log(con, "Checkpoint: checking dN/dS output")
+            parse_dnds_results(con)
+            
+        if jump <= 6.8 and stop > 6.8:
+            write_log(con, "Checkpoint: comparing Df to dN/dS")
+            setup_compare_functional_loci(con)
+            compare_functional_loci(con)
+    else:
+        write_log(con, "Codon sequences were not given by the user; I will skip dN/dS analysis.")
 
 
 

@@ -213,9 +213,7 @@ def read_config_file(con, ap):
         elif tokens[0].startswith("FAMILY_DESCRIPTION"):
             ap.params["family_description"] = tokens[1] 
             add_setting_value(con, "family_description", ap.params["family_description"])
-
-# depricated: 
-# continue here... and look in the msa get_bondary_sites function      
+ 
         elif tokens[0].startswith("SEED"):
             cleaned_taxa_name = re.sub(" ", "", tokens[1])
             add_setting_value(con, "seedtaxa", cleaned_taxa_name)

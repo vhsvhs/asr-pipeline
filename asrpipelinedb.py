@@ -35,6 +35,11 @@ def build_db(dbpath = None):
     cur.execute("create table if not exists AlignmentMethods(id INTEGER primary key autoincrement, name TEXT unique, exe_path TEXT)")
     cur.execute("create table if not exists AlignedSequences(id INTEGER primary key autoincrement, taxonid INT, alsequence TEXT, almethod INT, datatype INT)") # these sequences contain indels
 
+    """Each entry in SiteMap says that site1 from alignment almethod1 is basically the same site
+        as site2 in alignment almethod2. These site maps are built by looking at the sites in the
+        seed sequences."""
+    cur.execute("create table if not exists SiteMap(taxonid INT, almethod1 INT, site1 INT, almethod2, site2 INT)")
+
     cur.execute("create table if not exists SequenceSimilarityNetwork(id INTEGER primary key autoincrement, label TEXT unique, xgmml TEXT, filter_name TEXT, filter_direction TEXT, filter_value FLOAT)") # label is the XGMML lable
 
     """A SiteSet is a collection of sites in the alignment. For example, after trimming the sequences, instead of storing a new

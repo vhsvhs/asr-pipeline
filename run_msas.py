@@ -384,8 +384,82 @@ def check_aligned_sequences(con):
                 else:
                     write_error(con, "I cannot match the codon sequence and amino acid sequence for " + taxa)
                     exit()
+
+def map_sequences(seqa, seqb):
+    """Given two identical sequences, with each containing a unique pattern of gaps,
+        this method returns a list of tuples (x,y), indicated that site x in seqa is
+        the same as site y in seqb."""
+    nsites = max( seqa.__len__(), seqb.__len__() )
+    acount = 0 # count within seq
+    lasta = 0 # count with indels
+    bcount = 0
+    lastb = 0
+    seqlen = re.sub("-", "", seqa).__len__()
+    matches = []
+    for site in range(0, seqlen):
+        
+        while seqa[lasta] == "-":
+            lasta += 1
+        while seqb[lastb] == "-":
+            lastb += 1
+        if seqa[lasta] != seqb[lastb]:
+            print "Error:"
+        else:
+            matches.append( (lasta,lastb) )
+            lasta += 1
+            lastb += 1
+    return matches
+        
+
+def build_site_map(con):
+    """Builds a map between the different alignments."""
+    cur = con.cursor()
+    seedtaxonname = get_setting_values(con, "seedtaxa")[0]
     
 
+    sql = "select id from Taxa"
+    cur.execute(sql)
+    taxaids = []
+    for ii in cur.fetchall():
+        taxaids.append(ii[0])
+    
+    """First get all the seed sequences."""
+    sql = "select almethod, taxonid, alsequence from AlignedSequences"
+    cur.execute(sql)
+    almethod_taxa_seq = {}
+    for ii in cur.fetchall():
+        almethod = ii[0]
+        taxonid = ii[1]
+        seq = ii[2]
+        if almethod not in almethod_taxa_seq:
+            almethod_taxa_seq[almethod] = {}
+        almethod_taxa_seq[almethod][taxonid] = seq
+
+    
+    """Now map the seeds"""
+    sql = "delete from SiteMap"
+    cur.execute(sql)
+    con.commit()
+    
+    #
+    # continue here -- build a map of all characters to all characters,
+    # rather than just seed sites to seed sites
+    # but do this in a future build.
+    #
+    for aa in almethod_taxa_seq:
+        for bb in almethod_taxa_seq:
+            if aa == bb:
+                continue
+            for t in taxaids:
+                seqa = almethod_taxa_seq[aa][t]
+                seqb = almethod_taxa_seq[bb][t]
+                matches = map_sequences(seqa, seqb)
+                for m in matches:
+                    sql = "insert into SiteMap(taxonid, almethod1, site1, almethod2, site2)"
+                    sql += " values(" + t.__str__() + "," + aa.__str__() + "," + m[0].__str__() + "," + bb.__str__() + "," + m[1].__str__() + ")"
+                    cur.execute(sql)
+                con.commit()
+            
 def fasta_to_phylip(inpath, outpath):
     fin = open(inpath, "r")
     last_taxa = None
