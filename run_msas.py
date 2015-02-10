@@ -389,21 +389,37 @@ def map_sequences(seqa, seqb):
     """Given two identical sequences, with each containing a unique pattern of gaps,
         this method returns a list of tuples (x,y), indicated that site x in seqa is
         the same as site y in seqb."""
+    if seqa.__len__() == 0:
+        print "\n. Error 393 in map_sequences -- sequence A is empty."
+        return None
+    if seqb.__len__() == 0:
+        print "\n. Error 394 in map_sequences -- sequence B is empty."
+        return None
+    
     nsites = max( seqa.__len__(), seqb.__len__() )
-    acount = 0 # count within seq
-    lasta = 0 # count with indels
-    bcount = 0
-    lastb = 0
-    seqlen = re.sub("-", "", seqa).__len__()
+    lasta = 1 # count with indels
+    lastb = 1
     matches = []
-    for site in range(0, seqlen):
-        
-        while seqa[lasta] == "-":
+    while lasta <= seqa.__len__() and lastb <= seqb.__len__():
+        """Advance the pointers lasta and lastb until we're pointing
+            at non-indel sequence content for both sequences seqa and seqb"""
+        while lasta <= seqa.__len__()-1 and seqa[lasta-1] == "-":
             lasta += 1
-        while seqb[lastb] == "-":
+        while lastb <= seqb.__len__()-1 and seqb[lastb-1] == "-":
             lastb += 1
-        if seqa[lasta] != seqb[lastb]:
-            print "Error:"
+        
+        """If the residue at position lasta and lastb don't match, then somehow
+            the pointers have become out of sync.  This shouldn't happen."""
+        if seqa[lasta-1] != seqb[lastb-1]:
+            print "\n. Error 410", lasta, lastb
+            print "1:", seqa
+            print "2:", seqb
+            exit()
+        elif (lasta < seqa.__len__() and seqa[lasta-1] == "-") or (lastb < seqb.__len__() and seqb[lastb-1] == "-"):
+            print "Error 412", lasta, lastb
+            print "1:", seqa
+            print "2:", seqb
+            exit()
         else:
             matches.append( (lasta,lastb) )
             lasta += 1
@@ -454,12 +470,19 @@ def build_site_map(con):
                 seqa = almethod_taxa_seq[aa][t]
                 seqb = almethod_taxa_seq[bb][t]
                 matches = map_sequences(seqa, seqb)
+                if matches == None:
+                    write_log(con, "I found no matches between sequences " + aa + " and " + bb + " for taxon " + t)
                 for m in matches:
                     sql = "insert into SiteMap(taxonid, almethod1, site1, almethod2, site2)"
                     sql += " values(" + t.__str__() + "," + aa.__str__() + "," + m[0].__str__() + "," + bb.__str__() + "," + m[1].__str__() + ")"
                     cur.execute(sql)
                 con.commit()
-            
+                sql = "select count(*) from SiteMap where almethod1=" + aa.__str__() + " and almethod2=" + bb.__str__()
+                sql += " and taxonid=" + t.__str__()
+                cur.execute(sql)
+                countmapped = cur.fetchone()[0]
+                write_log(con, "I mapped " + countmapped.__str__() + " sites between alignments " + aa.__str__() + " and " + bb.__str__() + " for taxon " + t.__str__()  )
+        
 def fasta_to_phylip(inpath, outpath):
     fin = open(inpath, "r")
     last_taxa = None

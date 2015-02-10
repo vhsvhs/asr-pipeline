@@ -28,6 +28,7 @@
 from log import *
 from tools import *
 from alrt2alr import *
+import dendropy
 from dendropy import Tree
 from asrpipelinedb_api import *
 
@@ -959,7 +960,7 @@ def match_ancestors_across_models(con):
             xx = cur.fetchone()
             if xx == None:
                 write_error(con, "I cannot find the ancestral Newick cladogram for almethod=" + msaid.__str__() + " and phylomodelid=" + modelid.__str__())
-            cladonewick = xx[0]
+            cladonewick = xx[0].__str__()
             
             t = Tree()
             t.read_from_string(cladonewick, "newick")

@@ -50,6 +50,9 @@ write_log(con, "Checkpoint: configuration is OK.")
     and avoiding the need to keep the original FASTA and the configuration file around.
     This would need to be added as a command-line option."""
 
+if jump != None:
+    print "\n. Jumping to Step " + jump.__str__()
+
 if jump <= 0.5 and stop > 0.5:
     write_log(con, "Checkpoint: building sequence similarity network")
     run_similarity_network_analysis(con)
@@ -139,6 +142,8 @@ if jump <= 4 and stop > 4:
     x = calc_alrt(con)
     run_script(x)
     calc_alr(con)
+
+if jump <= 4.1 and stop > 4.1:
     import_supported_trees(con)
 
 """ A.S.R. """
