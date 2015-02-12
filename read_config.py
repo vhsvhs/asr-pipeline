@@ -51,6 +51,10 @@ def read_config_file(con, ap):
             ap.params["project_title"] = tokens[1]
             add_setting_value(con, "project_title", tokens[1])
 
+        if tokens[0].startswith("VERSION"):
+            ap.params["version"] = tokens[1]
+            add_setting_value(con, "version", tokens[1])
+
         if tokens[0].startswith("SEQUENCES"):
             ergseqpath = re.sub(" ", "", tokens[1])
             ap.params["ergseqpath"] = ergseqpath

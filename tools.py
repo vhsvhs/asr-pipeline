@@ -260,6 +260,44 @@ def get_ml_sequence(site_states_probs):
             mlseq += maxc
     return mlseq
 
+def get_site_ml(con, ancid, skip_indels = True):
+    """Returns the hashtable; key = site, value = tuple of (mlstate, mlpp)"""
+    cur = con.cursor()
+    sql = "select site, state, pp from AncestralStates where ancid=" + ancid.__str__()
+    cur.execute(sql)
+    x = cur.fetchall()
+    site_tuple = {}
+    site_mlpp = {}
+    for ii in x:
+        site = ii[0]
+        state = ii[1]
+        pp = ii[2]
+        if state == "-":
+            pp = 100.0
+        if site not in site_mlpp:
+            site_mlpp[site] = pp
+            site_tuple[site] = (state, pp)
+        if pp > site_mlpp[site]:
+            site_mlpp[site] = pp
+            site_tuple[site] = (state, pp)
+    
+    """Indel correction:"""
+    for site in site_tuple:
+        found_gap = False
+        for tuple in site_tuple[site]:
+            if tuple[0] == "-":
+                found_gap = True
+                break
+
+        if found_gap == True:
+            if skip_indels == True:
+                """Remove the indel site from the dictionary"""
+                del site_tuple[site]
+            else:
+                """Correct the probability of an indel. We don't really have probs. here, so I set it to 0.0"""
+                site_tuple[site] = ("-", 0.0)
+    return site_tuple
+
 def get_pp_distro(path):
     fin = open( path , "r")
     site_state_pp = {}

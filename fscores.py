@@ -712,6 +712,8 @@ def parse_dnds_results(con):
             write_log(con, "I found " + count.__str__() + " BEB sites in " + outdir)       
                  
 def setup_compare_functional_loci(con):
+    """This method determines which dNdS tests map to which dF-score tests."""
+    
     cur = con.cursor()
     
     sql = "delete from Compare_DNDS_Fscores"
@@ -758,6 +760,8 @@ def setup_compare_functional_loci(con):
             con.commit()
 
 def compare_functional_loci(con):
+    """This method compares dNdS tests to dF score rankings.
+        It writes an output text file named compare_dnds_Df.txt"""
     cur = con.cursor()
     sql = "select dnds_testid, fscore_testid from Compare_DNDS_Fscores"
     cur.execute(sql)
@@ -768,6 +772,40 @@ def compare_functional_loci(con):
         """For each test"""
         dnds_testid = ii[0]
         fscore_testid = ii[1]
+        
+        """Get the context -- which ancestors? alignment method? phylo model? etc..."""
+        almethod = None
+        phylomodel = None
+        anc1id = None
+        anc2id = None
+        sql = "selet almethod, phylomodel, anc1, anc2 from DNDS_Tests where id=" + dnds_testid.__str__()
+        cur.execute(sql)
+        x = cur.fetchall()
+        if x.__len__() > 1:
+            write_error(con, "There are multiple entires for the DNDS test " + dnds_testid.__str__() )
+            exit()
+        almethod = int(x[0])
+        phylomodel = int(x[1])
+        anc1id = int(x[2])
+        anc2id = int(x[3])
+        
+        site_anc1mlstate = {}
+        site_anc1mlpp = {}
+        site_anc2mlstate = {}
+        site_anc2mlpp = {}
+        
+        tups = get_site_ml(con, anc1id, skip_indels = False)
+        for site in tups:
+            state = tups[site][0]
+            pp = tups[site][1]
+            site_anc1mlstate[site] = state
+            site_anc1mlpp[site] = pp
+        tups = get_site_ml(con, anc2id, skip_indels = False)
+        for site in tups:
+            state = tups[site][0]
+            pp = tups[site][1]
+            site_anc2mlstate[site] = state
+            site_anc2mlpp[site] = pp
         
         """Get scores for sites."""
         site_nebppcat2 = {}
@@ -856,6 +894,11 @@ def compare_functional_loci(con):
             
             line += "\t" + site_df[s].__str__() + "\t" + site_k[s].__str__() 
             line += "\t" + site_p[s].__str__()
+            
+            line += "\t" + site_anc1mlstate[s]
+            line += "\t" + site_anc1mlpp[s]
+            line += "\t" + site_anc2mlstate[s]
+            line += "\t" + site_anc2mlpp[s]
             
             outl += line + "\n"
     

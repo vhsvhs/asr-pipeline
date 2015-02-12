@@ -36,7 +36,7 @@ def build_db(dbpath = None):
     cur.execute("create table if not exists AlignedSequences(id INTEGER primary key autoincrement, taxonid INT, alsequence TEXT, almethod INT, datatype INT)") # these sequences contain indels
 
     """Each entry in SiteMap says that site1 from alignment almethod1 is basically the same site
-        as site2 in alignment almethod2. These site maps are built by looking at the sites in the
+        as site2 in alignment almethod2 for the given taxon ID. These site maps are built by looking at the sites in the
         seed sequences."""
     cur.execute("create table if not exists SiteMap(taxonid INT, almethod1 INT, site1 INT, almethod2, site2 INT)")
 

@@ -235,6 +235,7 @@ if jump <= 7 and stop > 7:
     cleanup(con) 
 
 write_log(con, "Checkpoint: Analysis is complete.")
+exit()
 
 """
     December 2014: The following HTML-generation methods are disabled.
