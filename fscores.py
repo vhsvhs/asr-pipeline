@@ -883,16 +883,21 @@ def compare_functional_loci(con):
         print "\n. " + (dnds_sites.__len__()-sites.__len__()).__str__() + " do not match." 
         sites.sort()
         for s in sites:
-            line = s.__str__() + "\t"
-            line += site_nebppcat2[s].__str__() + "\t"
-            line += site_nebppcat3[s].__str__() + "\t" + site_nebppcat4[s].__str__()
-            line += "\t" + site_nebmut[s].__str__() + "\t" + site_nebsigflag[s].__str__()
+            line = s.__str__()
+            line += "\t" + site_nebppcat2[s].__str__()
+            line += "\t" + site_nebppcat3[s].__str__()
+            line += "\t" + site_nebppcat4[s].__str__()
+            line += "\t" + site_nebmut[s].__str__()
+            line += "\t" + site_nebsigflag[s].__str__()
 
-            line += "\t" + site_bebppcat2[s].__str__() + "\t"
-            line += site_bebppcat3[s].__str__() + "\t" + site_bebppcat4[s].__str__()
-            line += "\t" + site_bebmut[s].__str__() + "\t" + site_bebsigflag[s].__str__()
+            line += "\t" + site_bebppcat2[s].__str__()
+            line += "\t" + site_bebppcat3[s].__str__()
+            line += "\t" + site_bebppcat4[s].__str__()
+            line += "\t" + site_bebmut[s].__str__()
+            line += "\t" + site_bebsigflag[s].__str__()
             
-            line += "\t" + site_df[s].__str__() + "\t" + site_k[s].__str__() 
+            line += "\t" + site_df[s].__str__()
+            line += "\t" + site_k[s].__str__() 
             line += "\t" + site_p[s].__str__()
             
             line += "\t" + site_anc1mlstate[s]
