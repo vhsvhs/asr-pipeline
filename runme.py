@@ -9,7 +9,7 @@ from fscores import *
 from asr_bayes import *
 from html_helper import *
 from struct_analysis import *
-from pythoscape_tools import *
+#from pythoscape_tools import *
 from log import *
 from plots import *
 print_splash()
@@ -53,12 +53,12 @@ write_log(con, "Checkpoint: configuration is OK.")
 if jump != None:
     print "\n. Jumping to Step " + jump.__str__()
 
-if jump <= 0.5 and stop > 0.5:
-    write_log(con, "Checkpoint: building sequence similarity network")
-    run_similarity_network_analysis(con)
-if jump <= 0.6 and stop > 0.6:
-    write_log(con, "Checkpoint: checking the output from the similarity network analysis.")
-    check_similarity_network_analysis(con)
+# if jump <= 0.5 and stop > 0.5:
+#     write_log(con, "Checkpoint: building sequence similarity network")
+#     run_similarity_network_analysis(con)
+# if jump <= 0.6 and stop > 0.6:
+#     write_log(con, "Checkpoint: checking the output from the similarity network analysis.")
+#     check_similarity_network_analysis(con)
     
 """ MSAs """
 if jump <= 1 and stop > 1:

@@ -522,9 +522,11 @@ def check_asr_output(con):
             
             """Ensure the cladogram is rooted according to the outgroup."""
             cladostring = reroot_newick(con, cladostring)
+            cladostring = re.sub("\n", "", cladostring)
             
             """Save the cladogram to the database."""
-            sql = "insert into AncestralCladogram (unsupportedmltreeid,newick) values(" + treeid.__str__() + ",'" + cladostring + "')"
+            sql = "insert into AncestralCladogram (unsupportedmltreeid,newick) values(" + treeid.__str__() + ",\"" + cladostring + "\")"
+            #print "528", sql
             cur.execute(sql)
             con.commit()
             
@@ -973,7 +975,10 @@ def match_ancestors_across_models(con):
                     ancid_childrenids[ancid] = []
                     
                     for l in node.leaf_iter():
+                        #print "978:", l
                         taxonname = l.as_newick_string()
+                        #print "980:", taxonname
+                        taxonname = re.sub("'", "", taxonname)
                         ancid_childrenids[ancid].append( taxonname_id[taxonname] )
     
     ancid_matches = {} # key = Ancestor ID, value = list of other ancestor IDs with the same children.

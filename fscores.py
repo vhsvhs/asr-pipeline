@@ -778,7 +778,7 @@ def compare_functional_loci(con):
         phylomodel = None
         anc1id = None
         anc2id = None
-        sql = "selet almethod, phylomodel, anc1, anc2 from DNDS_Tests where id=" + dnds_testid.__str__()
+        sql = "select almethod, phylomodel, anc1, anc2 from DNDS_Tests where id=" + dnds_testid.__str__()
         cur.execute(sql)
         x = cur.fetchall()
         if x.__len__() > 1:
