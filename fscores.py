@@ -770,8 +770,8 @@ def compare_functional_loci(con):
     outl = ""
     for ii in x:
         """For each test"""
-        dnds_testid = ii[0]
-        fscore_testid = ii[1]
+        dnds_testid = int(ii[0])
+        fscore_testid = int(ii[1])
         
         """Get the context -- which ancestors? alignment method? phylo model? etc..."""
         almethod = None
@@ -784,10 +784,10 @@ def compare_functional_loci(con):
         if x.__len__() > 1:
             write_error(con, "There are multiple entires for the DNDS test " + dnds_testid.__str__() )
             exit()
-        almethod = int(x[0])
-        phylomodel = int(x[1])
-        anc1id = int(x[2])
-        anc2id = int(x[3])
+        almethod = int(x[0][0])
+        phylomodel = int(x[0][1])
+        anc1id = int(x[0][2])
+        anc2id = int(x[0][3])
         
         site_anc1mlstate = {}
         site_anc1mlpp = {}
@@ -883,7 +883,12 @@ def compare_functional_loci(con):
         print "\n. " + (dnds_sites.__len__()-sites.__len__()).__str__() + " do not match." 
         sites.sort()
         for s in sites:
-            line = s.__str__()
+            line = dnds_testid.__str__()
+            line += "\t" + fscore_testid.__str__()
+            line += "\t" + anc1id.__str__()
+            line ++ "\t" + anc2id.__str__()
+            
+            line += "\t" + s.__str__()
             line += "\t" + site_nebppcat2[s].__str__()
             line += "\t" + site_nebppcat3[s].__str__()
             line += "\t" + site_nebppcat4[s].__str__()
@@ -901,9 +906,9 @@ def compare_functional_loci(con):
             line += "\t" + site_p[s].__str__()
             
             line += "\t" + site_anc1mlstate[s]
-            line += "\t" + site_anc1mlpp[s]
+            line += "\t" + site_anc1mlpp[s].__str__()
             line += "\t" + site_anc2mlstate[s]
-            line += "\t" + site_anc2mlpp[s]
+            line += "\t" + site_anc2mlpp[s].__str__()
             
             outl += line + "\n"
     

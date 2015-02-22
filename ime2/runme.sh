@@ -1,5 +1,6 @@
 #rm *.db
-python ../runme.py --configpath ime2.config --jump 1.11 --stop 1.12
+python ../runme.py --configpath ime2.config --jump 6.2 --stop 6.3
+
 
 
 

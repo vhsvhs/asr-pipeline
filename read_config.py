@@ -1,4 +1,4 @@
-import re,sys,os
+import re,sys,os, time
 from tools import *
 from log import *
 from asrpipelinedb import *
@@ -510,5 +510,7 @@ def cleanup(con):
         os.system("rm -rf dnds")
     
     os.system("rm -rf *to*")
+    
+    add_setting_value(con, "time_cleanup", time.time().__str__(), unique=True)
     
     

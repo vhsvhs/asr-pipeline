@@ -1,5 +1,6 @@
 import random,sys,os
 from tools import *
+import time
 from phyloasr import *
 
 from splash import *
@@ -9,6 +10,7 @@ from fscores import *
 from asr_bayes import *
 from html_helper import *
 from struct_analysis import *
+from index_mutations import *
 #from pythoscape_tools import *
 from log import *
 from plots import *
@@ -198,28 +200,29 @@ if jump <= 6.1 and stop > 6.1:
     write_log(con, "Checkpoint: checking Df output")
     parse_compareanc_results(con)
 
+if jump <= 6.2 and stop > 6.2:
+    index_mutations(con)
 
 """
 dN/dS Tests
 """
-if jump <= 6.5 and stop > 6.5:
-    x = get_setting_values(con, "ergntpath")
-    if x != None:
-        if jump <= 6.5 and stop > 6.5:
-            """Do dn/ds test."""
-            write_log(con, "Checkpoint: performing dN/dS tests")
-            x = get_dnds_commands(con)
-            run_script(x)
-        if jump <= 6.6 and stop > 6.6:
-            write_log(con, "Checkpoint: checking dN/dS output")
-            parse_dnds_results(con)
-            
-        if jump <= 6.8 and stop > 6.8:
-            write_log(con, "Checkpoint: comparing Df to dN/dS")
-            setup_compare_functional_loci(con)
-            compare_functional_loci(con)
-    else:
-        write_log(con, "Codon sequences were not given by the user; I will skip dN/dS analysis.")
+x = get_setting_values(con, "ergntpath")
+if x != None:
+    if jump <= 6.5 and stop > 6.5:
+        """Do dn/ds test."""
+        write_log(con, "Checkpoint: performing dN/dS tests")
+        x = get_dnds_commands(con)
+        run_script(x)
+    if jump <= 6.6 and stop > 6.6:
+        write_log(con, "Checkpoint: checking dN/dS output")
+        parse_dnds_results(con)
+        
+    if jump <= 6.8 and stop > 6.8:
+        write_log(con, "Checkpoint: comparing Df to dN/dS")
+        setup_compare_functional_loci(con)
+        compare_functional_loci(con)
+else:
+    write_log(con, "Codon sequences were not given by the user; I will skip dN/dS analysis.")
 
 
 

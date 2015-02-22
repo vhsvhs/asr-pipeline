@@ -85,6 +85,16 @@ def get_raxml_fastapath(DIR):
     nick = DIR_nick[DIR]
     return DIR + "/" + ap.params["geneid"] + SEP + nick + SEP + "raxml" + SEP + "fasta"
 
+def get_seed_sequence(con, msaid):
+    cur = con.cursor()
+    sql = "select id from Taxa where shortname in (select value from Settings where keyword='seedtaxa')"
+    cur.execute(sql)
+    seedtaxonid = cur.fetchone()[0]
+    
+    sql = "select alsequence from AlignedSequences where almethod=" + msaid.__str__() + " and taxonid=" + seedtaxonid.__str__() 
+    cur.execute(sql)
+    seedsequence = cur.fetchone()[0]
+    return seedsequence 
 
 def get_asr_fastapath(DIR):
     return get_fastapath(DIR)
@@ -143,6 +153,17 @@ def get_tree_length(path):
     t = Tree()
     t.read_from_path(path, "newick")
     return t.length()
+
+def get_anc_cladogram(con, msaid, phylomodelid):
+    """Returns the Newick-formatted string with the cladogram of ancestral
+        nodes for the given alignment method (msaid) and model (phylomodelid)"""
+    cur = con.cursor()
+    sql = "select newick from AncestralCladogram where unsupportedmltreeid in"
+    sql += "(select id from UnsupportedMlPhylogenies where almethod=" + msaid.__str__() + " and phylomodelid=" + phylomodelid.__str__() + ")"
+    cur.execute(sql)
+    newick = cur.fetchone()[0]
+    return newick
+
 
 def reroot_tree(tstr):
     """Input: a tree path to a Newick tree.  Output: a re-rooted version of the tree, based on the outgroup defined in configuration.py"""
@@ -269,9 +290,9 @@ def get_site_ml(con, ancid, skip_indels = True):
     site_tuple = {}
     site_mlpp = {}
     for ii in x:
-        site = ii[0]
+        site = int(ii[0])
         state = ii[1]
-        pp = ii[2]
+        pp = float(ii[2])
         if state == "-":
             pp = 100.0
         if site not in site_mlpp:
@@ -284,10 +305,9 @@ def get_site_ml(con, ancid, skip_indels = True):
     """Indel correction:"""
     for site in site_tuple:
         found_gap = False
-        for tuple in site_tuple[site]:
-            if tuple[0] == "-":
-                found_gap = True
-                break
+        if site_tuple[site][0] == "-":
+            found_gap = True
+            break
 
         if found_gap == True:
             if skip_indels == True:
@@ -462,3 +482,70 @@ def get_ml_model(con, almethod):
     x = cur.fetchone()[0]
     return x
     
+    
+def get_ancestral_matches(con, ancid1, ancid2):
+    cur = con.cursor()
+    sql = "select same_ancid from AncestorsAcrossModels where ancid=" + ancid1.__str__()
+    cur.execute(sql)
+    
+    msas = []
+    models = []
+    
+    msa_model_match1 = {} # key = msa, value = hash; key = model, value = ancestral ID of a match to ancid1
+    for ii in cur.fetchall():
+        this_ancid = ii[0]
+        sql = "select almethod, phylomodel from Ancestors where id=" + this_ancid.__str__()
+        cur.execute(sql)
+        xx = cur.fetchone()
+        almethod = xx[0]
+        if almethod not in msas:
+            msas.append(almethod)
+        phylomodelid = xx[1]
+        if phylomodelid not in models:
+            models.append(phylomodelid)
+        if almethod not in msa_model_match1:
+            msa_model_match1[almethod] = {}
+        msa_model_match1[almethod][phylomodelid] = this_ancid
+    
+    
+    sql = "select same_ancid from AncestorsAcrossModels where ancid=" + ancid2.__str__()
+    cur.execute(sql)
+
+    msa_model_match2 = {}# key = msa, value = hash; key = model, value = ancestral ID of a match to ancid2
+    for ii in cur.fetchall():
+        this_ancid = ii[0]
+        sql = "select almethod, phylomodel from Ancestors where id=" + this_ancid.__str__()
+        cur.execute(sql)
+        xx = cur.fetchone()
+        almethod = xx[0]
+        if almethod not in msas:
+            msas.append(almethod)
+        phylomodelid = xx[1]
+        if phylomodelid not in models:
+            models.append(phylomodelid)
+        if almethod not in msa_model_match2:
+            msa_model_match2[almethod] = {}
+        msa_model_match2[almethod][phylomodelid] = this_ancid    
+    
+    """Now find those alignment-model combinations with a match to both anc1 and anc2"""
+    sql = "Select almethod from Ancestors where id=" + ancid1.__str__()
+    cur.execute(sql)
+    input_almethod = cur.fetchone()[0]
+    
+    msas.pop( msas.index(input_almethod) )
+    
+    matches = []
+    if input_almethod in msa_model_match1 and input_almethod in msa_model_match2:
+        for model in models:
+            if model in msa_model_match1[input_almethod] and model in msa_model_match2[input_almethod]:
+                matches.append( (msa_model_match1[input_almethod][model], msa_model_match2[input_almethod][model]) )        
+    else:
+        print "\n. Error 296 (view_tools.py)", input_almethod, msa_model_match1.keys(), msa_model_match2.keys()
+        
+    for msa in msas:
+        if msa in msa_model_match1 and msa in msa_model_match2:
+            for model in models:
+                if model in msa_model_match1[msa] and model in msa_model_match2[msa]:
+                    matches.append( (msa_model_match1[msa][model], msa_model_match2[msa][model]) )
+    
+    return matches

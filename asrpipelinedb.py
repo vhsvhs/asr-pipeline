@@ -60,7 +60,6 @@ def build_db(dbpath = None):
     cur.execute("create table if not exists FasttreeSymmetricDistances(treeid1 INTEGER, treeid2 INTEGER, distance FLOAT)")
     cur.execute("create table if not exists FasttreeRFDistances(treeid1 INTEGER, treeid2 INTEGER, distance FLOAT)")
 
-    
     # a list of phylo softwares, such as PhyML and RAxML
     cur.execute("create table if not exists PhyloSoftwares(id INTEGER primary key autoincrement, name TEXT unique, exe_path TEXT)") 
     # a list of phylogenetic models, such as LG+I+G
@@ -99,8 +98,12 @@ def build_db(dbpath = None):
     cur.execute("create table if not exists AncestorsAlias(pairid INTEGER primary key autoincrement, ancid INTEGER, alias TEXT)") # alias names for this ancestor
     """Some ancestors are special, with pre-defined mappings to known ingroups and outgroups."""
     
-    
     cur.execute("create table if not exists AncestorsGroups(ancid INTEGER, ingroupid INTEGER, outgroupid INTEGER)") # some ancestors, but not all, will have a mapping to known taxa groups.
+    
+    """The table MutationIndex is a pre-calculated index of ML state mutations between ancestors sepearted by one edge.
+        This table is useful when searching for occurrances of a known mutation, or for rapidly displaying
+        all known mutation information (for example in Django)."""
+    cur.execute("create table if not exists MutationIndex(ancid1 INTEGER, ancid2 INTEGER, mlstate1 TEXT, mlstate2 TEXT, state1pp FLOAT, state2pp FLOAT)")
     
     
     """Tables to store comparisons of ancestral sites."""
