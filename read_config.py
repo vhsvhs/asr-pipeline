@@ -486,7 +486,7 @@ def verify_all_exe(con):
 
 def print_config(ap):
     for p in ap.params:
-        print p, ":", ap.params[p]
+        print "\t", p, ":", ap.params[p]
 
 def setup_workspace(con):
     for msa in get_alignment_method_names(con):

@@ -21,7 +21,6 @@ def write_log(con, message, code=None):
     
     print "\n. " + message
     
-
 def write_error(con, message, code=None):
     cur = con.cursor()
     sql = "insert into ErrorLog (message"

@@ -886,7 +886,7 @@ def compare_functional_loci(con):
             line = dnds_testid.__str__()
             line += "\t" + fscore_testid.__str__()
             line += "\t" + anc1id.__str__()
-            line ++ "\t" + anc2id.__str__()
+            line += "\t" + anc2id.__str__()
             
             line += "\t" + s.__str__()
             line += "\t" + site_nebppcat2[s].__str__()

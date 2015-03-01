@@ -1,5 +1,7 @@
 #rm *.db
-python ../runme.py --configpath ime2.config --jump 6.2 --stop 6.3
+python ../runme.py --configpath ime2.config --enable_aws True --s3_bucket phylobot.jobfiles --s3_keybase ime2.test
+
+
 
 
 

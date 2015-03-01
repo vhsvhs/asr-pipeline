@@ -8,7 +8,7 @@ from read_config import *
 from run_msas import *
 from fscores import *
 from asr_bayes import *
-from html_helper import *
+from aws_tools import *
 from struct_analysis import *
 from index_mutations import *
 #from pythoscape_tools import *
@@ -28,8 +28,35 @@ if stop == None:
 else:
     stop = float( stop )
 
+enable_aws = ap.getOptionalArg("--enable_aws")
+if enable_aws == None:
+    enable_aws = False
+else:
+    enable_aws = True
+    
+S3_BUCKET = None # the name of a bucket in S3
+S3_KEYBASE = None # the base of a key string for this job, presumably this string will be the job ID.
+if enable_aws:
+    S3_BUCKET = ap.getOptionalArg("--s3_bucket")
+    if S3_BUCKET == None:
+        print "\n.You enabled AWS with --enable_aws, but you did not specify an S3 bucket with --s3_bucket"
+        exit()
+    S3_KEYBASE = ap.getOptionalArg("--s3_keybase")
+    if S3_KEYBASE == None:
+        print "\n.You enabled AWS with --enable_aws, but you did not specify an S3 keybase with --s3_keybase"
+        exit()
+
+if enable_aws:
+    aws_update_status("Launching the PhyloBot Pipeline", S3_BUCKET, S3_KEYBASE)
+
 """Restore/build the database."""
-con = build_db( dbpath = ap.getOptionalArg("--dbpath") )
+dbpath = ap.getOptionalArg("--dbpath") 
+if dbpath == None or dbpath == False:
+    dbpath = "asr.db"
+    print "\n. Creating a new database at", dbpath
+else:
+    print "\n. Restoring the existing database at", dbpath
+con = build_db( dbpath )
 
 """ Setup """
 read_config_file( con, ap )
@@ -37,6 +64,9 @@ print_config(ap)
 verify_config(con, ap)
 verify_all_exe(con)
 setup_workspace(con)
+
+if enable_aws:
+    aws_update_status("Importing Sequences", S3_BUCKET, S3_KEYBASE)
 
 if jump <= 0 and stop > 0:
     write_log(con, "Checkpoint: reading sequences.")
@@ -47,6 +77,9 @@ if jump <= 0 and stop > 0:
 
 verify_erg_seqs(con, ap)
 write_log(con, "Checkpoint: configuration is OK.")
+
+if enable_aws:
+    aws_update_status("Sequences and Configuration are OK", S3_BUCKET, S3_KEYBASE)
 
 """Note: Continue Here: An imported SQL DB could be retrieved right here, avoiding all the prior steps,
     and avoiding the need to keep the original FASTA and the configuration file around.
@@ -65,20 +98,25 @@ if jump != None:
 """ MSAs """
 if jump <= 1 and stop > 1:
     write_log(con, "Checkpoint: aligning sequences.")
+    if enable_aws:
+        aws_update_status("Aligning Sequences", S3_BUCKET, S3_KEYBASE)
     ap.params["checkpoint"] = 0
     ap.params["pending_checkpoint"] = 1
-    write_log(con, "Aligning sequences")
     p = write_msa_commands(con)
     run_script(p)
 
 if jump <= 1.1 and stop > 1.1:
     write_log(con, "Checkpoint: checking aligned sequences.")
+    if enable_aws:
+        aws_update_status("Checking the Aligned Sequences", S3_BUCKET, S3_KEYBASE)
     ap.params["checkpoint"] = 1
     ap.params["pending_checkpoint"] = 1.1
     check_aligned_sequences(con)
     
 if jump <= 1.11 and stop > 1.11:
     write_log(con, "Building a site map between different alignments.")
+    if enable_aws:
+        aws_update_status("Building a Site Map Between Different Alignments", S3_BUCKET, S3_KEYBASE)
     build_site_map(con)
 
 if jump <= 1.9 and stop > 1.91:
@@ -98,6 +136,8 @@ if False == ap.getOptionalToggle("--skip_zorro"):
     """Use ZORRO to the find the phylogenetically informative sites."""
     if jump <= 2.41 and stop > 2.41:
         write_log(con, "Checkpoint: starting ZORRO analysis")
+        if enable_aws:
+            aws_update_status("Running the ZORRO Analysis", S3_BUCKET, S3_KEYBASE)
         p = build_zorro_commands(con)
         run_script(p)
     if jump <= 2.42 and stop > 2.42:
@@ -120,11 +160,15 @@ if False == ap.getOptionalToggle("--skip_zorro"):
 
 if jump <= 2.7 and stop > 2.7:
     write_log(con, "Checkpoint: converting all FASTA to PHYLIP")
+    if enable_aws:
+        aws_update_status("Converting all FASTA to PHYLIP", S3_BUCKET, S3_KEYBASE)
     convert_all_fasta_to_phylip(con)
 
 """ ML Trees """
 if jump <= 3 and stop > 3:
     write_log(con, "Checkpoint: finding ML trees with RAxML (be patient)")
+    if enable_aws:
+        aws_update_status("Finding ML Phylogenies with RAxML", S3_BUCKET, S3_KEYBASE)
     ap.params["checkpoint"] = 2
     ap.params["pending_checkpoint"] = 3
     p = write_raxml_commands(con)
@@ -132,6 +176,8 @@ if jump <= 3 and stop > 3:
 
 if jump <= 3.1 and stop > 3.1:
     write_log(con, "Checkpoint: checking RAxML output")
+    if enable_aws:
+        aws_update_status("Checking RAxML Output", S3_BUCKET, S3_KEYBASE)
     """ML trees, part 2"""
     check_raxml_output(con)
     get_mlalpha_pp(con)
@@ -139,6 +185,8 @@ if jump <= 3.1 and stop > 3.1:
 """ Branch Support """
 if jump <= 4 and stop > 4:
     write_log(con, "Checkpoint: calculating branch support")
+    if enable_aws:
+        aws_update_status("Calculating Phylogenetic Branch Support", S3_BUCKET, S3_KEYBASE)
     ap.params["checkpoint"] = 3
     ap.params["pending_checkpoint"] = 4
     x = calc_alrt(con)
@@ -151,6 +199,8 @@ if jump <= 4.1 and stop > 4.1:
 """ A.S.R. """
 if jump <= 5 and stop > 5:
     write_log(con, "Checkpoint: reconstructing ancestral sequences")
+    if enable_aws:
+        aws_update_status("Reconstructing Ancestral Sequences", S3_BUCKET, S3_KEYBASE)
     ap.params["checkpoint"] = 4
     ap.params["pending_checkpoint"] = 5
     x = get_asr_commands(con)
@@ -160,31 +210,26 @@ if jump <= 5.1 and stop > 5.1:
     check_asr_output(con)
 
 if jump <= 5.11 and stop > 5.11:
+    if enable_aws:
+        aws_update_status("Matching Ancestors Across Models", S3_BUCKET, S3_KEYBASE)
     match_ancestors_across_models(con)
     
 if jump <= 5.2 and stop > 5.3:
     write_log(con, "Checkpoint: extracting relevant ancestors")
+    if enable_aws:
+        aws_update_status("Extracting Relevant Ancestors", S3_BUCKET, S3_KEYBASE)
     ap.params["checkpoint"] = 5
     ap.params["pending_checkpoint"] = 5.1
     x = get_getanc_commands(con)
     run_script(x)
     check_getanc_output(con)
 
-#
-# The Bayesian-sampling of ancestral sequences is now depricated.
-# These alternate sequences are now generated just-in-time by the Django
-# web framework when requested by the user.
-#
-# if jump <= 5.9 and stop > 5.9:
-#     write_log(con, "Checkpoint: calculating Bayesian-sampled alternate ancestors")
-#     ap.params["checkpoint"] = 5.1
-#     ap.params["pending_checkpoint"] = 5.2
-#     run_asr_bayes(con, ap)
-
 """ Predict sites of functional evolution """
 if jump <= 6 and stop > 6:
     if "compareanc" in ap.params:
         write_log(con, "Checkpoint: performing Df ranking for functional loci")
+        if enable_aws:
+            aws_update_status("Calculating Df Ranks for Functional Loci", S3_BUCKET, S3_KEYBASE)
         ap.params["checkpoint"] = 5.2
         ap.params["pending_checkpoint"] = 6
         
@@ -200,8 +245,8 @@ if jump <= 6.1 and stop > 6.1:
     write_log(con, "Checkpoint: checking Df output")
     parse_compareanc_results(con)
 
-if jump <= 6.2 and stop > 6.2:
-    index_mutations(con)
+#if jump <= 6.2 and stop > 6.2:
+#    index_mutations(con)
 
 """
 dN/dS Tests
@@ -211,6 +256,8 @@ if x != None:
     if jump <= 6.5 and stop > 6.5:
         """Do dn/ds test."""
         write_log(con, "Checkpoint: performing dN/dS tests")
+        if enable_aws:
+            aws_update_status("Calculating dN/dS Test Metrics", S3_BUCKET, S3_KEYBASE)
         x = get_dnds_commands(con)
         run_script(x)
     if jump <= 6.6 and stop > 6.6:
@@ -219,6 +266,8 @@ if x != None:
         
     if jump <= 6.8 and stop > 6.8:
         write_log(con, "Checkpoint: comparing Df to dN/dS")
+        if enable_aws:
+            aws_update_status("Comparing Df Ranks to dN/dS Test Scores", S3_BUCKET, S3_KEYBASE)
         setup_compare_functional_loci(con)
         compare_functional_loci(con)
 else:
@@ -235,9 +284,15 @@ else:
 
 if jump <= 7 and stop > 7:
     write_log(con, "Checkpoint: cleaning-up residual files")
+    if enable_aws:
+        aws_update_status("Almost Done: Cleaning Residual Files", S3_BUCKET, S3_KEYBASE)
     cleanup(con) 
 
 write_log(con, "Checkpoint: Analysis is complete.")
+if enable_aws:
+    aws_update_status("Finished", S3_BUCKET, S3_KEYBASE)
+    push_database_to_s3(dbpath, S3_BUCKET, S3_KEYBASE)
+
 exit()
 
 """
@@ -247,26 +302,6 @@ exit()
     This new dynamic approach will consume less disk space, and be
     more flexible, than the static approach.
 """
-
-# """ Build an HTML Report """
-if jump <= 8 and stop > 8:
-    write_log(con, "Checkpoint - writing an HTML report.")
-    ap.params["checkpoint"] = 6
-    ap.params["pending_checkpoint"] = 7
-    write_log(con, "Writing an HTML report.")
-    write_css()
-    write_index(con)
-    write_alignments(con)
-    write_treesancs(con)
-    write_ancestors_indi(con) # write individual ancestor pages
- 
-if jump <= 8.1 and stop > 8.1:
-    ap.params["checkpoint"] = 7
-    ap.params["pending_checkpoint"] = 7.1
-    if "compareanc" in ap.params:
-        for pair in ap.params["compareanc"]:
-            write_anccomp_indi(pair, con, ap)
-            write_mutations_indi(pair, con, ap)
  
 if jump <= 8.2 and stop > 8.3:
     ap.params["checkpoint"] = 7.1

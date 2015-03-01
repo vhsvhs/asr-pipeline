@@ -23,6 +23,11 @@ def index_mutations(con):
                 index_mutations_helper(con, msaid, modelid, anc1name, anc2name)
                     
 def index_mutations_helper(con, msaid, phylomodelid, anc1name, anc2name):
+    
+    """To-do continue here -- there may be some redundancy here.
+        I.e., this method is being called for each msa/model, but then later in the method
+        we iterate over msa/models AGAIN."""
+    
     cur = con.cursor()
     
     sql = "select name from AlignmentMethods where id=" + msaid.__str__()

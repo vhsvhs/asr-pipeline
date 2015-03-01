@@ -8,16 +8,9 @@ import sqlite3 as lite
 import os, sys
 from splash import *
 
-def build_db(dbpath = None):
+def build_db(dbpath):
     """Initializes all the tables. Returns the DB connection object.
     If tables already exist, they will NOT be overwritten."""
-        
-    if dbpath == None or dbpath == False:
-        dbpath = "asr.db"
-        print "\n. Creating a new database at", dbpath
-    else:
-        print "\n. Restoring the existing database at", dbpath
-
     con = lite.connect(dbpath)
 
     cur = con.cursor()

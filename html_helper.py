@@ -1,3 +1,12 @@
+#
+# March 2015 - I think all the methods in this file are now depricated.
+# HTML viz. is happening with the new Django architecture.
+#
+#
+
+
+
+
 import os, sys, time
 from configuration import *
 from tools import *
