@@ -728,10 +728,16 @@ def setup_compare_functional_loci(con):
         return
     nsites_id = x[0][0]
     
-    sql = "select id from AlignmentMethods where name='mafft'"
+    sql = "select id from AlignmentMethods where name='muscle'"
     cur.execute(sql)
-    mafftid = cur.fetchone()[0]
-    ml_modelid = get_ml_model(con, mafftid)
+    muscleid = cur.fetchone()
+    if muscleid == None:
+        print "\n. Warning - the comparison of functional loci is hardcoded to use the MUSCLE alignment"
+        print "but it appears that the muscle method wasn't used with your data."
+        print "I'm skipping the comparison"
+        return
+    muscleid = muscleid[0]
+    ml_modelid = get_ml_model(con, muscle)
     
     sql = "select id, almethod, anc1, anc2 from DNDS_Tests where dnds_model=" + nsites_id.__str__() + " and phylomodel=" + ml_modelid.__str__()
     cur.execute(sql)

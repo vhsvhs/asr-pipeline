@@ -36,7 +36,6 @@ def aws_update_status(message, S3_BUCKET, S3_KEYBASE):
 #             print "\t", key.name
     
     STATUS_KEY = S3_KEYBASE + "/status"
-    print "attempting to get key", STATUS_KEY
     key = bucket.get_key(STATUS_KEY)
     if key == None:
         key = bucket.new_key(STATUS_KEY)
@@ -54,6 +53,7 @@ def push_database_to_s3(dbpath, S3_BUCKET, S3_KEYBASE):
         jobid is the ID of the Job object,
         filepath is the path on this server to the file."""
     #s3 = S3Connection()
+    print "\n. Pushing the database to S3"
     
     s3 = S3Connection()
     

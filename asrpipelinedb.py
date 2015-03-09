@@ -12,7 +12,6 @@ def build_db(dbpath):
     """Initializes all the tables. Returns the DB connection object.
     If tables already exist, they will NOT be overwritten."""
     con = lite.connect(dbpath)
-
     cur = con.cursor()
     cur.execute("CREATE TABLE IF NOT EXISTS About(version TEXT)")
     cur.execute("INSERT OR REPLACE INTO About(version) VALUES('" + VERSION.__str__() + "')")

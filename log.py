@@ -14,8 +14,9 @@ def write_log(con, message, code=None):
         sql += ",code"
     sql += ") values(\"" + message
     if code != None:
-        sql += "," + code.__str__()
-    sql += "\")"
+        sql += "\"," + code.__str__() + ")"
+    else:
+        sql += "\")"
     cur.execute(sql)
     con.commit()
     
@@ -28,8 +29,9 @@ def write_error(con, message, code=None):
         sql += ",code"
     sql += ") values(\"" + message
     if code != None:
-        sql += "," + code.__str__()
-    sql += "\")"
+        sql += "\"," + code.__str__() + ")"
+    else:
+        sql += "\")"
     cur.execute(sql)
     con.commit()
     print "\n. ERROR: " + message
