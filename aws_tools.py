@@ -34,12 +34,13 @@ def aws_update_status(message, S3_BUCKET, S3_KEYBASE):
     key = bucket.get_key(STATUS_KEY)
     if key == None:
         key = bucket.new_key(STATUS_KEY)
-        key.set_acl('public-read')
+
         #key = bucket.get_key(STATUS_KEY) 
     if key == None:
         print "\n. Error 39 - the key is None"
         exit()   
     key.set_contents_from_string(message)
+    key.set_acl('public-read')
     
     print "\n. S3 Status Update:", key.get_contents_as_string()
 
@@ -64,13 +65,12 @@ def aws_checkpoint(checkpoint, S3_BUCKET, S3_KEYBASE):
     key = bucket.get_key(CHECKPOINT_KEY)
     if key == None:
         key = bucket.new_key(CHECKPOINT_KEY)
-        key.set_acl('public-read')
         #key = bucket.get_key(STATUS_KEY) 
     if key == None:
         print "\n. Error 67 - the key is None"
         exit()   
     key.set_contents_from_string(checkpoint.__str__())
-    
+    key.set_acl('public-read')    
     print "\n. S3 Checkpoint:", key.get_contents_as_string()
 
 def push_database_to_s3(dbpath, S3_BUCKET, S3_KEYBASE):
@@ -102,7 +102,6 @@ def push_database_to_s3(dbpath, S3_BUCKET, S3_KEYBASE):
     key = bucket.get_key(SQLDB_KEY)
     if key == None:
         key = bucket.new_key(SQLDB_KEY)
-        key.set_acl('public-read')
     key.set_contents_from_filename(dbpath)
-    
+    key.set_acl('public-read')    
     
