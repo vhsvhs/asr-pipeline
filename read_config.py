@@ -332,15 +332,18 @@ def verify_config(con, ap):
         ap.params["run_exe"] = "source"
         add_setting_value(con, "run_exe", "source")
     
-    if "blastp_exe" not in ap.params:
-        ap.params["blastp_exe"] = "blastp"
-        add_setting_value(con, "blastp_exe", "blastp")
+    #if "blastp_exe" not in ap.params:
+    #    ap.params["blastp_exe"] = "blastp"
+    #    add_setting_value(con, "blastp_exe", "blastp")
 
     if "cdhit_exe" not in ap.params:
         ap.params["cdhit_exe"] = "cd-hit"
         add_setting_value(con, "cdhit_exe", "cd-hit")
 
-    if "ingroup" in ap.params:
+    if "ingroup" not in ap.params:
+        ap.params["ingroup"] = []
+        ap.params["compareanc"] = []
+    elif "ingroup" in ap.params:
         for a in ap.params["ingroup"]:
             print a, ap.params["asrseedtaxa"]
             if a not in ap.params["asrseedtaxa"]:

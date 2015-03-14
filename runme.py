@@ -67,6 +67,7 @@ setup_workspace(con)
 
 if enable_aws:
     aws_update_status("Importing Sequences", S3_BUCKET, S3_KEYBASE)
+    aws_checkpoint(0, S3_BUCKET, S3_KEYBASE)
 
 if jump <= 0 and stop > 0:
     write_log(con, "Checkpoint: reading sequences.")
@@ -77,10 +78,10 @@ if jump <= 0 and stop > 0:
 
 verify_erg_seqs(con, ap)
 write_log(con, "Checkpoint: configuration is OK.")
-
 if enable_aws:
     aws_update_status("Sequences and Configuration are OK", S3_BUCKET, S3_KEYBASE)
     push_database_to_s3(dbpath, S3_BUCKET, S3_KEYBASE)
+    aws_checkpoint(1, S3_BUCKET, S3_KEYBASE)
 
 """Note: Continue Here: An imported SQL DB could be retrieved right here, avoiding all the prior steps,
     and avoiding the need to keep the original FASTA and the configuration file around.
@@ -112,6 +113,7 @@ if jump <= 1.1 and stop > 1.1:
     if enable_aws:
         aws_update_status("Checking the Aligned Sequences", S3_BUCKET, S3_KEYBASE)
         push_database_to_s3(dbpath, S3_BUCKET, S3_KEYBASE)
+        aws_checkpoint(1.1, S3_BUCKET, S3_KEYBASE)
     ap.params["checkpoint"] = 1
     ap.params["pending_checkpoint"] = 1.1
     check_aligned_sequences(con)
@@ -121,6 +123,7 @@ if jump <= 1.11 and stop > 1.11:
     if enable_aws:
         aws_update_status("Building a Site Map Between Different Alignments", S3_BUCKET, S3_KEYBASE)
         push_database_to_s3(dbpath, S3_BUCKET, S3_KEYBASE)
+        aws_checkpoint(1.11, S3_BUCKET, S3_KEYBASE)
     build_site_map(con)
 
 if jump <= 1.9 and stop > 1.91:
@@ -143,6 +146,7 @@ if False == ap.getOptionalToggle("--skip_zorro"):
         if enable_aws:
             aws_update_status("Running the ZORRO Analysis", S3_BUCKET, S3_KEYBASE)
             push_database_to_s3(dbpath, S3_BUCKET, S3_KEYBASE)
+            aws_checkpoint(2.41, S3_BUCKET, S3_KEYBASE)
         p = build_zorro_commands(con)
         run_script(p)
     if jump <= 2.42 and stop > 2.42:
@@ -168,6 +172,7 @@ if jump <= 2.7 and stop > 2.7:
     if enable_aws:
         aws_update_status("Converting all FASTA to PHYLIP", S3_BUCKET, S3_KEYBASE)
         push_database_to_s3(dbpath, S3_BUCKET, S3_KEYBASE)
+        aws_checkpoint(2.7, S3_BUCKET, S3_KEYBASE)
     convert_all_fasta_to_phylip(con)
 
 """ ML Trees """
@@ -176,6 +181,7 @@ if jump <= 3 and stop > 3:
     if enable_aws:
         aws_update_status("Finding ML Phylogenies with RAxML", S3_BUCKET, S3_KEYBASE)
         push_database_to_s3(dbpath, S3_BUCKET, S3_KEYBASE)
+        aws_checkpoint(3, S3_BUCKET, S3_KEYBASE)
     ap.params["checkpoint"] = 2
     ap.params["pending_checkpoint"] = 3
     p = write_raxml_commands(con)
@@ -186,6 +192,7 @@ if jump <= 3.1 and stop > 3.1:
     if enable_aws:
         aws_update_status("Checking RAxML Output", S3_BUCKET, S3_KEYBASE)
         push_database_to_s3(dbpath, S3_BUCKET, S3_KEYBASE)
+        aws_checkpoint(3.1, S3_BUCKET, S3_KEYBASE)
     """ML trees, part 2"""
     check_raxml_output(con)
     get_mlalpha_pp(con)
@@ -196,6 +203,7 @@ if jump <= 4 and stop > 4:
     if enable_aws:
         aws_update_status("Calculating Phylogenetic Branch Support", S3_BUCKET, S3_KEYBASE)
         push_database_to_s3(dbpath, S3_BUCKET, S3_KEYBASE)
+        aws_checkpoint(4, S3_BUCKET, S3_KEYBASE)
     ap.params["checkpoint"] = 3
     ap.params["pending_checkpoint"] = 4
     x = calc_alrt(con)
@@ -211,6 +219,7 @@ if jump <= 5 and stop > 5:
     if enable_aws:
         aws_update_status("Reconstructing Ancestral Sequences", S3_BUCKET, S3_KEYBASE)
         push_database_to_s3(dbpath, S3_BUCKET, S3_KEYBASE)
+        aws_checkpoint(5, S3_BUCKET, S3_KEYBASE)
     ap.params["checkpoint"] = 4
     ap.params["pending_checkpoint"] = 5
     x = get_asr_commands(con)
@@ -223,6 +232,7 @@ if jump <= 5.11 and stop > 5.11:
     if enable_aws:
         aws_update_status("Matching Ancestors Across Models", S3_BUCKET, S3_KEYBASE)
         push_database_to_s3(dbpath, S3_BUCKET, S3_KEYBASE)
+        aws_checkpoint(5.11, S3_BUCKET, S3_KEYBASE)
     match_ancestors_across_models(con)
     
 if jump <= 5.2 and stop > 5.3:
@@ -230,6 +240,7 @@ if jump <= 5.2 and stop > 5.3:
     if enable_aws:
         aws_update_status("Extracting Relevant Ancestors", S3_BUCKET, S3_KEYBASE)
         push_database_to_s3(dbpath, S3_BUCKET, S3_KEYBASE)
+        aws_checkpoint(5.2, S3_BUCKET, S3_KEYBASE)
     ap.params["checkpoint"] = 5
     ap.params["pending_checkpoint"] = 5.1
     x = get_getanc_commands(con)
@@ -243,6 +254,7 @@ if jump <= 6 and stop > 6:
         if enable_aws:
             aws_update_status("Calculating Df Ranks for Functional Loci", S3_BUCKET, S3_KEYBASE)
             push_database_to_s3(dbpath, S3_BUCKET, S3_KEYBASE)
+            aws_checkpoint(6, S3_BUCKET, S3_KEYBASE)
         ap.params["checkpoint"] = 5.2
         ap.params["pending_checkpoint"] = 6
         
@@ -272,6 +284,7 @@ if x != None:
         if enable_aws:
             aws_update_status("Calculating dN/dS Test Metrics", S3_BUCKET, S3_KEYBASE)
             push_database_to_s3(dbpath, S3_BUCKET, S3_KEYBASE)
+            aws_checkpoint(6.5, S3_BUCKET, S3_KEYBASE)
         x = get_dnds_commands(con)
         run_script(x)
     if jump <= 6.6 and stop > 6.6:
@@ -283,6 +296,7 @@ if x != None:
         if enable_aws:
             aws_update_status("Comparing Df Ranks to dN/dS Test Scores", S3_BUCKET, S3_KEYBASE)
             push_database_to_s3(dbpath, S3_BUCKET, S3_KEYBASE)
+            aws_checkpoint(6.8, S3_BUCKET, S3_KEYBASE)
         setup_compare_functional_loci(con)
         compare_functional_loci(con)
 else:
@@ -302,12 +316,14 @@ if jump <= 7 and stop > 7:
     if enable_aws:
         aws_update_status("Almost Done: Cleaning Residual Files", S3_BUCKET, S3_KEYBASE)
         push_database_to_s3(dbpath, S3_BUCKET, S3_KEYBASE)
+        aws_checkpoint(7, S3_BUCKET, S3_KEYBASE)
     cleanup(con) 
 
 write_log(con, "Checkpoint: Analysis is complete.")
 if enable_aws:
     aws_update_status("Finished", S3_BUCKET, S3_KEYBASE)
     push_database_to_s3(dbpath, S3_BUCKET, S3_KEYBASE)
+    aws_checkpoint(8, S3_BUCKET, S3_KEYBASE)
 
 exit()
 
