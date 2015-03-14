@@ -336,9 +336,9 @@ def verify_config(con, ap):
     #    ap.params["blastp_exe"] = "blastp"
     #    add_setting_value(con, "blastp_exe", "blastp")
 
-    if "cdhit_exe" not in ap.params:
-        ap.params["cdhit_exe"] = "cd-hit"
-        add_setting_value(con, "cdhit_exe", "cd-hit")
+    #if "cdhit_exe" not in ap.params:
+    #    ap.params["cdhit_exe"] = "cd-hit"
+    #    add_setting_value(con, "cdhit_exe", "cd-hit")
 
     if "ingroup" not in ap.params:
         ap.params["ingroup"] = []
