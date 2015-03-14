@@ -157,6 +157,7 @@ def get_ancestral_comparison_pairs(con):
 
 def get_ingroup_ids(con):
     cur = con.cursor()
+    """Select all the taxa groups that AREN'T outgroup"""
     sql = "select id from TaxaGroups where name <> 'outgroup'"
     cur.execute(sql)
     ids = []

@@ -21,6 +21,7 @@ def index_mutations(con):
                 anc1name = "Node" + edge.head_node.label.__str__()
                 anc2name = "Node" + edge.tail_node.label.__str__()
                 index_mutations_helper(con, msaid, modelid, anc1name, anc2name)
+              
                     
 def index_mutations_helper(con, msaid, phylomodelid, anc1name, anc2name):
     
@@ -74,7 +75,7 @@ def index_mutations_helper(con, msaid, phylomodelid, anc1name, anc2name):
     cur.execute(sql)
     ancname2 = cur.fetchone()[0]
     
-    """Get the site map beween different sequence alignments"""
+    """Get the site map between different sequence alignments"""
     msa_site1_site2 = {} # key = msaid, value = hash; key = site in user-specified msa, value = site in msaid
     sql = "select id, name from AlignmentMethods"
     cur.execute(sql)
@@ -95,7 +96,8 @@ def index_mutations_helper(con, msaid, phylomodelid, anc1name, anc2name):
         for qq in query:
             site1 = qq[0]
             site2 = qq[1]
-            msa_site1_site2[this_msaid][site1] = site2      
+            msa_site1_site2[this_msaid][site1] = site2  
+                
     """Note: at this point,  msa_site1_site2 contains data about all alignments EXCEPT
         for the user-specified msaid"""
 

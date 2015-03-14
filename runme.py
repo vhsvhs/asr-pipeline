@@ -247,6 +247,7 @@ if jump <= 5.2 and stop > 5.3:
     run_script(x)
     check_getanc_output(con)
 
+
 """ Predict sites of functional evolution """
 if jump <= 6 and stop > 6:
     if "compareanc" in ap.params:

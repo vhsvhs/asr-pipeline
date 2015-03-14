@@ -150,14 +150,31 @@ def verify_erg_seqs(con, ap):
     
     """Is the seed sequence found?"""
     seeds = get_setting_values(con, "seedtaxa")
-    for s in seeds:
-        sql = "select count(*) from Taxa where shortname='" + s + "'"
-        cur.execute(sql)
-        x = cur.fetchone()[0]
-        if x == 0:
-            write_error(con, "I cannot find your seed taxa '" + s + "' in your original sequences.")
-            exit()
+    if seeds != None:
+        for s in seeds:
+            sql = "select count(*) from Taxa where shortname='" + s + "'"
+            cur.execute(sql)
+            x = cur.fetchone()[0]
+            if x == 0:
+                write_error(con, "I cannot find your seed taxa '" + s + "' in your original sequences.")
+                exit()
     
+    """Clear any old/stale ingroups in the database that aren't currently specificed in the
+        configuration file."""
+    sql = "select id, name from TaxaGroups"
+    cur.execute(sql)
+    x = cur.fetchall()
+    known_taxagroup_names = []
+    for ii in x:
+        known_taxagroup_names.append( ii[1] )
+    for groupname in known_taxagroup_names:
+        if groupname not in ap.params["ingroup"]:
+            sql = "delete from TaxaGroups where name='" + groupname + "'"
+            cur.execute(sql)
+            con.commit()
+        
+    print "\n. I'm verifying the following taxa groups:", ap.params["ingroup"]
+        
     """Are the ingroup/outgroup specifications valid, given these sequences?"""
     for ingroup in ap.params["ingroup"]:
         if ingroup not in ap.params["asrseedtaxa"]:
@@ -430,9 +447,8 @@ def map_sequences(seqa, seqb):
 def build_site_map(con):
     """Builds a map between the different alignments."""
     cur = con.cursor()
-    seedtaxonname = get_setting_values(con, "seedtaxa")[0]
+    #seedtaxonname = get_setting_values(con, "seedtaxa")[0]
     
-
     sql = "select id from Taxa"
     cur.execute(sql)
     taxaids = []
@@ -646,32 +662,45 @@ def trim_alignments(con):
         """Get the seed sequence, and then find the start and end sites."""
         alid = ii[0]
         alname = ii[1]        
-        seeds = get_setting_values(con, "seedtaxa")
+
         minstart = None
         maxstop = None
-        for seed in seeds:
-            seedid = get_taxonid( con, seed  )
-            seedseq = get_aligned_seq(con, seedid, alid)
-            start_motif = get_setting_values(con, "start_motif")
-            if start_motif != None:
-                start_motif = start_motif[0]
-            end_motif = get_setting_values(con, "end_motif")
-            if end_motif != None:
-                end_motif = end_motif[0]            
-                    
-            [start, stop] = get_boundary_sites(seedseq, start_motif, end_motif)
-            if minstart == None:
-                minstart = start
-            if maxstop == None:
-                maxstop == stop
+        seeds = get_setting_values(con, "seedtaxa")
+        if seeds != None:
+            for seed in seeds:
+                seedid = get_taxonid( con, seed  )
+                seedseq = get_aligned_seq(con, seedid, alid)
+                start_motif = get_setting_values(con, "start_motif")
+                if start_motif != None:
+                    start_motif = start_motif[0]
+                end_motif = get_setting_values(con, "end_motif")
+                if end_motif != None:
+                    end_motif = end_motif[0]            
+                        
+                [start, stop] = get_boundary_sites(seedseq, start_motif, end_motif)
+                if minstart == None:
+                    minstart = start
+                if maxstop == None:
+                    maxstop == stop
+                
+                if minstart > start:
+                    minstart = start
+                if maxstop < stop:
+                    maxstop = stop
+        
+        """ minstart and maxstop could be None
+            if no seeds where specified"""
+        if minstart == None:
+            minstart = 1
             
-            if minstart > start:
-                minstart = start
-            if maxstop < stop:
-                maxstop = stop
+        if maxstop == None:
+            sql = "select max(length(alsequence)) from AlignedSequences where almethod=" + alid.__str__()
+            cur.execute(sql)
+            maxstop = int( cur.fetchone()[0] )
+        
         start = minstart
         stop = maxstop
-                
+                        
         """Remember these start and end sites."""
         sql = "insert or replace into SiteSetsAlignment(setid, almethod, fromsite, tosite) VALUES("
         sql += sitesetid.__str__() + "," + alid.__str__() + "," + start.__str__() + "," + stop.__str__() + ")"
@@ -740,6 +769,7 @@ def build_zorro_commands(con):
     fout.close()
     return zorro_scriptpath
 
+
 def import_zorro_scores(con):
     cur = con.cursor()    
     
@@ -787,6 +817,7 @@ def import_zorro_scores(con):
         cur.execute(sql)
         count = cur.fetchone()[0]
         write_log(con, "I found " + count.__str__() + " ZORRO site scores for the alignment " + almethod.__str__())
+
 
 def plot_zorro_stats(con):
     cur = con.cursor()

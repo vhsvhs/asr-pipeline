@@ -589,7 +589,7 @@ def get_getanc_commands(con):
             taxa = [get_taxon_name(con,i) for i in taxa]
             outgroup_string = "[" + ",".join(taxa) + "]"
                 
-            ingroup_ids = get_ingroup_ids(con)    
+            ingroup_ids = get_ingroup_ids(con)  
             for ing in ingroup_ids:
                 sql = "select name from TaxaGroups where id=" + ing.__str__()
                 cur.execute(sql)
