@@ -813,7 +813,6 @@ def get_compareanc_commands(con):
             compare_commands.append("source run_rscripts.sh")
     
     fout = open("SCRIPTS/compareanc_commands.sh", "w")
-    print compare_commands
     for c in compare_commands:
         fout.write(c + "\n")
     fout.close()
