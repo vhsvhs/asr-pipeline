@@ -589,7 +589,8 @@ def write_alignment_for_raxml(con):
         zorromethod = cur.fetchone()[0]
         
         sql = "select site from AlignmentSiteScores where almethodid=" + msaid.__str__() + " and scoringmethodid=" +  zorromethod.__str__()
-        sql += " and score >= " + min_score.__str__() + " order by site ASC"
+        #sql += " and score >= " + min_score.__str__()
+        sql += " order by site ASC"
         cur.execute(sql)
         y = cur.fetchall()
         sites = [] # a list of site indices into seed-trimmed sequences

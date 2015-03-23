@@ -179,7 +179,7 @@ if jump <= 2.7 and stop > 2.7:
 if jump <= 3 and stop > 3:
     write_log(con, "Checkpoint: finding ML trees with RAxML (be patient)")
     if enable_aws:
-        aws_update_status("Finding ML Phylogenies with RAxML", S3_BUCKET, S3_KEYBASE)
+        aws_update_status("Finding ML Phylogenies with RAxML (this can take a while)", S3_BUCKET, S3_KEYBASE)
         push_database_to_s3(dbpath, S3_BUCKET, S3_KEYBASE)
         aws_checkpoint(3, S3_BUCKET, S3_KEYBASE)
     ap.params["checkpoint"] = 2
@@ -322,8 +322,8 @@ if jump <= 7 and stop > 7:
 
 write_log(con, "Checkpoint: Analysis is complete.")
 if enable_aws:
-    aws_update_status("Finished", S3_BUCKET, S3_KEYBASE)
     push_database_to_s3(dbpath, S3_BUCKET, S3_KEYBASE)
+    aws_update_status("Finished", S3_BUCKET, S3_KEYBASE)
     aws_checkpoint(8, S3_BUCKET, S3_KEYBASE)
 
 exit()
