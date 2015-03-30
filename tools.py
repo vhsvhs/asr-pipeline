@@ -218,13 +218,20 @@ def reroot_newick(con, newick):
     cur = con.cursor()
     dendrotree = Tree()
     dendrotree.read_from_string(newick, "newick")
+    print "221:", dendrotree.taxon_set
     sql = "select shortname from Taxa where id in (select taxonid from GroupsTaxa where groupid in (select id from TaxaGroups where name='outgroup'))"
     cur.execute(sql)
     rrr = cur.fetchall()
     outgroup_labels = []
     for iii in rrr:
-        outgroup_labels.append( iii[0].__str__() )
+        label = re.sub("_", " ", iii[0])
+        outgroup_labels.append( label.__str__() )
+    #print "228b:", newick
+    print "228:", outgroup_labels
+    for ol in outgroup_labels:
+        print "230:", ol, newick.__contains__(ol)
     mrca = dendrotree.mrca(taxon_labels=outgroup_labels)
+    print "229:", mrca.edge
     dendrotree.reroot_at_edge(mrca.edge, update_splits=True)
     newick = dendrotree.as_string("newick")
     return newick

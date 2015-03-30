@@ -242,6 +242,8 @@ def verify_erg_seqs(con, ap):
         ogstring = ogstring[0: ogstring.__len__()-1 ]
     taxa = ogstring.split(",")
 
+    print "245:", taxa
+
     """Check that each member of the group definition exists in the original sequences."""
     for t in taxa:
         taxonid = get_taxonid(con, t)

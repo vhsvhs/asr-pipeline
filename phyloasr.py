@@ -104,6 +104,10 @@ def check_raxml_output(con):
             if False == os.path.exists(raxml_treepath):
                 print "I can't find the expected result from RAxML at " + here + "/" + msa + "/RAxML_bestTree." + runid
                 write_error(con, "I can't find the expected result from RAxML at " + here + "/" + msa + "/RAxML_bestTree." + runid)
+                
+                sql = "delete from PhyloModels where name='" + model + "'"
+                cur.execute(sql)
+                con.commit()
                 exit()
             
             # get the modelid
