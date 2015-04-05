@@ -973,6 +973,7 @@ def match_ancestors_across_models(con):
             for node in t.nodes():
                 if node.is_leaf() == False and node.level() > 0:                    
                     sql = "select id from Ancestors where name='Node" + node.label + "' and almethod=" + msaid.__str__() + " and phylomodel=" + modelid.__str__()
+                    print "976:", modelid, msaid, node.label
                     cur.execute(sql)
                     ancid = cur.fetchone()[0]
                     ancid_childrenids[ancid] = []

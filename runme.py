@@ -325,6 +325,9 @@ if enable_aws:
     push_database_to_s3(dbpath, S3_BUCKET, S3_KEYBASE)
     aws_update_status("Finished", S3_BUCKET, S3_KEYBASE)
     aws_checkpoint(8, S3_BUCKET, S3_KEYBASE)
+    
+    """The job sends the stop signal to the SQS queue, essentially committing suicide."""
+    sqs_stop(S3_KEYBASE, attempts=0)
 
 exit()
 

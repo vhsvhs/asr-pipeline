@@ -105,3 +105,12 @@ def push_database_to_s3(dbpath, S3_BUCKET, S3_KEYBASE):
     key.set_contents_from_filename(dbpath)
     key.set_acl('public-read')    
     
+    
+def sqs_stop(jobid, attempts=0):
+    conn = boto.sqs.connect_to_region(ZONE)
+    queue = conn.get_queue("phylobot-jobs")
+    if queue == None:
+        queue = conn.create_queue("phylobot-jobs")
+    m = Message()
+    m.set_body('stop ' + jobid.__str__() + " " + attempts.__str__())
+    queue.write(m)  
