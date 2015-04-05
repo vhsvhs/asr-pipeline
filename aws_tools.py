@@ -7,11 +7,14 @@
 import boto
 import boto.ec2
 import boto.s3
+import boto.sqs
+from boto.sqs.message import Message
 from boto.s3.connection import S3Connection
 from boto.s3.connection import Location
 import sys, time
 
 S3LOCATION = Location.USWest
+ZONE = "us-west-1"
 
 def aws_update_status(message, S3_BUCKET, S3_KEYBASE):
     if S3_BUCKET == None:
