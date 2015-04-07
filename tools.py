@@ -225,8 +225,10 @@ def reroot_newick(con, newick):
     for iii in rrr:
         label = re.sub("_", " ", iii[0])
         outgroup_labels.append( label.__str__() )
+    
     mrca = dendrotree.mrca(taxon_labels=outgroup_labels)
-    dendrotree.reroot_at_edge(mrca.edge, update_splits=True)
+    if mrca.edge.tail_node != None and mrca.edge.head_node != None:
+        dendrotree.reroot_at_edge(mrca.edge, update_splits=True)
     newick = dendrotree.as_string("newick")
     return newick
 
