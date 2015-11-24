@@ -15,18 +15,6 @@ def run_script(path):
     else:
         exe = ap.params["run_exe"] + " " + path
     
-    # to-do: why does version 1 fail on the Johnson lab server?
-    
-    #
-    # version 1
-    #
-    #args = exe.split()
-    #proc = subprocess.Popen( args, preexec_fn=os.setsid ) # see http://pymotw.com/2/subprocess/
-    #proc.wait()
-    
-    #
-    # version 2
-    #
     os.system(exe)
 
 def run_subprocess(command):
@@ -550,5 +538,6 @@ def get_ancestral_matches(con, ancid1, ancid2):
             for model in models:
                 if model in msa_model_match1[msa] and model in msa_model_match2[msa]:
                     matches.append( (msa_model_match1[msa][model], msa_model_match2[msa][model]) )
-    
     return matches
+
+

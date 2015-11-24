@@ -71,6 +71,7 @@ if enable_aws:
 
 if jump <= 0 and stop > 0:
     write_log(con, "Checkpoint: reading sequences.")
+    add_checkpoint(con, 0)
     ap.params["checkpoint"] = -1
     ap.params["pending_checkpoint"] = 0
     write_log(con, "Reading input sequences")
@@ -114,6 +115,7 @@ if jump <= 1.1 and stop > 1.1:
         aws_update_status("Checking the Aligned Sequences", S3_BUCKET, S3_KEYBASE)
         push_database_to_s3(dbpath, S3_BUCKET, S3_KEYBASE)
         aws_checkpoint(1.1, S3_BUCKET, S3_KEYBASE)
+    add_checkpoint(con, 1)
     ap.params["checkpoint"] = 1
     ap.params["pending_checkpoint"] = 1.1
     check_aligned_sequences(con)
@@ -127,6 +129,7 @@ if jump <= 1.11 and stop > 1.11:
     build_site_map(con)
 
 if jump <= 1.9 and stop > 1.91:
+    add_checkpoint(con, 1.9)
     clear_sitesets(con)
 
 if jump <= 2 and stop > 2.1:
@@ -169,6 +172,7 @@ if False == ap.getOptionalToggle("--skip_zorro"):
 
 if jump <= 2.7 and stop > 2.7:
     write_log(con, "Checkpoint: converting all FASTA to PHYLIP")
+    add_checkpoint(con, 2.7)
     if enable_aws:
         aws_update_status("Converting all FASTA to PHYLIP", S3_BUCKET, S3_KEYBASE)
         push_database_to_s3(dbpath, S3_BUCKET, S3_KEYBASE)
@@ -186,6 +190,7 @@ if jump <= 3 and stop > 3:
     ap.params["pending_checkpoint"] = 3
     p = write_raxml_commands(con)
     run_script(p)
+    add_checkpoint(con, 3)
 
 if jump <= 3.1 and stop > 3.1:
     write_log(con, "Checkpoint: checking RAxML output")
@@ -196,6 +201,7 @@ if jump <= 3.1 and stop > 3.1:
     """ML trees, part 2"""
     check_raxml_output(con)
     get_mlalpha_pp(con)
+    add_checkpoint(con, 3.1)
 
 """ Branch Support """
 if jump <= 4 and stop > 4:
@@ -209,6 +215,7 @@ if jump <= 4 and stop > 4:
     x = calc_alrt(con)
     run_script(x)
     calc_alr(con)
+    add_checkpoint(con, 4)
 
 if jump <= 4.1 and stop > 4.1:
     import_supported_trees(con)
@@ -223,6 +230,7 @@ if jump <= 4.2 and stop > 4.2:
     ap.params["checkpoint"] = 4
     ap.params["pending_checkpoint"] = 4.2
     compute_tree_distances(con)
+    add_checkpoint(con, 4.2)
 
 """ A.S.R. """
 if jump <= 5 and stop > 5:
@@ -235,6 +243,7 @@ if jump <= 5 and stop > 5:
     ap.params["pending_checkpoint"] = 5
     x = get_asr_commands(con)
     run_script(x)
+    add_checkpoint(con, 5)
     
 if jump <= 5.1 and stop > 5.1:
     check_asr_output(con)
@@ -258,7 +267,6 @@ if jump <= 5.2 and stop > 5.3:
     run_script(x)
     check_getanc_output(con)
 
-
 """ Predict sites of functional evolution """
 if jump <= 6 and stop > 6:
     if "compareanc" in ap.params:
@@ -269,6 +277,7 @@ if jump <= 6 and stop > 6:
             aws_checkpoint(6, S3_BUCKET, S3_KEYBASE)
         ap.params["checkpoint"] = 5.2
         ap.params["pending_checkpoint"] = 6
+        add_checkpoint(con, 5.2)
         
         #write_log(con, "Setting up PDB maps")
         # continue here -- retool this method to use SQL:
@@ -281,6 +290,7 @@ if jump <= 6 and stop > 6:
 if jump <= 6.1 and stop > 6.1:
     write_log(con, "Checkpoint: checking Df output")
     parse_compareanc_results(con)
+    add_checkpoint(con, 6.1)
 
 #if jump <= 6.2 and stop > 6.2:
 #    index_mutations(con)
@@ -329,6 +339,7 @@ if jump <= 7 and stop > 7:
         aws_update_status("Almost Done: Cleaning Residual Files", S3_BUCKET, S3_KEYBASE)
         push_database_to_s3(dbpath, S3_BUCKET, S3_KEYBASE)
         aws_checkpoint(7, S3_BUCKET, S3_KEYBASE)
+        add_checkpoint(con, 7)
     cleanup(con) 
 
 write_log(con, "Checkpoint: Analysis is complete.")
@@ -336,6 +347,7 @@ if enable_aws:
     push_database_to_s3(dbpath, S3_BUCKET, S3_KEYBASE)
     aws_update_status("Finished", S3_BUCKET, S3_KEYBASE)
     aws_checkpoint(8, S3_BUCKET, S3_KEYBASE)
+    add_checkpoint(con, 8)
     
     """The job sends the stop signal to the SQS queue, essentially committing suicide."""
     sqs_stop(S3_KEYBASE, attempts=0)
@@ -357,4 +369,5 @@ if jump <= 8.2 and stop > 8.3:
  
 if stop >= 9:
     ap.params["checkpoint"] = 100
+    add_checkpoint(con, 100)
     write_log(con, "Done")

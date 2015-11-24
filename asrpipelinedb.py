@@ -19,6 +19,7 @@ def build_db(dbpath):
     cur.execute("create table if not exists Settings(keyword TEXT, value TEXT)")
     cur.execute("create table if not exists Log(id INTEGER primary key, time DATETIME DEFAULT CURRENT_TIMESTAMP,  message TEXT, code INT)")
     cur.execute("create table if not exists ErrorLog(id INTEGER primary key, time DATETIME DEFAULT CURRENT_TIMESTAMP,  message TEXT, code INT)")
+    cur.execute("create table if not exists CheckPoints(checkpoint FLOAT, time FLOAT)")
     
     # Sequence Alignment
     """Note: each Taxa can have only one sequence; see the 'unique' modified on taxonid table fields."""
