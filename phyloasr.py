@@ -1024,10 +1024,10 @@ def compute_tree_distances(con):
         t.read_from_string(newick, "newick")
         treeid_dendropytree[treeid] = t
         
-    for ii in treeids:
+    for ii in treeid_dendropytree:
         treeii = treeid_dendropytree[ii]
         this_row = []
-        for jj in treeids:
+        for jj in treeid_dendropytree:
             treejj = treeid_dendropytree[jj]
             
             """Symmetric Distance"""
