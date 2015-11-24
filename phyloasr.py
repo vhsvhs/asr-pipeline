@@ -973,7 +973,6 @@ def match_ancestors_across_models(con):
             for node in t.nodes():
                 if node.is_leaf() == False and node.level() > 0:                    
                     sql = "select id from Ancestors where name='Node" + node.label + "' and almethod=" + msaid.__str__() + " and phylomodel=" + modelid.__str__()
-                    print "976:", modelid, msaid, node.label
                     cur.execute(sql)
                     ancid = cur.fetchone()[0]
                     ancid_childrenids[ancid] = []
@@ -1010,10 +1009,41 @@ def match_ancestors_across_models(con):
     con.commit()
     
 def compute_tree_distances(con):
-    pass
     cur = con.cursor()
-    cur.execute("insert or replace into TreeDistanceMetrics(metricid, name) values(1, 'euclidean')")
-    cur.execute("insert or replace into TreeDistanceMetrics(metricid, name) values(2, 'symmetric')")
+    cur.execute("insert or replace into TreeDistanceMetrics(metricid, name) values(1, 'symmetric')")
+    cur.execute("insert or replace into TreeDistanceMetrics(metricid, name) values(2, 'euclidean')")
+    con.commit()
+    
+    treeid_dendropytree = {}
+    sql = "select id, almethod, phylomodelid, newick from UnsupportedMlPhylogenies"
+    con.execute(sql)
+    x = cur.fetchall()
+    for ii in x:
+        treeid = ii[0]
+        t = Tree()
+        t.read_from_string(newick, "newick")
+        treeid_dendropytree[treeid] = t
+        
+    for ii in treeids:
+        treeii = treeid_dendropytree[ii]
+        this_row = []
+        for jj in treeids:
+            treejj = treeid_dendropytree[jj]
+            
+            """Symmetric Distance"""
+            distance = treeii.symmetric_difference(treejj)
+            """Store the computed distance in the database."""
+            sql = "insert into TreeDistances(metricid, treeida, treeidb, distance) values("
+            sql += "1," + ii.__str__() + "," + jj.__str__() + "," + distance.__str__() + ")"
+            cur.execute(sql)
+
+            """Euclidean Distance"""
+            distance = treeii.euclidean_distance(treejj)
+            """Store the computed distance in the database."""
+            sql = "insert into TreeDistances(metricid, treeida, treeidb, distance) values("
+            sql += "2," + ii.__str__() + "," + jj.__str__() + "," + distance.__str__() + ")"
+            cur.execute(sql)
+    
     con.commit()
                         
                         

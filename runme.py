@@ -212,6 +212,17 @@ if jump <= 4 and stop > 4:
 
 if jump <= 4.1 and stop > 4.1:
     import_supported_trees(con)
+    
+""" Distances Between ML Trees """
+if jump <= 4.2 and stop > 4.2:
+    write_log(con, "Checkpoint: computing distances between trees")
+    if enable_aws:
+        aws_update_status("Computing Distances Between Trees", S3_BUCKET, S3_KEYBASE)
+        push_database_to_s3(dbpath, S3_BUCKET, S3_KEYBASE)
+        aws_checkpoint(4.2, S3_BUCKET, S3_KEYBASE)
+    ap.params["checkpoint"] = 4
+    ap.params["pending_checkpoint"] = 4.2
+    compute_tree_distances(con)
 
 """ A.S.R. """
 if jump <= 5 and stop > 5:
