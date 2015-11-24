@@ -242,8 +242,6 @@ def verify_erg_seqs(con, ap):
         ogstring = ogstring[0: ogstring.__len__()-1 ]
     taxa = ogstring.split(",")
 
-    print "245:", taxa
-
     """Check that each member of the group definition exists in the original sequences."""
     for t in taxa:
         taxonid = get_taxonid(con, t)
@@ -433,12 +431,12 @@ def map_sequences(seqa, seqb):
             print "\n. Error 410", lasta, lastb
             print "1:", seqa
             print "2:", seqb
-            exit()
+            return []
         elif (lasta < seqa.__len__() and seqa[lasta-1] == "-") or (lastb < seqb.__len__() and seqb[lastb-1] == "-"):
             print "Error 412", lasta, lastb
             print "1:", seqa
             print "2:", seqb
-            exit()
+            return []
         else:
             matches.append( (lasta,lastb) )
             lasta += 1
@@ -475,11 +473,6 @@ def build_site_map(con):
     cur.execute(sql)
     con.commit()
     
-    #
-    # continue here -- build a map of all characters to all characters,
-    # rather than just seed sites to seed sites
-    # but do this in a future build.
-    #
     for aa in almethod_taxa_seq:
         for bb in almethod_taxa_seq:
             if aa == bb:

@@ -57,7 +57,7 @@ def write_raxml_commands(con):
             command += " -s " + phypath
             command += " -n " + runid
             command += " -w " + here + "/" + msa
-            command += " -e 0.001"
+            command += " -e 0.01"
             command += " -m " + model
             command += " -p 12345"
             constraint_tree = get_setting_values(con, "constraint_tree")
@@ -1007,6 +1007,13 @@ def match_ancestors_across_models(con):
         for anc2 in ancid_matches[anc1]:
             sql = "insert into AncestorsAcrossModels (ancid, same_ancid) values(" + anc1.__str__() + "," + anc2.__str__() + ")"
             cur.execute(sql)
+    con.commit()
+    
+def compute_tree_distances(con):
+    pass
+    cur = con.cursor()
+    cur.execute("insert or replace into TreeDistanceMetrics(metricid, name) values(1, 'euclidean')")
+    cur.execute("insert or replace into TreeDistanceMetrics(metricid, name) values(2, 'symmetric')")
     con.commit()
                         
                         
