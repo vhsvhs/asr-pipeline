@@ -40,7 +40,7 @@ def add_setting_value(con, keyword, value, unique=False):
 def add_checkpoint(con, checkpoint):
     cur = con.cursor()
     seconds = time.time()
-    sql = "insert or replace into CheckPoints (checkpoint, time) value(" + checkpoint.__str__() + "," + seconds.__str__() + ")"
+    sql = "insert or replace into CheckPoints (checkpoint, time) values(" + checkpoint.__str__() + "," + seconds.__str__() + ")"
     cur.execute(sql)
     con.commit()
 
