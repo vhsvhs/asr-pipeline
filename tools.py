@@ -43,35 +43,35 @@ def get_sd(values):
 
 
 def get_runid(dir, model):
-    nick = DIR_nick[dir]
+    nick = get_msa_nickname(dir)
     runid = nick + "." + model
     return runid
 
-def get_phylippath(DIR):
-    nick = DIR_nick[DIR]
-    return DIR + "/" + ap.params["geneid"] + SEP + nick + SEP + "phylip"
+def get_phylippath(dir):
+    nick = get_msa_nickname(dir)
+    return dir + "/" + ap.params["geneid"] + SEP + nick + SEP + "phylip"
 
-def get_fastapath(DIR):
-    nick = DIR_nick[DIR]
-    return DIR + "/" + ap.params["geneid"] + SEP + nick + SEP + "fasta"
+def get_fastapath(dir):
+    nick = get_msa_nickname(dir)
+    return dir + "/" + ap.params["geneid"] + SEP + nick + SEP + "fasta"
 
-def get_trimmed_phylippath(DIR):
-    nick = DIR_nick[DIR]
-    return DIR + "/" + ap.params["geneid"] + SEP + nick + SEP + "trim" + SEP + "phylip"
+def get_trimmed_phylippath(dir):
+    nick = get_msa_nickname(dir)
+    return dir + "/" + ap.params["geneid"] + SEP + nick + SEP + "trim" + SEP + "phylip"
 
-def get_trimmed_fastapath(DIR):
-    nick = DIR_nick[DIR]
-    return DIR + "/" + ap.params["geneid"] + SEP + nick + SEP + "trim" + SEP + "fasta"
+def get_trimmed_fastapath(dir):
+    nick = get_msa_nickname(dir)
+    return dir + "/" + ap.params["geneid"] + SEP + nick + SEP + "trim" + SEP + "fasta"
 
-def get_raxml_phylippath(DIR):
+def get_raxml_phylippath(dir):
     """The phylip path for the MSA used in RAxML"""
-    nick = DIR_nick[DIR]
-    return DIR + "/" + ap.params["geneid"] + SEP + nick + SEP + "raxml" + SEP + "phylip"
+    nick = get_msa_nickname(dir)
+    return dir + "/" + ap.params["geneid"] + SEP + nick + SEP + "raxml" + SEP + "phylip"
 
-def get_raxml_fastapath(DIR):
+def get_raxml_fastapath(dir):
     """The fasta path for the MSA used in RAxML"""
-    nick = DIR_nick[DIR]
-    return DIR + "/" + ap.params["geneid"] + SEP + nick + SEP + "raxml" + SEP + "fasta"
+    nick = get_msa_nickname(dir)
+    return dir + "/" + ap.params["geneid"] + SEP + nick + SEP + "raxml" + SEP + "fasta"
 
 def get_seed_sequence(con, msaid):
     cur = con.cursor()

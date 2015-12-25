@@ -4,9 +4,6 @@
 #
 #
 
-
-
-
 import os, sys, time
 from configuration import *
 from tools import *
@@ -241,7 +238,7 @@ def write_anctree(d, model):
 
     out = ""
     out += get_header(head=js)
-    out += "<h2>Cladogram of Ancestors, Alignment: " + DIR_nick[d] + ", Model: " + model + "</h2>\n"
+    out += "<h2>Cladogram of Ancestors, Alignment: " + get_msa_nickname(d) + ", Model: " + model + "</h2>\n"
     out += "<h3>Click an ancestral node for details.</h3>\n"
     out += "<div id=\"svgCanvas\"> </div>\n"
     out += get_footer()
@@ -450,7 +447,7 @@ def write_ancestors_indi(con):
                     google_header = write_ppdistro_plot(data)
                     out += get_header(urlpre="../",head=google_header)
                     
-                    out += "<h2>Ancestral Node " + nodenum + ", Alignment: " + DIR_nick[d] + ", Model: " + model + "</h2>\n"
+                    out += "<h2>Ancestral Node " + nodenum + ", Alignment: " + get_msa_nickname(d) + ", Model: " + model + "</h2>\n"
                     #out += "<hr>\n"
                     out += "<div>\n"
                     out += "<h3>Maximum Likelihood Sequence:</h3>\n"

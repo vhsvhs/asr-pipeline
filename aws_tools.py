@@ -99,8 +99,7 @@ def push_database_to_s3(dbpath, S3_BUCKET, S3_KEYBASE):
     if bucket == None:
         bucket = s3.create_bucket(S3_BUCKET, location=S3LOCATION)
         bucket.set_acl('public-read')
-    
-    
+        
     SQLDB_KEY = S3_KEYBASE + "/sqldb"
     key = bucket.get_key(SQLDB_KEY)
     if key == None:

@@ -169,6 +169,26 @@ def read_config_file(con, ap):
             ap.params["msa_algorithms"] = []
             for i in x:
                 ap.params["msa_algorithms"].append( i )
+        
+        elif tokens[0].startswith("USER_ALIGNMENT"): # user-specified sequence alignments
+            if "user_msas" not in ap.params:
+                ap.params["user_msas"] = {}
+            x = tokens[1].split()
+            if x.__len__() < 2:
+                write_error(con, "This line in your configuration file appears to be too short: " + l, code=None)
+            msaname = x[0]
+            if ap.params["user_msas"].__contains__( msaname ):
+                write_error(con, "Your configuration appears to contain duplicated lines for the user-specified alignment named " + msaname )
+            if ap.params["msa_algorithms"].__contains__(msaname):
+                write_error(con, "Your configuration file contains a user-specified alignment, named " + msaname + ", that conflicts with the name of a built-in alignment algorithm. Please re-name your user-specified alignment and try again.")
+                exit()
+            msapath = x[1]
+            if False == os.path.exists( msapath ):
+                write_error(con, "I cannot find the user-specified alignment named " + msaname + " at path: " + msapath)
+                exit()
+            else:
+                ap.params["user_msas"][msaname] = msapath
+            print ap.params["user_msas"]
 
         elif tokens[0].startswith("THRESHOLDS_ZORRO"):
             """Note: these values are stored in the SQL DB later, during the
@@ -198,14 +218,14 @@ def read_config_file(con, ap):
             if ap.params["start_motif"].__contains__("None"):
                 ap.params["start_motif"] = None 
             elif ap.params["start_motif"].__len__() < 2:
-                write_log("Warning: your start motif ('" + ap.params["start_motif"] + "') is very short.")
+                write_log(con, "Warning: your start motif ('" + ap.params["start_motif"] + "') is very short.")
         
         elif tokens[0].startswith("END_MOTIF"):
             ap.params["end_motif"] = re.sub(" ", "", tokens[1])
             if ap.params["end_motif"].__contains__("None"):
                 ap.params["end_motif"] = None 
             elif ap.params["end_motif"].__len__() < 2:
-                write_log("Warning: your end motif ('" + ap.params["end_motif"] + "') is very short.")
+                write_log(con, "Warning: your end motif ('" + ap.params["end_motif"] + "') is very short.")
  
         elif tokens[0].startswith("CONSTRAINT_TREE"):
             constraint_tree = re.sub(" ", "", tokens[1])
@@ -396,13 +416,19 @@ def verify_config(con, ap):
             import_alignment_method(con, msa, ap.params["prank_exe"])
         
         if msa == "mafft" and "mafft_exe" not in ap.params:
-            print "\n. Something is wrong. Your config file doesn't have an executable path for PRANK."
-            write_error(con, "Something is wrong. Your config file doesn't have an executable path for PRANK.")
+            print "\n. Something is wrong. Your config file doesn't have an executable path for MAFFT."
+            write_error(con, "Something is wrong. Your config file doesn't have an executable path for MAFFT.")
             exit()
         elif msa == "mafft" and "mafft_exe" in ap.params:
             import_alignment_method(con, msa, ap.params["mafft_exe"])
-        
     
+    for msaname in ap.params["user_msas"]:
+        # copy the user-specified alignment into it's own folder
+        if False == os.path.exists( msaname ):
+            os.system("mkdir " + msaname)
+        os.system("cp " + ap.params["user_msas"][msaname] + " " + get_fastapath(msaname) )
+        import_alignment_method(con, msaname, "")
+            
     if "map2pdb" not in ap.params:
         ap.params["map2pdb"] = {}
         
@@ -435,6 +461,10 @@ def verify_all_exe(con):
     for ii in x:
         name = ii[0]
         exe_path = ii[1]
+        if exe_path == "":
+            # Skip the alignments that are user-specified, which is indicated by
+            # their lack of an executable path
+            continue
         name_exe[ name ] = exe_path
             
     """ ZORRO """
