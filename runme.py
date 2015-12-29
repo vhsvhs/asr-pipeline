@@ -325,13 +325,11 @@ else:
     write_log(con, "Codon sequences were not given by the user; I will skip dN/dS analysis.")
 
 
-
 """
     December 2014: The new Django-version of this code should stop here.
     Rather than building static HTML pages (code below), we'll use Django
     to produce dynamic HTML content on the fly.
 """
-
 
 if jump <= 7 and stop > 7:
     write_log(con, "Checkpoint: cleaning-up residual files")

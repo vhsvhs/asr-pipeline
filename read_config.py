@@ -31,6 +31,7 @@ def read_config_file(con, ap):
 
     ap.params["end_motif"] = None
     ap.params["start_motif"] = None
+    ap.params["user_msas"] = {}
 
     for l in fin.xreadlines():
         l = l.strip()
