@@ -385,7 +385,7 @@ def get_neb_scores_from_rstfile(con, rstpath, testid, neb_sig_sites):
                 ancid1 = x[0]
                 ancid2 = x[1]
                 
-                sql = "select pp, state from AncestralStates where site=" + site.__str__() + " and ancid=" + ancid1.__str__()
+                sql = "select pp, state from AncestralStates" + ancid1.__str__() + " where site=" + site.__str__()
                 cur.execute(sql)
                 x = cur.fetchall()
                 maxpp1 = 0.0
@@ -395,7 +395,7 @@ def get_neb_scores_from_rstfile(con, rstpath, testid, neb_sig_sites):
                         maxpp1 = ii[0]
                         state1 = ii[1]
                 
-                sql = "select pp, state from AncestralStates where site=" + site.__str__() + " and ancid=" + ancid2.__str__()
+                sql = "select pp, state from AncestralStates" + ancid2.__str__() + " where site=" + site.__str__()
                 cur.execute(sql)
                 x = cur.fetchall()
                 maxpp2 = 0.0
@@ -492,7 +492,7 @@ def get_beb_scores_from_rstfile(con, rstpath, testid, beb_sig_sites):
                 ancid1 = x[0]
                 ancid2 = x[1]
                 
-                sql = "select pp, state from AncestralStates where site=" + site.__str__() + " and ancid=" + ancid1.__str__()
+                sql = "select pp, state from AncestralStates" + ancid1.__str__() + " where site=" + site.__str__()
                 cur.execute(sql)
                 x = cur.fetchall()
                 maxpp1 = 0.0
@@ -502,7 +502,7 @@ def get_beb_scores_from_rstfile(con, rstpath, testid, beb_sig_sites):
                         maxpp1 = ii[0]
                         state1 = ii[1]
                 
-                sql = "select pp, state from AncestralStates where site=" + site.__str__() + " and ancid=" + ancid2.__str__()
+                sql = "select pp, state from AncestralStates" + ancid2.__str__() + " where site=" + site.__str__()
                 cur.execute(sql)
                 x = cur.fetchall()
                 maxpp2 = 0.0

@@ -553,15 +553,23 @@ def check_asr_output(con):
                 cur.execute(sql) 
                 con.commit()
                 
+                """Get the ID of the ancestor we just inserted."""
                 sql = "select id from Ancestors where almethod=" + msaid.__str__() + " and phylomodel=" + modelid.__str__() + " and name='Node" + nodenum.__str__() + "'"
                 cur.execute(sql)
                 ancid = cur.fetchone()[0]
                 
+                """Create a table for this ancestor's PP values."""
+                tablename = "AncestralStates" + ancid.__str__()
+                sql = "create table if not exists " + tablename.__str__() + "(site INT, state CHAR, pp FLOAT)"
+                cur.execute(sql)
+                con.commit()
+                
                 for site in ssp:
                     for state in ssp[site]:
                         pp = ssp[site][state]
-                        sql = "insert into AncestralStates (ancid, site, state, pp) values("
-                        sql += ancid.__str__() + "," + site.__str__() + ",'" + state + "',"
+                        sql = "insert or replace into " + tablename + " (site, state, pp) values("
+                        sql += site.__str__() + ",'"
+                        sql += state + "',"
                         sql += pp.__str__() + ")"
                         cur.execute(sql)
                 con.commit()

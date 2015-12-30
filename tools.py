@@ -275,7 +275,7 @@ def get_ml_sequence(site_states_probs):
 def get_site_ml(con, ancid, skip_indels = True):
     """Returns the hashtable; key = site, value = tuple of (mlstate, mlpp)"""
     cur = con.cursor()
-    sql = "select site, state, pp from AncestralStates where ancid=" + ancid.__str__()
+    sql = "select site, state, pp from AncestralStates" + ancid.__str__()
     cur.execute(sql)
     x = cur.fetchall()
     site_tuple = {}
