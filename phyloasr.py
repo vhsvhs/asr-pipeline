@@ -56,7 +56,7 @@ def write_raxml_commands(con):
             command = cv[0] # i.e., raxml_exe
             command += " -s " + phypath
             command += " -n " + runid
-            command += " -w " + here + "/" + msa
+            command += " -w " + here + "/" + msa + "/"
             command += " -e 0.01"
             command += " -m " + model
             command += " -p 12345"
@@ -77,7 +77,7 @@ def make_fasttree_command(con, ap, outdir, phylippath):
     newtree = get_fasttree_path(phylippath)
     
     c = get_setting_values(con, "fasttree_exe")[0]
-    c += " -wag "
+    c += " -nomatrix "
     c += " < " + phylippath + " > " + newtree
     return c
     
@@ -98,7 +98,7 @@ def check_raxml_output(con):
         msaid = cur.fetchone()[0]
         
         phypath = get_raxml_phylippath(msa)
-        for model in get_phylo_modelnames(con):
+        for model in get_phylo_modelnames(con, filter_user_created = True):
             runid = get_runid(msa, model) 
             raxml_treepath = get_raxml_treepath(msa, runid)
             if False == os.path.exists(raxml_treepath):
@@ -130,6 +130,64 @@ def check_raxml_output(con):
             sql += msaid.__str__() + "," + modelid.__str__() + ",'" + rooted_treestring + "')"
             cur.execute(sql)
             con.commit()
+
+
+def import_user_trees(con, ap):
+    cur = con.cursor()
+
+    if "user_mltrees" not in ap.params:
+        return
+    
+    for mltreename in ap.params["user_mltrees"]:
+        mltreepath = ap.params["user_mltrees"][mltreename]
+        if False == os.path.exists( mltreepath ):
+            message = "I cannot find your user-supplied ML tree at " + mltreepath
+            print message
+            exit()        
+        
+        # We already verified that mltreename is unique and doesn't conflict with
+        # RAxML model names.
+        sql = "insert into PhyloModels(name, user_created) VALUES('" + mltreename + "', 1)"
+        cur.execute(sql)
+        con.commit()
+
+        # get the modelid
+        sql = "select modelid from PhyloModels where name='" + mltreename + "'"
+        cur.execute(sql)
+        modelid = cur.fetchone()[0]
+                    
+        # get the Newick string from the tree
+        fin = open(mltreepath, "r")
+        treestring = fin.readline()
+        fin.close()
+        
+        rooted_treestring = reroot_newick(con, treestring)
+        rooted_treestring = re.sub("'", "", rooted_treestring)              
+        sql = "insert into UnsupportedMlPhylogenies (almethod,phylomodelid,newick) VALUES("
+        sql += "NULL" + "," + modelid.__str__() + ",'" + rooted_treestring + "')"
+        cur.execute(sql)
+        con.commit()
+        
+        # This is sort of a hack. . .
+        # Write the user tree into a fake RAxML output file.
+        # This will allow Lazarus to read it and build ancestors
+        amethods = get_alignment_method_names(con)
+        for method in amethods:
+            fout = open(method.__str__() + "/RAxML_bestTree." + method.__str__() + "." + mltreename, "w")
+            fout.write(rooted_treestring + "\n" )
+            fout.close()
+
+        sql = "insert into TreeML(mltreeid, likelihood) values(" + modelid.__str__() + ",NULL)"
+        cur.execute(sql)
+        con.commit()
+        
+        sql = "insert into TreeAlpha(mltreeid, alpha) values(" + modelid.__str__() + ",NULL)"
+        cur.execute(sql)
+        con.commit()
+        
+        sql = "insert into TreePP(mltreeid, pp) values(" + modelid.__str__() + ",NULL)"
+        cur.execute(sql)
+        con.commit()
 
 
 def get_mlalpha_pp(con):
@@ -368,7 +426,8 @@ def import_supported_trees(con):
     cur.execute(sql)
     alr_id = cur.fetchone()[0]
     
-    sql = "select id, almethod, phylomodelid from UnsupportedMlPhylogenies"
+    # get alignment/model combos for non-user-created models only
+    sql = "select id, almethod, phylomodelid from UnsupportedMlPhylogenies where phylomodelid in (select modelid from PhyloModels where user_created=0)"
     cur.execute(sql)
     x = cur.fetchall()
     for ii in x:
@@ -490,8 +549,8 @@ def check_asr_output(con):
     
     sql = "delete from Ancestors"
     cur.execute(sql)
-    sql = "delete from AncestralStates"
-    cur.execute(sql)
+    #sql = "delete from AncestralStates"
+    #cur.execute(sql)
     sql = "delete from AncestralCladogram"
     cur.execute(sql)
     con.commit()

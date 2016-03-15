@@ -32,6 +32,7 @@ def write_error(con, message, code=None):
         sql += "\"," + code.__str__() + ")"
     else:
         sql += "\")"
+    print sql
     cur.execute(sql)
     con.commit()
     print "\n. ERROR: " + message

@@ -56,10 +56,9 @@ def build_db(dbpath):
     # a list of phylo softwares, such as PhyML and RAxML
     cur.execute("create table if not exists PhyloSoftwares(id INTEGER primary key autoincrement, name TEXT unique, exe_path TEXT)") 
     # a list of phylogenetic models, such as LG+I+G
-    cur.execute("create table if not exists PhyloModels(modelid INTEGER primary key autoincrement, name TEXT unique)") 
+    cur.execute("create table if not exists PhyloModels(modelid INTEGER primary key autoincrement, name TEXT unique, user_created INT)")
     # command-line strings used to invoke phylo models in different softwares
     cur.execute("create table if not exists PhyloModelsSoftware(modelid INTEGER, softwareid INTEGER, software_model_string TEXT)") 
-    cur.execute("create table if not exists ParsimonyPhylogenies(id INTEGER primary key autoincrement, seqsetid INTEGER, newick TEXT)") # seqsetid is the site set used to make this tree
     cur.execute("create table if not exists UnsupportedMlPhylogenies(id INTEGER primary key autoincrement, almethod INT, phylomodelid INTEGER, newick TEXT)")
 
     cur.execute("create table if not exists TreeMl(mltreeid INTEGER, likelihood FLOAT)") # mltreeid is an ID for an UnsupportedMlPhylogeny
@@ -82,7 +81,7 @@ def build_db(dbpath):
     cur.execute("create table if not exists GroupSeedTaxa(groupid, INTEGER, seed_taxonid INTEGER)") # each group can have one, or multiple, seed taxon
     
     cur.execute("create table if not exists Ancestors(id INTEGER primary key autoincrement, almethod INT, phylomodel INT, name TEXT)")
-    cur.execute("create table if not exists AncestralStates(ancid INTEGER, site INT, state CHAR, pp FLOAT)") # site is specific to the almethod for this Ancestor
+    #cur.execute("create table if not exists AncestralStates(ancid INTEGER, site INT, state CHAR, pp FLOAT)") # site is specific to the almethod for this Ancestor
     cur.execute("create table if not exists AncestralCladogram(id INTEGER primary key autoincrement, unsupportedmltreeid INTEGER, newick TEXT)")
     
     """The table AncestorsAcrossModels says that ancestor 'ancid' is the same as another ancestor 'same_ancid'

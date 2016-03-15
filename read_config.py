@@ -190,6 +190,25 @@ def read_config_file(con, ap):
             else:
                 ap.params["user_msas"][msaname] = msapath
             print ap.params["user_msas"]
+        
+        """
+        elif tokens[0].startswith("USER_MLTREE"):
+            if "user_mltrees" not in ap.params:
+                ap.params["user_mltrees"] = {}
+            x = tokens[1].split()
+            if x.__len__() < 2:
+                write_error(con, "This line in your configuration file appears to be too short: " + l, code=None)
+            mltreename = x[0]
+            if ap.params["user_mltrees"].__contains__( mltreename ):
+                write_error(con, "Your configuration appears to contain duplicated lines for the user-specified ML tree named " + mltreename )
+            mltreepath = x[1]
+            if False == os.path.exists( mltreepath ):
+                write_error(con,  "I cannot find the user-specified ML tree named " + mltreename + " at path: " + mltreepath)
+                exit()
+            else:
+                ap.params["user_mltrees"][mltreename] = mltreepath
+            print ap.params["user_mltrees"]
+        """
 
         elif tokens[0].startswith("THRESHOLDS_ZORRO"):
             """Note: these values are stored in the SQL DB later, during the
@@ -204,11 +223,12 @@ def read_config_file(con, ap):
         elif tokens[0].startswith("MODELS_RAXML"):
             x = tokens[1].split()
             for i in x:
+                # Ensure that no other phylo. models have this name
                 sql = "select count(*) from PhyloModels where name='" + i + "'"
                 cur.execute(sql)
                 count = cur.fetchone()[0]
                 if count == 0:               
-                    sql = "insert into PhyloModels(name) VALUES('" + i + "')"
+                    sql = "insert into PhyloModels(name, user_created) VALUES('" + i + "', 0)"
                     cur.execute(sql)
                     con.commit()
         
@@ -329,8 +349,8 @@ def read_config_file(con, ap):
     fin.close()
 
 def verify_config(con, ap):
-    """Will return nothing if the configuration is ok.  Will error and quit if the
-    configuration is flawed."""
+    """This method will return nothing if the configuration is OK.  
+    If errors exist, then it will report an error and quit."""
     
     cur = con.cursor()
     
@@ -353,14 +373,6 @@ def verify_config(con, ap):
         ap.params["run_exe"] = "source"
         add_setting_value(con, "run_exe", "source")
     
-    #if "blastp_exe" not in ap.params:
-    #    ap.params["blastp_exe"] = "blastp"
-    #    add_setting_value(con, "blastp_exe", "blastp")
-
-    #if "cdhit_exe" not in ap.params:
-    #    ap.params["cdhit_exe"] = "cd-hit"
-    #    add_setting_value(con, "cdhit_exe", "cd-hit")
-
     if "ingroup" not in ap.params:
         ap.params["ingroup"] = []
         ap.params["compareanc"] = []
@@ -429,6 +441,20 @@ def verify_config(con, ap):
             os.system("mkdir " + msaname)
         os.system("cp " + ap.params["user_msas"][msaname] + " " + get_fastapath(msaname) )
         import_alignment_method(con, msaname, "")
+    
+    phylomodelnames = get_phylo_modelnames(con)
+    if "user_mltrees" in ap.params:
+        for mltreename in ap.params["user_mltrees"]:
+            mltreepath = ap.params["user_mltrees"][mltreename]
+            if False == os.path.exists( mltreepath ):
+                message = "I cannot find your user-supplied ML tree at " + mltreepath
+                print message
+                exit()  
+            # Check if mltreename is unique:
+            if mltreename in phylomodelnames:
+                message = "Your user-supplied tree has a name that conflicts with existing phylogenetic models:", mltreename
+                print message
+                exit()
             
     if "map2pdb" not in ap.params:
         ap.params["map2pdb"] = {}
@@ -438,8 +464,14 @@ def verify_config(con, ap):
     else:
         ap.params["do_pdb_analysis"] = False
         
+    if "zorro_exe" not in ap.params and False == ap.getOptionalToggle("--skip_zorro"):
+        add_setting_value(con, "zorro_exe", "zorro")
+        
     if "zorro_thresholds" not in ap.params:
         ap.params["zorro_thresholds"] = [0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.5, 0.6, 0.75, 1.0]
+    
+    if "fasttree_exe" not in ap.params:
+        add_setting_value(con, "fasttree_exe", "fasttree")
     
     for t in ap.params["zorro_thresholds"]:
         add_setting_value(con, "zorro_thresholds", t)

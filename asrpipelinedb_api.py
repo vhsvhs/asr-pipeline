@@ -400,9 +400,11 @@ def get_phylo_modelids(con):
         modelids.append( ii[0] )
     return modelids
 
-def get_phylo_modelnames(con):
+def get_phylo_modelnames(con, filter_user_created = False):
     cur = con.cursor()
     sql = "select name from PhyloModels"
+    if filter_user_created:
+        sql += " where user_created = 0"
     cur.execute(sql)
     modelnames = []
     x = cur.fetchall()

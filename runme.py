@@ -202,7 +202,7 @@ if jump <= 3.1 and stop > 3.1:
     check_raxml_output(con)
     get_mlalpha_pp(con)
     add_checkpoint(con, 3.1)
-
+        
 """ Branch Support """
 if jump <= 4 and stop > 4:
     write_log(con, "Checkpoint: calculating branch support")
@@ -219,7 +219,8 @@ if jump <= 4 and stop > 4:
 
 if jump <= 4.1 and stop > 4.1:
     import_supported_trees(con)
-    
+    import_user_trees(con, ap)
+
 """ Distances Between ML Trees """
 if jump <= 4.2 and stop > 4.2:
     write_log(con, "Checkpoint: computing distances between trees")
