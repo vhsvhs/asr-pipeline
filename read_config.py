@@ -191,7 +191,7 @@ def read_config_file(con, ap):
                 ap.params["user_msas"][msaname] = msapath
             print ap.params["user_msas"]
         
-        """
+        
         elif tokens[0].startswith("USER_MLTREE"):
             if "user_mltrees" not in ap.params:
                 ap.params["user_mltrees"] = {}
@@ -208,7 +208,7 @@ def read_config_file(con, ap):
             else:
                 ap.params["user_mltrees"][mltreename] = mltreepath
             print ap.params["user_mltrees"]
-        """
+        
 
         elif tokens[0].startswith("THRESHOLDS_ZORRO"):
             """Note: these values are stored in the SQL DB later, during the
