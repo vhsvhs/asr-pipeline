@@ -389,23 +389,24 @@ def check_aligned_sequences(con):
         c = cur.fetchone()[0]
         write_log(con, "There are " + c.__str__() + " sequences in the " + msa + " alignment.")
      
-        """If the user supplied nucleotide sequences, then map the codon sequences to these amino acid sequences."""
-        x = get_setting_values(con, "ergntpath")
-        if x != None:
-            for taxa in taxa_seq:
-                taxonid = get_taxonid(con, taxa)
-                org_codon_seq = get_original_seq(con, taxonid, datatype=0)
-                """Note: taxa_seq[taxa] is the aa sequence, and org_codon_seq is the nt seq."""
-                aligned_codon_seq = align_codon_to_aaseq(con, taxa_seq[taxa], org_codon_seq)
-                #print "\n. 361:", taxa
-                #print "nt:", aligned_codon_seq
-                #print "aa:", taxa_seq[taxa]
-                if aligned_codon_seq != None:
-                    import_aligned_seq(con, taxonid, msaid, aligned_codon_seq, datatype=0)
-                else:
-                    write_error(con, "I cannot match the codon sequence and amino acid sequence for " + taxa)
-                    exit()
+        #"""If the user supplied nucleotide sequences, then map the codon sequences to these amino acid sequences."""
+        #x = get_setting_values(con, "ergntpath")
+        #if x != None:
+        #    for taxa in taxa_seq:
+        #        taxonid = get_taxonid(con, taxa)
+        #        org_codon_seq = get_original_seq(con, taxonid, datatype=0)
+        #        """Note: taxa_seq[taxa] is the aa sequence, and org_codon_seq is the nt seq."""
+        #        aligned_codon_seq = align_codon_to_aaseq(con, taxa_seq[taxa], org_codon_seq)
+        #        #print "\n. 361:", taxa
+        #        #print "nt:", aligned_codon_seq
+        #        #print "aa:", taxa_seq[taxa]
+        #        if aligned_codon_seq != None:
+        #            import_aligned_seq(con, taxonid, msaid, aligned_codon_seq, datatype=0)
+        #        else:
+        #            write_error(con, "I cannot match the codon sequence and amino acid sequence for " + taxa)
+        #            exit()
 
+        
 def map_sequences(seqa, seqb):
     """Given two identical sequences, with each containing a unique pattern of gaps,
         this method returns a list of tuples (x,y), indicated that site x in seqa is
