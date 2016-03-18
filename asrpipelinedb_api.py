@@ -76,6 +76,7 @@ def import_original_seq(con, shortname, sequence, datatype=1):
 def import_aligned_seq(con, taxonid, almethodid, seq, datatype=1):
     cur = con.cursor()    
     sql = "select count(*) from AlignedSequences where taxonid=" + taxonid.__str__() + " and almethod=" + almethodid.__str__() + " and datatype=" + datatype.__str__()
+    print sql
     cur.execute(sql)
     count = cur.fetchone()[0]
     if count == 0:      
